@@ -1,0 +1,246 @@
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { WorkoutDataService } from '../../services/workout-data.service';
+import { WorkoutStateService } from '../../services/workout-state.service';
+import { StorageService } from '../../services/storage.service';
+import { ConfirmDialogService } from '../../services/confirm-dialog.service';
+import { Day, Exercise, WorkoutSession, ExInsight } from '../../models/workout.model';
+
+interface SerieRow {
+  reps: string;
+  load: string;
+  done: boolean;
+  ripPlaceholder: string;
+  loadPlaceholder: string;
+}
+
+interface ExerciseVM {
+  ex: Exercise;
+  rows: SerieRow[];
+  open: boolean;
+  insightVisible: boolean;
+  insight: ExInsight | null;
+}
+
+@Component({
+  selector: 'app-scheda-detail',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './scheda-detail.component.html',
+  styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
+})
+export class SchedaDetailComponent implements OnInit, OnDestroy {
+  day!: Day;
+  dayIndex = 0;
+  exercises: ExerciseVM[] = [];
+  saveStatus: 'idle' | 'saved' | 'err' = 'idle';
+  private draftTimer: ReturnType<typeof setTimeout> | null = null;
+
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    public workoutData: WorkoutDataService,
+    public state: WorkoutStateService,
+    private storage: StorageService,
+    private confirm: ConfirmDialogService,
+    private sanitizer: DomSanitizer
+  ) {}
+
+  ngOnInit(): void {
+    const n = parseInt(this.route.snapshot.paramMap.get('n') ?? '0', 10);
+    this.dayIndex = n;
+    this.day = this.workoutData.days[n];
+    if (!this.day) { this.router.navigate(['/scheda']); return; }
+    this.buildExercises();
+    this.loadDraft();
+    this.loadInsights();
+  }
+
+  ngOnDestroy(): void {
+    if (this.draftTimer) clearTimeout(this.draftTimer);
+  }
+
+  private buildExercises(): void {
+    const week = this.state.currentWeek;
+    this.exercises = this.day.ex.map(ex => {
+      const { sets, reps } = this.workoutData.getExSetsReps(ex, week);
+      const rows: SerieRow[] = Array.from({ length: sets }, (_, i) => ({
+        reps: '',
+        load: '',
+        done: false,
+        ripPlaceholder: String(reps[i] ?? ''),
+        loadPlaceholder: ''
+      }));
+      return { ex, rows, open: true, insightVisible: false, insight: null };
+    });
+  }
+
+  private loadDraft(): void {
+    const draft = this.storage.getJSON<{ exercises: { rows: SerieRow[] }[] }>(`draft:${this.day.id}`);
+    if (!draft) return;
+    draft.exercises.forEach((dex, i) => {
+      if (this.exercises[i]) {
+        dex.rows.forEach((row, j) => {
+          if (this.exercises[i].rows[j]) {
+            this.exercises[i].rows[j].reps = row.reps ?? '';
+            this.exercises[i].rows[j].load = row.load ?? '';
+            this.exercises[i].rows[j].done = row.done ?? false;
+          }
+        });
+      }
+    });
+  }
+
+  private loadInsights(): void {
+    const keys = this.storage.list(`workout:${this.day.id}:`).sort();
+    if (keys.length === 0) return;
+
+    const sessions = keys.map(k => this.storage.getJSON<WorkoutSession>(k)).filter(Boolean) as WorkoutSession[];
+
+    this.exercises.forEach((vm, exIdx) => {
+      const exName = vm.ex.name;
+
+      // Collect max loads per session for this exercise
+      const maxLoads: number[] = [];
+      let lastSessionData: { load: string | null; reps: string | null }[] = [];
+
+      sessions.forEach(s => {
+        const sexData = s.exercises.find(e => e.name === exName);
+        if (!sexData) return;
+        const loads = sexData.sets.map(sr => parseFloat(sr.load ?? '') || 0);
+        const maxLoad = Math.max(...loads.filter(l => l > 0));
+        if (maxLoad > 0) maxLoads.push(maxLoad);
+        lastSessionData = sexData.sets.map(sr => ({ load: sr.load, reps: sr.reps }));
+      });
+
+      // Set load placeholder from last session
+      if (lastSessionData.length > 0) {
+        lastSessionData.forEach((sr, j) => {
+          if (vm.rows[j] && sr.load) {
+            vm.rows[j].loadPlaceholder = sr.load;
+          }
+        });
+      }
+
+      const lastKey = keys[keys.length - 1];
+      const lastSession = sessions[sessions.length - 1];
+      const lastEx = lastSession?.exercises.find(e => e.name === exName);
+      let lastText = '';
+      if (lastEx && lastKey) {
+        const dateStr = lastKey.split(':')[2] ?? '';
+        const d = dateStr ? new Date(dateStr) : null;
+        const dd = d ? `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}` : '';
+        const maxLoad = Math.max(...lastEx.sets.map(s => parseFloat(s.load ?? '') || 0).filter(l => l > 0));
+        lastText = dd ? `Ultimo (${dd}): ${maxLoad > 0 ? maxLoad + ' kg' : '—'}` : '';
+      }
+
+      let sparkSvg: string | null = null;
+      let delta: string | null = null;
+      let deltaClass = '';
+
+      if (maxLoads.length >= 2) {
+        sparkSvg = this.workoutData.sparklineSVG(maxLoads);
+        const diff = maxLoads[maxLoads.length - 1] - maxLoads[maxLoads.length - 2];
+        if (diff > 0) { delta = `+${diff} kg`; deltaClass = 'up'; }
+        else if (diff < 0) { delta = `${diff} kg`; deltaClass = 'down'; }
+        else { delta = '= kg'; deltaClass = ''; }
+      } else if (maxLoads.length === 1) {
+        sparkSvg = this.workoutData.sparklineSVG(maxLoads);
+      }
+
+      let suggestion: string | null = null;
+      if (vm.ex.scheme === 'wave' && maxLoads.length > 0) {
+        const lastMax = maxLoads[maxLoads.length - 1];
+        const suggested = lastMax + 2.5;
+        suggestion = `Prova <b>${suggested} kg</b> — +2.5 kg rispetto all'ultima volta`;
+      }
+
+      if (lastText || sparkSvg || suggestion) {
+        vm.insight = { lastText, sparkSvg, delta, deltaClass, suggestion };
+        vm.insightVisible = true;
+      }
+    });
+  }
+
+  toggleEx(vm: ExerciseVM): void {
+    vm.open = !vm.open;
+  }
+
+  onSetCheck(vm: ExerciseVM, rowIdx: number): void {
+    vm.rows[rowIdx].done = !vm.rows[rowIdx].done;
+    this.scheduleDraft();
+    if (vm.rows[rowIdx].done) {
+      this.state.startRestTimer();
+    }
+  }
+
+  onInput(): void {
+    this.scheduleDraft();
+  }
+
+  private scheduleDraft(): void {
+    if (this.draftTimer) clearTimeout(this.draftTimer);
+    this.draftTimer = setTimeout(() => this.saveDraft(), 500);
+  }
+
+  private saveDraft(): void {
+    const data = { exercises: this.exercises.map(vm => ({ rows: vm.rows })) };
+    this.storage.setJSON(`draft:${this.day.id}`, data);
+  }
+
+  getDoneCount(vm: ExerciseVM): number {
+    return vm.rows.filter(r => r.done).length;
+  }
+
+  isComplete(vm: ExerciseVM): boolean {
+    return vm.rows.length > 0 && vm.rows.every(r => r.done);
+  }
+
+  getMuscleInfo(muscle: string) {
+    return this.workoutData.MUSCLES[muscle] ?? { color: '#64D2FF', dim: 'rgba(100,210,255,0.16)' };
+  }
+
+  getMuscleIcon(muscle: string): SafeHtml {
+    return this.sanitizer.bypassSecurityTrustHtml(
+      this.workoutData.MUSCLE_ICONS[muscle] ?? this.workoutData.MUSCLE_ICONS['Core']
+    );
+  }
+
+  async saveWorkout(): Promise<void> {
+    const isoDate = new Date().toISOString().split('T')[0];
+    const session: WorkoutSession = {
+      dayId: this.day.id,
+      dayLabel: this.day.label,
+      date: isoDate,
+      exercises: this.exercises.map(vm => ({
+        name: vm.ex.name,
+        sets: vm.rows.map(r => ({ load: r.load || null, reps: r.reps || null, done: r.done }))
+      }))
+    };
+    const key = `workout:${this.day.id}:${isoDate}`;
+    const ok = this.storage.setJSON(key, session);
+    if (ok) {
+      this.storage.delete(`draft:${this.day.id}`);
+      this.saveStatus = 'saved';
+      setTimeout(() => { this.saveStatus = 'idle'; }, 2000);
+    } else {
+      this.saveStatus = 'err';
+      setTimeout(() => { this.saveStatus = 'idle'; }, 2000);
+    }
+  }
+
+  getSaveBtnClass(): string {
+    if (this.saveStatus === 'saved') return 'savebtn saved';
+    if (this.saveStatus === 'err') return 'savebtn err';
+    return 'savebtn';
+  }
+
+  getSaveBtnText(): string {
+    if (this.saveStatus === 'saved') return '✓ Allenamento salvato!';
+    if (this.saveStatus === 'err') return '✕ Errore salvataggio';
+    return 'Completa allenamento';
+  }
+}

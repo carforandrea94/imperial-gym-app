@@ -1,0 +1,53 @@
+<div *ngIf="!session" class="history-empty">Seduta non trovata.</div>
+
+<ng-container *ngIf="session">
+  <div class="daymeta">
+    <span>{{ session.dayLabel }}</span>
+    <span class="rec">{{ displayDate }}</span>
+  </div>
+
+  <div class="exlist">
+    <div class="ex readonly" *ngFor="let ex of session.exercises; let i = index"
+         [class.open]="openExercises[i]">
+
+      <div class="ex-summary" (click)="toggleEx(i)">
+        <div class="ex-icon ex-num"
+          [style.background]="getMuscleInfo(ex.name).dim"
+          [style.color]="getMuscleInfo(ex.name).color"
+          [style.border-color]="getMuscleInfo(ex.name).color + '30'">
+          {{ i + 1 }}
+        </div>
+        <div class="ex-info">
+          <div class="ex-name">{{ ex.name }}</div>
+          <span class="ex-muscle" [style.background]="getMuscleInfo(ex.name).color">
+            {{ getMuscle(ex.name) }}
+          </span>
+        </div>
+        <div class="ex-meta">
+          <span class="ex-counter" [class.complete]="getDoneCount(ex.sets) === ex.sets.length">
+            {{ getDoneCount(ex.sets) }}/{{ ex.sets.length }}
+          </span>
+          <span class="ex-chevron">▾</span>
+        </div>
+      </div>
+
+      <div class="content-inner" *ngIf="openExercises[i]">
+        <div class="settable-head">
+          <span>Serie</span><span>Rip.</span><span>Carico</span><span style="text-align:center">✓</span>
+        </div>
+        <div class="settable-row" *ngFor="let s of ex.sets; let j = index">
+          <div class="serie-badge">{{ j + 1 }}</div>
+          <div class="ro-value">{{ s.reps ?? '—' }}</div>
+          <div class="ro-value">{{ s.load ? s.load + ' kg' : '—' }}</div>
+          <div class="set-check" [class.done]="s.done">✓</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="savebar">
+    <button class="savebtn delete-session-btn" (click)="deleteSession()">
+      Elimina questa seduta
+    </button>
+  </div>
+</ng-container>

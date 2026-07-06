@@ -1,0 +1,19 @@
+<app-navbar
+  [title]="navTitle"
+  [subtitle]="navSubtitle"
+  [showBack]="showBack"
+  [showActions]="showActions"
+  (backClick)="onBack()"
+  (historyClick)="onHistory()"
+  (infoClick)="onInfo()">
+</app-navbar>
+
+<div class="content">
+  <div class="wrap">
+    <router-outlet></router-outlet>
+  </div>
+</div>
+
+<app-rest-timer></app-rest-timer>
+<app-confirm-dialog></app-confirm-dialog>
+<app-tabbar></app-tabbar>

@@ -1,0 +1,77 @@
+<div class="daymeta" *ngIf="day">
+  <span>{{ day.label }}</span>
+  <span class="rec">rec {{ day.rec }}</span>
+</div>
+
+<div class="exlist" *ngIf="day">
+  <div class="ex" *ngFor="let vm of exercises; let i = index" [class.open]="vm.open">
+
+    <div class="ex-summary" (click)="toggleEx(vm)">
+      <div class="ex-icon ex-num"
+        [style.background]="getMuscleInfo(vm.ex.muscle).dim"
+        [style.color]="getMuscleInfo(vm.ex.muscle).color"
+        [style.border-color]="getMuscleInfo(vm.ex.muscle).color + '44'">
+        {{ i + 1 }}
+      </div>
+      <div class="ex-info">
+        <div class="ex-name">{{ vm.ex.name }}</div>
+        <span class="ex-muscle" [style.background]="getMuscleInfo(vm.ex.muscle).color">
+          {{ vm.ex.muscle }}
+        </span>
+        <span class="ex-chip" *ngIf="vm.ex.text">{{ vm.ex.text }}</span>
+      </div>
+      <div class="ex-meta">
+        <span class="ex-schemebadge">{{ vm.ex.scheme === 'wave' ? 'WAVE' : 'FISSO' }}</span>
+        <span class="ex-counter" [class.complete]="isComplete(vm)">
+          {{ getDoneCount(vm) }}/{{ vm.rows.length }}
+        </span>
+        <span class="ex-chevron">▾</span>
+      </div>
+    </div>
+
+    <div class="content-inner" *ngIf="vm.open">
+      <p class="note" *ngIf="vm.ex.note">{{ vm.ex.note }}</p>
+
+      <div class="settable-head">
+        <span>Serie</span>
+        <span>Rip.</span>
+        <span>Carico (kg)</span>
+        <span>✓</span>
+      </div>
+
+      <div class="settable-row" *ngFor="let row of vm.rows; let j = index">
+        <div class="serie-badge">{{ j + 1 }}</div>
+        <input class="rip-input" type="text" inputmode="decimal"
+          [(ngModel)]="row.reps"
+          [placeholder]="row.ripPlaceholder"
+          (input)="onInput()" />
+        <input class="load-input" type="text" inputmode="decimal"
+          [(ngModel)]="row.load"
+          [placeholder]="row.loadPlaceholder || '0'"
+          (input)="onInput()" />
+        <div class="set-check" [class.done]="row.done" (click)="onSetCheck(vm, j)">✓</div>
+      </div>
+
+      <!-- Insights -->
+      <div class="ex-insights" [class.show]="vm.insightVisible && vm.insight">
+        <ng-container *ngIf="vm.insight">
+          <div *ngIf="vm.insight.lastText" class="lastsession">{{ vm.insight.lastText }}</div>
+          <div class="spark-row" *ngIf="vm.insight.sparkSvg">
+            <span class="spark-label">Progressione</span>
+            <span [innerHTML]="vm.insight.sparkSvg"></span>
+            <span class="spark-delta" *ngIf="vm.insight.delta" [class]="'spark-delta ' + vm.insight.deltaClass">
+              {{ vm.insight.delta }}
+            </span>
+          </div>
+          <div class="suggestion-chip" *ngIf="vm.insight.suggestion" [innerHTML]="vm.insight.suggestion"></div>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="savebar" *ngIf="day">
+  <button [class]="getSaveBtnClass()" (click)="saveWorkout()">
+    {{ getSaveBtnText() }}
+  </button>
+</div>

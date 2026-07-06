@@ -1,0 +1,25 @@
+<nav class="tabbar">
+  <div class="pill" [class.p1]="activeTab === 'dieta'"></div>
+
+  <button class="tabbtn" [class.active]="activeTab === 'scheda'" (click)="navigate('scheda')">
+    <span class="ic">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="3"/>
+        <line x1="9" y1="9" x2="15" y2="9"/>
+        <line x1="9" y1="12" x2="15" y2="12"/>
+        <line x1="9" y1="15" x2="13" y2="15"/>
+      </svg>
+    </span>
+    <span class="tl">Scheda</span>
+  </button>
+
+  <button class="tabbtn" [class.active]="activeTab === 'dieta'" (click)="navigate('dieta')">
+    <span class="ic">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12c0-2.76 1.12-5.26 2.93-7.07"/>
+        <path d="M8 12h8M12 8v8"/>
+      </svg>
+    </span>
+    <span class="tl">Dieta</span>
+  </button>
+</nav>
