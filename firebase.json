@@ -1,4 +1,18 @@
 {
+  "hosting": {
+    "public": "dist/protocollo-app/browser",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
   "firestore": {
     "database": "(default)",
     "location": "eur3",
