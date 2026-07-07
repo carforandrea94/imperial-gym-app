@@ -1,5 +1,5 @@
 <!-- Tabbar CLIENT: Scheda / Dieta / Misure -->
-<nav class="tabbar tabbar-3" *ngIf="!isCoach">
+<nav class="tabbar tabbar-3" *ngIf="!isCoach && auth.authReady()">
   <div class="pill" [class.p1]="activeTab === 'dieta'" [class.p2]="activeTab === 'misure'"></div>
 
   <button class="tabbtn" [class.active]="activeTab === 'scheda'" (click)="navigate('scheda')">
@@ -36,7 +36,7 @@
 </nav>
 
 <!-- Tabbar COACH: Bacheca / Clienti -->
-<nav class="tabbar" *ngIf="isCoach">
+<nav class="tabbar" *ngIf="isCoach && auth.authReady()">
   <div class="pill" [class.p1]="activeCoachTab === 'clienti'"></div>
 
   <button class="tabbtn" [class.active]="activeCoachTab === 'bacheca'" (click)="navigateCoach('bacheca')">

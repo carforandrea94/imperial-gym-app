@@ -1,5 +1,5 @@
 <app-navbar
-  *ngIf="showChrome"
+  *ngIf="showChrome && auth.authReady()"
   [title]="navTitle"
   [subtitle]="navSubtitle"
   [showBack]="showBack"
@@ -20,6 +20,6 @@
   </div>
 </div>
 
-<app-rest-timer *ngIf="showChrome"></app-rest-timer>
+<app-rest-timer *ngIf="showChrome && auth.authReady()"></app-rest-timer>
 <app-confirm-dialog></app-confirm-dialog>
-<app-tabbar *ngIf="showChrome"></app-tabbar>
+<app-tabbar *ngIf="showChrome && auth.authReady()"></app-tabbar>

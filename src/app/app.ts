@@ -24,7 +24,7 @@ export class App implements OnInit, OnDestroy {
   showHistory = false;
   showInfo = false;
   showAnalytics = false;
-  showChrome = true;
+  showChrome = false;
 
   private routeSub: Subscription | null = null;
 
