@@ -1,0 +1,30 @@
+<p class="sectiontitle">Nuovo avviso</p>
+<div class="infocard">
+  <textarea class="bacheca-textarea" rows="3" [(ngModel)]="newText"
+    placeholder="Scrivi un avviso per i tuoi clienti…"></textarea>
+  <button class="savebtn" style="margin-top:10px" [disabled]="posting || !newText.trim()" (click)="post()">
+    {{ posting ? 'Pubblicazione…' : 'Pubblica avviso' }}
+  </button>
+</div>
+
+<p class="sectiontitle">Avvisi pubblicati</p>
+
+<div *ngIf="loading" class="history-empty">Caricamento…</div>
+
+<div *ngIf="!loading && announcements.length === 0" class="history-empty">
+  Nessun avviso pubblicato.<br>I tuoi avvisi appariranno qui e nell'app dei tuoi clienti.
+</div>
+
+<div *ngIf="!loading && announcements.length > 0" class="grouplist">
+  <div class="infocard bacheca-item" *ngFor="let a of announcements">
+    <p class="bacheca-text">{{ a.text }}</p>
+    <div class="bacheca-footer">
+      <span class="bacheca-date">{{ displayDate(a.createdAt) }}</span>
+      <button class="delete-btn" (click)="remove(a.id)" title="Elimina">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>

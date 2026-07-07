@@ -1,8 +1,10 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
+import { AuthService } from '../../core/services/auth.service';
 
-type Tab = 'scheda' | 'dieta' | 'misure';
+type ClientTab = 'scheda' | 'dieta' | 'misure';
+type CoachTab = 'bacheca' | 'clienti';
 
 @Component({
   selector: 'app-tabbar',
@@ -11,16 +13,28 @@ type Tab = 'scheda' | 'dieta' | 'misure';
   templateUrl: './tabbar.component.html'
 })
 export class TabbarComponent {
-  constructor(private router: Router) {}
+  constructor(private router: Router, public auth: AuthService) {}
 
-  get activeTab(): Tab {
+  get isCoach(): boolean {
+    return this.auth.isCoach;
+  }
+
+  get activeTab(): ClientTab {
     const url = this.router.url;
     if (url.startsWith('/dieta')) return 'dieta';
     if (url.startsWith('/misure')) return 'misure';
     return 'scheda';
   }
 
-  navigate(tab: Tab): void {
+  get activeCoachTab(): CoachTab {
+    return this.router.url.startsWith('/coach/clienti') ? 'clienti' : 'bacheca';
+  }
+
+  navigate(tab: ClientTab): void {
     this.router.navigate(['/' + tab]);
+  }
+
+  navigateCoach(tab: CoachTab): void {
+    this.router.navigate(['/coach/' + tab]);
   }
 }

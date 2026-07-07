@@ -1,0 +1,35 @@
+<div class="authscreen">
+  <div class="authcard infocard">
+    <div class="authtitle">Diventa Coach</div>
+    <div class="authsub">Crea il tuo account per gestire i tuoi clienti</div>
+
+    <div class="authfield">
+      <label>Nome</label>
+      <div class="measure-input-wrap">
+        <input type="text" autocomplete="name" [(ngModel)]="displayName" placeholder="Il tuo nome" />
+      </div>
+    </div>
+
+    <div class="authfield">
+      <label>Email</label>
+      <div class="measure-input-wrap">
+        <input type="email" autocomplete="email" [(ngModel)]="email" placeholder="nome@esempio.com" />
+      </div>
+    </div>
+
+    <div class="authfield">
+      <label>Password</label>
+      <div class="measure-input-wrap">
+        <input type="password" autocomplete="new-password" [(ngModel)]="password" placeholder="Almeno 6 caratteri" />
+      </div>
+    </div>
+
+    <p class="autherror" *ngIf="errorMsg">{{ errorMsg }}</p>
+
+    <button class="savebtn" [disabled]="loading" (click)="submit()">
+      {{ loading ? 'Creazione account…' : 'Crea account coach' }}
+    </button>
+
+    <a class="authlink" routerLink="/login">Hai gia' un account? Accedi</a>
+  </div>
+</div>

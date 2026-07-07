@@ -1,18 +1,53 @@
-rules_version='2'
+rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      // This rule allows anyone with your database reference to view, edit,
-      // and delete all data in your database. It is useful for getting
-      // started, but it is configured to expire after 30 days because it
-      // leaves your app open to attackers. At that time, all client
-      // requests to your database will be denied.
-      //
-      // Make sure to write security rules for your app before that time, or
-      // else all client requests to your database will be denied until you
-      // update your rules.
-      allow read, write: if request.time < timestamp.date(2026, 8, 5);
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function myProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    match /users/{uid} {
+      // Un utente legge il proprio profilo; un coach legge i profili dei propri client.
+      allow read: if isSignedIn() && (
+        request.auth.uid == uid ||
+        resource.data.coachId == request.auth.uid
+      );
+
+      // Creazione: solo il proprio documento, in fase di registrazione/creazione account.
+      // Un coach si autodichiara coach (coachId nullo); un client viene creato con un
+      // coachId gia' valorizzato (assegnato dal coach che lo crea).
+      allow create: if isSignedIn() && request.auth.uid == uid &&
+        request.resource.data.uid == uid &&
+        (
+          (request.resource.data.role == 'coach' && request.resource.data.coachId == null) ||
+          (request.resource.data.role == 'client' && request.resource.data.coachId is string)
+        );
+
+      // Update: il client puo' solo completare l'accoppiamento (paired false -> true);
+      // il coach puo' aggiornare i documenti dei propri client (usi futuri).
+      allow update: if isSignedIn() && (
+        (request.auth.uid == uid &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['paired']) &&
+          resource.data.paired == false && request.resource.data.paired == true) ||
+        (resource.data.coachId == request.auth.uid)
+      );
+
+      allow delete: if false;
+    }
+
+    match /announcements/{id} {
+      // Il coach legge i propri avvisi; un client legge gli avvisi del proprio coach.
+      allow read: if isSignedIn() && (
+        resource.data.coachId == request.auth.uid ||
+        myProfile().coachId == resource.data.coachId
+      );
+      allow create: if isSignedIn() && request.resource.data.coachId == request.auth.uid;
+      allow update, delete: if isSignedIn() && resource.data.coachId == request.auth.uid;
     }
   }
 }

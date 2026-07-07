@@ -1,22 +1,25 @@
 <app-navbar
+  *ngIf="showChrome"
   [title]="navTitle"
   [subtitle]="navSubtitle"
   [showBack]="showBack"
   [showHistory]="showHistory"
   [showInfo]="showInfo"
   [showAnalytics]="showAnalytics"
+  [showLogout]="true"
   (backClick)="onBack()"
   (historyClick)="onHistory()"
   (infoClick)="onInfo()"
-  (analyticsClick)="onAnalytics()">
+  (analyticsClick)="onAnalytics()"
+  (logoutClick)="onLogout()">
 </app-navbar>
 
-<div class="content">
+<div class="content" [class.no-chrome]="!showChrome">
   <div class="wrap">
     <router-outlet></router-outlet>
   </div>
 </div>
 
-<app-rest-timer></app-rest-timer>
+<app-rest-timer *ngIf="showChrome"></app-rest-timer>
 <app-confirm-dialog></app-confirm-dialog>
-<app-tabbar></app-tabbar>
+<app-tabbar *ngIf="showChrome"></app-tabbar>

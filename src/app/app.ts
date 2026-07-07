@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { Router, NavigationEnd, RouterOutlet } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
@@ -7,11 +8,12 @@ import { TabbarComponent } from './components/tabbar/tabbar.component';
 import { RestTimerComponent } from './components/rest-timer/rest-timer.component';
 import { ConfirmDialogComponent } from './components/confirm-dialog/confirm-dialog.component';
 import { WorkoutDataService } from './services/workout-data.service';
+import { AuthService } from './core/services/auth.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, NavbarComponent, TabbarComponent, RestTimerComponent, ConfirmDialogComponent],
+  imports: [CommonModule, RouterOutlet, NavbarComponent, TabbarComponent, RestTimerComponent, ConfirmDialogComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
@@ -22,12 +24,14 @@ export class App implements OnInit, OnDestroy {
   showHistory = false;
   showInfo = false;
   showAnalytics = false;
+  showChrome = true;
 
   private routeSub: Subscription | null = null;
 
   constructor(
     private router: Router,
-    private workoutData: WorkoutDataService
+    private workoutData: WorkoutDataService,
+    public auth: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -47,6 +51,32 @@ export class App implements OnInit, OnDestroy {
 
   private updateNav(url: string): void {
     const u = url.split('?')[0];
+
+    if (u === '/login' || u === '/coach/registrati') {
+      this.showChrome = false;
+      return;
+    }
+    this.showChrome = true;
+
+    if (u === '/coach/bacheca') {
+      this.navTitle = 'Bacheca';
+      this.navSubtitle = this.auth.currentUser()?.displayName ?? '';
+      this.showBack = false;
+      this.showHistory = false;
+      this.showInfo = false;
+      this.showAnalytics = false;
+      return;
+    }
+
+    if (u === '/coach/clienti') {
+      this.navTitle = 'Clienti';
+      this.navSubtitle = 'I tuoi atleti';
+      this.showBack = false;
+      this.showHistory = false;
+      this.showInfo = false;
+      this.showAnalytics = false;
+      return;
+    }
 
     if (u === '/dieta') {
       this.navTitle = 'Dieta';
@@ -180,5 +210,10 @@ export class App implements OnInit, OnDestroy {
 
   onAnalytics(): void {
     this.router.navigate(['/misure/analytics']);
+  }
+
+  async onLogout(): Promise<void> {
+    await this.auth.logout();
+    this.router.navigate(['/login']);
   }
 }
