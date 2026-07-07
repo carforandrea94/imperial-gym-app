@@ -1,0 +1,176 @@
+<div *ngIf="loading" class="history-empty">Caricamento…</div>
+
+<ng-container *ngIf="!loading && protocol">
+
+  <div class="authfield" style="margin-bottom:14px">
+    <label>Nome protocollo</label>
+    <div class="measure-input-wrap">
+      <input type="text" [(ngModel)]="protocol.name" placeholder="Es. Protocollo Settembre" />
+    </div>
+  </div>
+
+  <div class="variant-tabs builder-tabs">
+    <button [class.active]="tab === 'scheda'" (click)="tab = 'scheda'">Scheda</button>
+    <button [class.active]="tab === 'dieta'" (click)="tab = 'dieta'">Dieta</button>
+    <button [class.active]="tab === 'info'" (click)="tab = 'info'">Info</button>
+  </div>
+
+  <!-- ===================== SCHEDA ===================== -->
+  <ng-container *ngIf="tab === 'scheda'">
+
+    <p class="sectiontitle">Programma</p>
+    <div class="infocard" style="margin-bottom:14px">
+      <div class="authfield" style="margin-bottom:0">
+        <label>Data inizio programma</label>
+        <div class="measure-input-wrap">
+          <input type="date" [(ngModel)]="protocol.workout.programStart" />
+        </div>
+      </div>
+    </div>
+
+    <p class="sectiontitle">Piano settimanale (per esercizi "wave")</p>
+    <div class="infocard" style="margin-bottom:14px">
+      <div class="weekplan-row" *ngFor="let wp of protocol.workout.weekPlan; let i = index">
+        <span class="weekplan-num">S{{ i + 1 }}</span>
+        <div class="measure-input-wrap weekplan-input">
+          <input type="number" [(ngModel)]="wp.sets" placeholder="serie" />
+          <span class="unit">serie</span>
+        </div>
+        <div class="measure-input-wrap weekplan-input">
+          <input type="number" [(ngModel)]="wp.reps" placeholder="rip" />
+          <span class="unit">rip</span>
+        </div>
+        <button class="delete-btn" (click)="removeWeek(i)" title="Rimuovi settimana">✕</button>
+      </div>
+      <button class="confirmbtn cancel" style="margin-top:8px;width:100%" (click)="addWeek()">+ Aggiungi settimana</button>
+    </div>
+
+    <p class="sectiontitle">Giorni di allenamento</p>
+    <div class="infocard builder-day" *ngFor="let day of protocol.workout.days; let di = index">
+      <div class="authfield">
+        <label>Nome giorno</label>
+        <div class="measure-input-wrap">
+          <input type="text" [(ngModel)]="day.label" placeholder="Es. Petto · Spalle · Tricipiti" />
+        </div>
+      </div>
+      <div class="authfield">
+        <label>Recupero (testo mostrato, es. 60-90")</label>
+        <div class="measure-input-wrap">
+          <input type="text" [(ngModel)]="day.rec" placeholder='60-90"' />
+        </div>
+      </div>
+
+      <p class="sectiontitle" style="margin-top:16px">Esercizi</p>
+      <div class="builder-exercise" *ngFor="let ex of day.ex; let ei = index">
+        <div class="authfield">
+          <label>Nome esercizio</label>
+          <div class="measure-input-wrap">
+            <input type="text" [(ngModel)]="ex.name" placeholder="Es. Panca piana" />
+          </div>
+        </div>
+        <div class="builder-row2">
+          <div class="authfield">
+            <label>Gruppo muscolare</label>
+            <div class="measure-input-wrap">
+              <select [(ngModel)]="ex.muscle">
+                <option *ngFor="let m of muscles" [value]="m">{{ m }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="authfield">
+            <label>Schema</label>
+            <div class="measure-input-wrap">
+              <select [(ngModel)]="ex.scheme" (ngModelChange)="onSchemeChange(ex)">
+                <option value="wave">Wave (segue il piano settimanale)</option>
+                <option value="plain">Fisso (serie/rip. manuali)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <ng-container *ngIf="ex.scheme === 'plain'">
+          <div class="builder-row2">
+            <div class="authfield">
+              <label>N. serie</label>
+              <div class="measure-input-wrap">
+                <input type="number" [ngModel]="ex.sets" (ngModelChange)="ex.sets = $event; onSetsChange(ex)" />
+              </div>
+            </div>
+            <div class="authfield">
+              <label>Testo mostrato (es. 3x12-10-8)</label>
+              <div class="measure-input-wrap">
+                <input type="text" [(ngModel)]="ex.text" placeholder="3x12-10-8" />
+              </div>
+            </div>
+          </div>
+          <div class="authfield">
+            <label>Ripetizioni per serie (separate da virgola)</label>
+            <div class="measure-input-wrap">
+              <input type="text" [ngModel]="repsAsString(ex)" (ngModelChange)="setRepsFromString(ex, $event)" placeholder="12, 10, 8" />
+            </div>
+          </div>
+        </ng-container>
+
+        <div class="authfield">
+          <label>Nota (opzionale)</label>
+          <div class="measure-input-wrap">
+            <input type="text" [(ngModel)]="ex.note" placeholder="Es. ultima serie in strip" />
+          </div>
+        </div>
+
+        <button class="confirmbtn cancel" style="width:100%" (click)="removeExercise(day, ei)">Rimuovi esercizio</button>
+      </div>
+
+      <button class="confirmbtn cancel" style="width:100%;margin-top:8px" (click)="addExercise(day)">+ Aggiungi esercizio</button>
+      <button class="savebtn" style="margin-top:14px;background:linear-gradient(90deg,#7A1414,#C8102E)" (click)="removeDay(di)">Rimuovi giorno</button>
+    </div>
+
+    <div class="savebar">
+      <button class="savebtn" (click)="addDay()">+ Aggiungi giorno</button>
+    </div>
+  </ng-container>
+
+  <!-- ===================== DIETA ===================== -->
+  <ng-container *ngIf="tab === 'dieta'">
+    <div class="rocker" [class.off]="dietMode === 'off'" (click)="dietMode = dietMode === 'on' ? 'off' : 'on'">
+      <div class="knob"></div>
+      <span class="lbl" [class.active]="dietMode === 'on'">ON</span>
+      <span class="lbl" [class.active]="dietMode === 'off'">OFF</span>
+    </div>
+
+    <div class="infocard builder-meal" *ngFor="let key of mealOrder">
+      <p class="sectiontitle" style="margin-top:0">{{ mealLabels[key] }}</p>
+      <div class="builder-item" *ngFor="let item of getMeal(key).items; let ii = index">
+        <div class="measure-input-wrap">
+          <input type="text" [(ngModel)]="item.name" placeholder="Alimento" />
+        </div>
+        <div class="measure-input-wrap builder-qty">
+          <input type="text" [(ngModel)]="item.qty" placeholder="Quantita'" />
+        </div>
+        <button class="delete-btn" (click)="removeItem(key, ii)">✕</button>
+      </div>
+      <button class="confirmbtn cancel" style="width:100%;margin-top:6px" (click)="addItem(key)">+ Aggiungi alimento</button>
+    </div>
+  </ng-container>
+
+  <!-- ===================== INFO ===================== -->
+  <ng-container *ngIf="tab === 'info'">
+    <p class="sectiontitle">Note per il cliente</p>
+    <div class="infocard">
+      <textarea class="bacheca-textarea" rows="8" [(ngModel)]="protocol.infoNote"
+        placeholder="Indicazioni generali, note sul programma, avvertenze…"></textarea>
+    </div>
+  </ng-container>
+
+  <p class="autherror" *ngIf="saveMsg">{{ saveMsg }}</p>
+
+  <div class="savebar builder-savebar">
+    <button class="confirmbtn cancel" style="flex:1" [disabled]="saving" (click)="save(false)">
+      {{ saving ? '…' : 'Salva bozza' }}
+    </button>
+    <button class="savebtn" style="flex:1.4" [disabled]="saving" (click)="save(true)">
+      {{ saving ? '…' : 'Salva e attiva' }}
+    </button>
+  </div>
+
+</ng-container>

@@ -1,0 +1,40 @@
+<div *ngIf="loading" class="history-empty">Caricamento…</div>
+
+<ng-container *ngIf="!loading">
+  <p class="sectiontitle">Cliente</p>
+  <div class="infocard" style="margin-bottom:16px">
+    <div class="lbl" style="font-size:16px;font-weight:700">{{ client?.displayName }}</div>
+    <div class="meta" style="margin-top:2px">{{ client?.email }}</div>
+  </div>
+
+  <div class="savebar" style="margin-top:0;margin-bottom:16px">
+    <button class="savebtn" (click)="newProtocol()">+ Nuovo protocollo</button>
+  </div>
+
+  <p class="sectiontitle">Protocolli</p>
+
+  <div *ngIf="protocols.length === 0" class="history-empty">
+    Nessun protocollo ancora.<br>Creane uno nuovo per iniziare a seguire questo cliente.
+  </div>
+
+  <div *ngIf="protocols.length > 0" class="grouplist">
+    <div class="daycard press-fx protocol-row" *ngFor="let p of protocols" (click)="editProtocol(p)">
+      <div class="info">
+        <div class="lbl">{{ p.name }}</div>
+        <div class="meta">
+          <span class="protocol-status" [class]="'ps-' + p.status">{{ statusLabel(p) }}</span>
+          &nbsp;·&nbsp;{{ p.source === 'pdf' ? 'da PDF' : 'manuale' }}
+        </div>
+      </div>
+      <button class="confirmbtn cancel protocol-activatebtn" *ngIf="p.status !== 'active'"
+        [disabled]="busyId === p.id" (click)="activate(p, $event)">
+        {{ busyId === p.id ? '…' : 'Attiva' }}
+      </button>
+      <button class="delete-btn" (click)="remove(p, $event)" title="Elimina">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</ng-container>

@@ -50,6 +50,18 @@ service cloud.firestore {
       match /state/{id} {
         allow read, write: if isSignedIn() && request.auth.uid == uid;
       }
+
+      // Protocolli (scheda + dieta) creati dal coach per questo client.
+      // Il client puo' solo leggere (li vede in Scheda/Dieta); solo il
+      // coach proprietario di questo client puo' crearli/modificarli.
+      match /protocols/{id} {
+        allow read: if isSignedIn() && (
+          request.auth.uid == uid ||
+          get(/databases/$(database)/documents/users/$(uid)).data.coachId == request.auth.uid
+        );
+        allow write: if isSignedIn() &&
+          get(/databases/$(database)/documents/users/$(uid)).data.coachId == request.auth.uid;
+      }
     }
 
     match /announcements/{id} {

@@ -4,7 +4,11 @@ import { Diet } from '../models/diet.model';
 @Injectable({ providedIn: 'root' })
 export class DietDataService {
 
-  readonly diet: Diet = {
+  applyDiet(diet: Diet): void {
+    this.diet = diet;
+  }
+
+  diet: Diet = {
     on: {
       colazione: {
         variants: [

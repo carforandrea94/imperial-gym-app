@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { UserProfile } from '../../core/models/user.model';
 
@@ -15,7 +16,7 @@ export class CoachClientiComponent implements OnInit {
   loading = true;
   copied = false;
 
-  constructor(public auth: AuthService) {}
+  constructor(public auth: AuthService, private router: Router) {}
 
   ngOnInit(): void {
     this.auth.ensureCoachCode();
@@ -26,6 +27,10 @@ export class CoachClientiComponent implements OnInit {
     this.loading = true;
     this.clients = await this.auth.listClients();
     this.loading = false;
+  }
+
+  openClient(c: UserProfile): void {
+    this.router.navigate(['/coach/clienti', c.uid]);
   }
 
   get myCode(): string {

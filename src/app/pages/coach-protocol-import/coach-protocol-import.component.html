@@ -1,0 +1,32 @@
+<p class="sectiontitle">Carica i PDF</p>
+
+<div class="infocard" style="margin-bottom:14px">
+  <p class="bacheca-text" style="margin-bottom:14px">
+    L'app prova a leggere i PDF ed estrarre esercizi e alimenti automaticamente.
+    E' un'estrazione best-effort: funziona meglio se il PDF ha un formato semplice
+    (una riga per esercizio/alimento). Rivedi sempre la bozza nel builder prima di attivarla.
+  </p>
+
+  <div class="authfield">
+    <label>Scheda allenamento (obbligatorio)</label>
+    <input type="file" accept="application/pdf" (change)="onFile($event, 'scheda')" />
+  </div>
+
+  <div class="authfield">
+    <label>Dieta (obbligatorio)</label>
+    <input type="file" accept="application/pdf" (change)="onFile($event, 'dieta')" />
+  </div>
+
+  <div class="authfield" style="margin-bottom:0">
+    <label>Integrazione (opzionale — finisce nella scheda Info)</label>
+    <input type="file" accept="application/pdf" (change)="onFile($event, 'integrazione')" />
+  </div>
+</div>
+
+<p class="autherror" *ngIf="errorMsg">{{ errorMsg }}</p>
+
+<div class="savebar">
+  <button class="savebtn" [disabled]="!canProcess" (click)="process()">
+    {{ processing ? 'Lettura in corso…' : 'Elabora e crea bozza' }}
+  </button>
+</div>

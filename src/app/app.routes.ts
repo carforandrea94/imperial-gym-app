@@ -33,6 +33,26 @@ export const routes: Routes = [
     canActivate: [authGuard, coachGuard],
     loadComponent: () => import('./pages/coach-clienti/coach-clienti.component').then(m => m.CoachClientiComponent)
   },
+  {
+    path: 'coach/clienti/:clientId',
+    canActivate: [authGuard, coachGuard],
+    loadComponent: () => import('./pages/coach-client-detail/coach-client-detail.component').then(m => m.CoachClientDetailComponent)
+  },
+  {
+    path: 'coach/clienti/:clientId/nuovo',
+    canActivate: [authGuard, coachGuard],
+    loadComponent: () => import('./pages/coach-protocol-new/coach-protocol-new.component').then(m => m.CoachProtocolNewComponent)
+  },
+  {
+    path: 'coach/clienti/:clientId/importa-pdf',
+    canActivate: [authGuard, coachGuard],
+    loadComponent: () => import('./pages/coach-protocol-import/coach-protocol-import.component').then(m => m.CoachProtocolImportComponent)
+  },
+  {
+    path: 'coach/clienti/:clientId/builder/:protocolId',
+    canActivate: [authGuard, coachGuard],
+    loadComponent: () => import('./pages/coach-protocol-builder/coach-protocol-builder.component').then(m => m.CoachProtocolBuilderComponent)
+  },
 
   {
     path: 'scheda',

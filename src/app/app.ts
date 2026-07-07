@@ -98,6 +98,46 @@ export class App implements OnInit, OnDestroy {
       return;
     }
 
+    if (/^\/coach\/clienti\/[^/]+$/.test(u)) {
+      this.navTitle = 'Cliente';
+      this.navSubtitle = 'Protocolli';
+      this.showBack = true;
+      this.showHistory = false;
+      this.showInfo = false;
+      this.showAnalytics = false;
+      return;
+    }
+
+    if (/^\/coach\/clienti\/[^/]+\/nuovo$/.test(u)) {
+      this.navTitle = 'Nuovo protocollo';
+      this.navSubtitle = '';
+      this.showBack = true;
+      this.showHistory = false;
+      this.showInfo = false;
+      this.showAnalytics = false;
+      return;
+    }
+
+    if (/^\/coach\/clienti\/[^/]+\/importa-pdf$/.test(u)) {
+      this.navTitle = 'Importa da PDF';
+      this.navSubtitle = '';
+      this.showBack = true;
+      this.showHistory = false;
+      this.showInfo = false;
+      this.showAnalytics = false;
+      return;
+    }
+
+    if (/^\/coach\/clienti\/[^/]+\/builder\/[^/]+$/.test(u)) {
+      this.navTitle = 'Protocollo';
+      this.navSubtitle = '';
+      this.showBack = true;
+      this.showHistory = false;
+      this.showInfo = false;
+      this.showAnalytics = false;
+      return;
+    }
+
     if (u === '/dieta') {
       this.navTitle = 'Dieta';
       this.navSubtitle = 'Piano alimentare';
@@ -210,6 +250,17 @@ export class App implements OnInit, OnDestroy {
       this.router.navigate(['/misure/storico']);
     } else if (u === '/misure/storico' || u === '/misure/analytics') {
       this.router.navigate(['/misure']);
+    } else if (/^\/coach\/clienti\/[^/]+\/builder\/[^/]+$/.test(u)) {
+      const clientId = u.split('/')[3];
+      this.router.navigate(['/coach/clienti', clientId]);
+    } else if (/^\/coach\/clienti\/[^/]+\/importa-pdf$/.test(u)) {
+      const clientId = u.split('/')[3];
+      this.router.navigate(['/coach/clienti', clientId, 'nuovo']);
+    } else if (/^\/coach\/clienti\/[^/]+\/nuovo$/.test(u)) {
+      const clientId = u.split('/')[3];
+      this.router.navigate(['/coach/clienti', clientId]);
+    } else if (/^\/coach\/clienti\/[^/]+$/.test(u)) {
+      this.router.navigate(['/coach/clienti']);
     } else {
       this.router.navigate(['/scheda']);
     }

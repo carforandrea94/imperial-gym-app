@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
 import { Day, MuscleInfo, WeekPlan, Exercise } from '../models/workout.model';
+import { WorkoutProtocol } from '../models/protocol.model';
 
 @Injectable({ providedIn: 'root' })
 export class WorkoutDataService {
 
-  readonly WEEK_PLAN: WeekPlan[] = [
+  WEEK_PLAN: WeekPlan[] = [
     { sets: 4, reps: 10 },
     { sets: 4, reps: 10 },
     { sets: 4, reps: 8 },
@@ -47,9 +48,10 @@ export class WorkoutDataService {
     'Core':      `<svg ${this.ICON_ATTRS}><rect x="6" y="4" width="12" height="16" rx="3"/><path d="M6 10h12M6 15h12M12 4v16"/></svg>`
   };
 
-  readonly DEFAULT_PROGRAM_START = '2026-07-05';
+  DEFAULT_PROGRAM_START = '2026-07-05';
+  hasCustomProtocol = false;
 
-  readonly days: Day[] = [
+  days: Day[] = [
     {
       id: 'day1', label: 'Petto · Spalle · Tricipiti', rec: '60–90"',
       ex: [
@@ -90,6 +92,14 @@ export class WorkoutDataService {
       ]
     }
   ];
+
+  /** Sostituisce i dati demo con il protocollo attivo del client caricato da Firestore. */
+  applyProtocol(wp: WorkoutProtocol): void {
+    this.days = wp.days;
+    this.WEEK_PLAN = wp.weekPlan;
+    this.DEFAULT_PROGRAM_START = wp.programStart;
+    this.hasCustomProtocol = true;
+  }
 
   getExSetsReps(ex: Exercise, week: number): { sets: number; reps: (number | string)[] } {
     if (ex.scheme === 'wave') {

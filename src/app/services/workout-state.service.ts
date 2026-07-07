@@ -14,8 +14,8 @@ const REST_DURATION = 90;
 @Injectable({ providedIn: 'root' })
 export class WorkoutStateService {
 
-  readonly DEFAULT_PROGRAM_START = '2026-07-05';
-  readonly currentWeek: number;
+  DEFAULT_PROGRAM_START = '2026-07-05';
+  currentWeek: number;
 
   dietMode = signal<DietMode>('on');
 
@@ -39,13 +39,19 @@ export class WorkoutStateService {
     this.dietModeLoaded = true;
   }
 
-  private computeAutoWeek(startISO: string): number {
+  /** Ricalcola la settimana corrente in base a un nuovo inizio programma (dal protocollo attivo). */
+  recomputeWeek(programStart: string, maxWeeks = 8): void {
+    this.DEFAULT_PROGRAM_START = programStart;
+    this.currentWeek = this.computeAutoWeek(programStart, maxWeeks);
+  }
+
+  private computeAutoWeek(startISO: string, maxWeeks = 8): number {
     const start = new Date(startISO + 'T00:00:00');
     const now = new Date();
     now.setHours(0, 0, 0, 0);
     const diffDays = Math.floor((now.getTime() - start.getTime()) / 86400000);
     const week = Math.floor(diffDays / 7) + 1;
-    return Math.min(Math.max(week, 1), 8);
+    return Math.min(Math.max(week, 1), maxWeeks);
   }
 
   startRestTimer(durationSeconds?: number): void {
