@@ -1,4 +1,4 @@
-import { Injectable, NgZone } from '@angular/core';
+import { Injectable } from '@angular/core';
 import {
   collection,
   addDoc,
@@ -12,14 +12,14 @@ import {
 import { FirebaseService } from '../core/services/firebase.service';
 import { AuthService } from '../core/services/auth.service';
 import { Announcement } from '../core/models/user.model';
-import { inZone } from '../core/utils/zone.util';
+import { ZoneFixService } from '../core/utils/zone.util';
 
 @Injectable({ providedIn: 'root' })
 export class AnnouncementsService {
-  constructor(private fb: FirebaseService, private auth: AuthService, private zone: NgZone) {}
+  constructor(private fb: FirebaseService, private auth: AuthService, private zoneFix: ZoneFixService) {}
 
   listForCoach(): Promise<Announcement[]> {
-    return inZone(this.zone, (async () => {
+    return this.zoneFix.run((async () => {
       const coach = this.auth.currentUser();
       if (!coach) return [];
       const q = query(
@@ -33,7 +33,7 @@ export class AnnouncementsService {
   }
 
   create(text: string): Promise<void> {
-    return inZone(this.zone, (async () => {
+    return this.zoneFix.run((async () => {
       const coach = this.auth.currentUser();
       if (!coach) throw new Error('Non autenticato.');
       await addDoc(collection(this.fb.db, 'announcements'), {
@@ -45,6 +45,6 @@ export class AnnouncementsService {
   }
 
   delete(id: string): Promise<void> {
-    return inZone(this.zone, deleteDoc(doc(this.fb.db, 'announcements', id)));
+    return this.zoneFix.run(deleteDoc(doc(this.fb.db, 'announcements', id)));
   }
 }

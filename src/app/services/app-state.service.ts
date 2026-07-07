@@ -1,8 +1,8 @@
-import { Injectable, NgZone } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { doc, getDoc, setDoc, updateDoc, deleteField } from 'firebase/firestore';
 import { FirebaseService } from '../core/services/firebase.service';
 import { AuthService } from '../core/services/auth.service';
-import { inZone } from '../core/utils/zone.util';
+import { ZoneFixService } from '../core/utils/zone.util';
 
 export interface WorkoutDraftRow {
   reps: string;
@@ -32,7 +32,7 @@ function emptyState(): AppState {
 export class AppStateService {
   private cache: AppState | null = null;
 
-  constructor(private fb: FirebaseService, private auth: AuthService, private zone: NgZone) {}
+  constructor(private fb: FirebaseService, private auth: AuthService, private zoneFix: ZoneFixService) {}
 
   private ref() {
     const uid = this.auth.currentUser()!.uid;
@@ -41,7 +41,7 @@ export class AppStateService {
 
   load(): Promise<AppState> {
     if (this.cache) return Promise.resolve(this.cache);
-    return inZone(this.zone, (async () => {
+    return this.zoneFix.run((async () => {
       const snap = await getDoc(this.ref());
       this.cache = snap.exists() ? { ...emptyState(), ...(snap.data() as AppState) } : emptyState();
       return this.cache;
@@ -56,7 +56,7 @@ export class AppStateService {
   }
 
   patch(partial: Partial<AppState>): Promise<void> {
-    return inZone(this.zone, (async () => {
+    return this.zoneFix.run((async () => {
       await this.ensureDoc();
       await updateDoc(this.ref(), partial as any);
       this.cache = { ...(this.cache ?? emptyState()), ...partial };
@@ -65,7 +65,7 @@ export class AppStateService {
 
   /** Aggiorna un campo annidato tramite dot-notation (es. 'workoutDrafts.day0'). */
   patchField(path: string, value: unknown): Promise<void> {
-    return inZone(this.zone, (async () => {
+    return this.zoneFix.run((async () => {
       await this.ensureDoc();
       await updateDoc(this.ref(), { [path]: value } as any);
       this.invalidateCache();
@@ -74,7 +74,7 @@ export class AppStateService {
 
   /** Rimuove un campo annidato tramite dot-notation. */
   deleteFieldPath(path: string): Promise<void> {
-    return inZone(this.zone, (async () => {
+    return this.zoneFix.run((async () => {
       await this.ensureDoc();
       await updateDoc(this.ref(), { [path]: deleteField() } as any);
       this.invalidateCache();

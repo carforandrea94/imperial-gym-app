@@ -1,4 +1,4 @@
-import { Injectable, signal, NgZone } from '@angular/core';
+import { Injectable, signal, NgZone, ApplicationRef } from '@angular/core';
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -17,7 +17,7 @@ import {
 } from 'firebase/firestore';
 import { FirebaseService } from './firebase.service';
 import { UserProfile } from '../models/user.model';
-import { inZone } from '../utils/zone.util';
+import { ZoneFixService } from '../utils/zone.util';
 
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // esclusi 0/O/1/I/L per leggibilita'
 
@@ -37,7 +37,12 @@ export class AuthService {
   private readyResolve!: () => void;
   readonly ready: Promise<void> = new Promise(res => { this.readyResolve = res; });
 
-  constructor(private fb: FirebaseService, private zone: NgZone) {
+  constructor(
+    private fb: FirebaseService,
+    private zone: NgZone,
+    private zoneFix: ZoneFixService,
+    private appRef: ApplicationRef
+  ) {
     onAuthStateChanged(this.fb.auth, async (fbUser: User | null) => {
       // L'SDK Firebase puo' invocare questo callback fuori dalla zone di
       // Angular: senza zone.run() i signal si aggiornerebbero ma la vista
@@ -54,6 +59,7 @@ export class AuthService {
           this.readyResolve();
         }
       });
+      setTimeout(() => this.appRef.tick(), 0);
     });
   }
 
@@ -63,7 +69,7 @@ export class AuthService {
   }
 
   login(email: string, password: string): Promise<UserProfile> {
-    return inZone(this.zone, (async () => {
+    return this.zoneFix.run((async () => {
       const cred = await signInWithEmailAndPassword(this.fb.auth, email.trim(), password);
       const profile = await this.loadProfile(cred.user.uid);
 
@@ -78,7 +84,7 @@ export class AuthService {
   }
 
   logout(): Promise<void> {
-    return inZone(this.zone, (async () => {
+    return this.zoneFix.run((async () => {
       await signOut(this.fb.auth);
       this.currentUser.set(null);
     })());
@@ -90,7 +96,7 @@ export class AuthService {
    * client perche' possano accoppiarsi in fase di registrazione.
    */
   registerCoach(email: string, password: string, displayName: string): Promise<UserProfile> {
-    return inZone(this.zone, (async () => {
+    return this.zoneFix.run((async () => {
       const cred = await createUserWithEmailAndPassword(this.fb.auth, email.trim(), password);
       const pairingCode = generateCode();
       const profile: UserProfile = {
@@ -116,7 +122,7 @@ export class AuthService {
    * leggibile pubblicamente anche prima di avere un account).
    */
   registerClient(displayName: string, email: string, password: string, coachCode: string): Promise<UserProfile> {
-    return inZone(this.zone, (async () => {
+    return this.zoneFix.run((async () => {
       const code = coachCode.trim().toUpperCase();
       if (!code) throw new Error('Inserisci il codice del tuo coach.');
 
@@ -145,7 +151,7 @@ export class AuthService {
 
   /** Lista dei clienti associati al coach loggato. */
   listClients(): Promise<UserProfile[]> {
-    return inZone(this.zone, (async () => {
+    return this.zoneFix.run((async () => {
       const coach = this.currentUser();
       if (!coach || coach.role !== 'coach') return [];
       const q = query(
@@ -164,7 +170,7 @@ export class AuthService {
    * la ricrea. Idempotente, sicuro da richiamare ad ogni apertura pagina.
    */
   ensureCoachCode(): Promise<void> {
-    return inZone(this.zone, (async () => {
+    return this.zoneFix.run((async () => {
       const coach = this.currentUser();
       if (!coach || coach.role !== 'coach' || !coach.pairingCode) return;
       const codeSnap = await getDoc(doc(this.fb.db, 'coachCodes', coach.pairingCode));

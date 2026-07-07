@@ -1,10 +1,10 @@
-import { Injectable, NgZone } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { doc, getDoc, setDoc, deleteDoc, collection, getDocs } from 'firebase/firestore';
 import { FirebaseService } from '../core/services/firebase.service';
 import { AuthService } from '../core/services/auth.service';
 import { AppStateService } from './app-state.service';
 import { MeasurementEntry, ALL_MEASURE_FIELDS, MeasurementKey } from '../models/measurement.model';
-import { inZone } from '../core/utils/zone.util';
+import { ZoneFixService } from '../core/utils/zone.util';
 
 /**
  * Dati misure su Firestore:
@@ -18,7 +18,7 @@ export class MeasurementDataService {
     private fb: FirebaseService,
     private auth: AuthService,
     private appState: AppStateService,
-    private zone: NgZone
+    private zoneFix: ZoneFixService
   ) {}
 
   private col() {
@@ -41,7 +41,7 @@ export class MeasurementDataService {
 
   /** Tutte le voci storiche, ordinate dalla piu' recente. */
   loadHistory(): Promise<MeasurementEntry[]> {
-    return inZone(this.zone, (async () => {
+    return this.zoneFix.run((async () => {
       const snap = await getDocs(this.col());
       return snap.docs
         .map(d => d.data() as MeasurementEntry)
@@ -50,7 +50,7 @@ export class MeasurementDataService {
   }
 
   saveEntry(entry: MeasurementEntry): Promise<boolean> {
-    return inZone(this.zone, (async () => {
+    return this.zoneFix.run((async () => {
       try {
         await setDoc(doc(this.col(), entry.date), entry);
         return true;
@@ -61,7 +61,7 @@ export class MeasurementDataService {
   }
 
   deleteEntry(date: string): Promise<boolean> {
-    return inZone(this.zone, (async () => {
+    return this.zoneFix.run((async () => {
       try {
         await deleteDoc(doc(this.col(), date));
         return true;
