@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
@@ -21,10 +21,9 @@ export class CoachRegisterComponent {
 
   constructor(private auth: AuthService, private router: Router) {}
 
-  async submit(): Promise<void> {
-    if (!this.displayName || !this.email || !this.password) return;
-    if (this.password.length < 6) {
-      this.errorMsg = 'La password deve avere almeno 6 caratteri.';
+  async submit(form: NgForm): Promise<void> {
+    if (form.invalid) {
+      Object.values(form.controls).forEach(c => c.markAsTouched());
       return;
     }
     this.loading = true;
@@ -46,6 +45,8 @@ export class CoachRegisterComponent {
         this.errorMsg = 'La richiesta sta impiegando troppo tempo. Controlla che Email/Password sia attivo su Firebase Authentication, poi riprova.';
       } else if (e?.code === 'auth/email-already-in-use') {
         this.errorMsg = 'Questa email e\' gia\' registrata.';
+      } else if (e?.code === 'auth/invalid-email') {
+        this.errorMsg = 'Email non valida.';
       } else if (e?.code === 'auth/operation-not-allowed') {
         this.errorMsg = 'Accesso Email/Password non ancora attivato su Firebase. Contatta l\'amministratore.';
       } else {

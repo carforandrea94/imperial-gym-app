@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
@@ -20,8 +20,11 @@ export class LoginComponent {
 
   constructor(private auth: AuthService, private router: Router) {}
 
-  async submit(): Promise<void> {
-    if (!this.email || !this.password) return;
+  async submit(form: NgForm): Promise<void> {
+    if (form.invalid) {
+      Object.values(form.controls).forEach(c => c.markAsTouched());
+      return;
+    }
     this.loading = true;
     this.errorMsg = '';
 
@@ -45,6 +48,10 @@ export class LoginComponent {
         this.errorMsg = 'La richiesta sta impiegando troppo tempo. Riprova.';
       } else if (e?.code === 'auth/invalid-credential' || e?.code === 'auth/wrong-password' || e?.code === 'auth/user-not-found') {
         this.errorMsg = 'Email o password non corrette.';
+      } else if (e?.code === 'auth/invalid-email') {
+        this.errorMsg = 'Email non valida.';
+      } else if (e?.code === 'auth/too-many-requests') {
+        this.errorMsg = 'Troppi tentativi. Riprova tra qualche minuto.';
       } else {
         this.errorMsg = e?.message || 'Errore durante l\'accesso. Riprova.';
       }

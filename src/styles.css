@@ -238,6 +238,7 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .authfield{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
 .authfield label{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.04em;color:var(--label-3);}
 .authfield input{width:100%;}
+.fielderr{font-family:'Inter',sans-serif;font-size:11.5px;color:#FF6961;margin-top:5px;line-height:1.4;}
 .autherror{font-family:'Inter',sans-serif;font-size:12.5px;color:#FF6961;background:rgba(255,69,58,.10);border:1px solid rgba(255,69,58,.25);border-radius:10px;padding:10px 12px;margin-bottom:14px;line-height:1.4;}
 .authlink{display:block;text-align:center;margin-top:18px;font-family:'Inter',sans-serif;font-size:12.5px;color:var(--label-3);text-decoration:underline;}
 
@@ -267,6 +268,7 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .savebar{margin-top:16px;}
 .savebtn{width:100%;padding:16px;min-height:52px;border-radius:20px;border:1px solid rgba(255,255,255,.14);background:linear-gradient(90deg,#0F7A57,var(--imp-red));color:#04140D;font-family:'Inter',sans-serif;font-weight:700;letter-spacing:-.005em;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 8px 22px rgba(0,0,0,.3);transition:filter .2s ease;}
 .savebtn:active{filter:brightness(0.92);}
+.savebtn:disabled{opacity:.5;cursor:not-allowed;filter:none;}
 .delete-session-btn{background:rgba(255,69,58,.16);color:#FF6961;border:1px solid rgba(255,69,58,.3);box-shadow:none;}
 .history-empty{font-size:13px;color:var(--label-2);line-height:1.5;font-family:'Inter',sans-serif;padding:20px 18px;text-align:center;background:var(--content-glass-bg);backdrop-filter:blur(12px) saturate(125%);-webkit-backdrop-filter:blur(12px) saturate(125%);border:1px solid var(--content-glass-border);border-radius:20px;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 -1px 0 rgba(0,0,0,.18);}
 .history-session{padding:12px 0;border-bottom:1px solid var(--separator);}

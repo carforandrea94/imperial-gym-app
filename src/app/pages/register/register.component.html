@@ -3,39 +3,66 @@
     <div class="authtitle">Crea il tuo account</div>
     <div class="authsub">Inserisci il codice fornito dal tuo coach per accoppiarti</div>
 
-    <div class="authfield">
-      <label>Nome</label>
-      <div class="measure-input-wrap">
-        <input type="text" autocomplete="name" [(ngModel)]="displayName" placeholder="Il tuo nome" />
+    <form #f="ngForm" (ngSubmit)="submit(f)" novalidate>
+
+      <div class="authfield">
+        <label>Nome</label>
+        <div class="measure-input-wrap">
+          <input type="text" autocomplete="name" name="displayName"
+            [(ngModel)]="displayName" #nameCtrl="ngModel"
+            required minlength="2" placeholder="Il tuo nome" />
+        </div>
+        <p class="fielderr" *ngIf="nameCtrl.invalid && (nameCtrl.touched || f.submitted)">
+          <span *ngIf="nameCtrl.errors?.['required']">Il nome e' obbligatorio.</span>
+          <span *ngIf="nameCtrl.errors?.['minlength']">Il nome deve avere almeno 2 caratteri.</span>
+        </p>
       </div>
-    </div>
 
-    <div class="authfield">
-      <label>Email</label>
-      <div class="measure-input-wrap">
-        <input type="email" autocomplete="email" [(ngModel)]="email" placeholder="nome@esempio.com" />
+      <div class="authfield">
+        <label>Email</label>
+        <div class="measure-input-wrap">
+          <input type="email" autocomplete="email" name="email"
+            [(ngModel)]="email" #emailCtrl="ngModel"
+            required email placeholder="nome@esempio.com" />
+        </div>
+        <p class="fielderr" *ngIf="emailCtrl.invalid && (emailCtrl.touched || f.submitted)">
+          <span *ngIf="emailCtrl.errors?.['required']">L'email e' obbligatoria.</span>
+          <span *ngIf="emailCtrl.errors?.['email']">Email non valida.</span>
+        </p>
       </div>
-    </div>
 
-    <div class="authfield">
-      <label>Password</label>
-      <div class="measure-input-wrap">
-        <input type="password" autocomplete="new-password" [(ngModel)]="password" placeholder="Almeno 6 caratteri" />
+      <div class="authfield">
+        <label>Password</label>
+        <div class="measure-input-wrap">
+          <input type="password" autocomplete="new-password" name="password"
+            [(ngModel)]="password" #passCtrl="ngModel"
+            required minlength="6" placeholder="Almeno 6 caratteri" />
+        </div>
+        <p class="fielderr" *ngIf="passCtrl.invalid && (passCtrl.touched || f.submitted)">
+          <span *ngIf="passCtrl.errors?.['required']">La password e' obbligatoria.</span>
+          <span *ngIf="passCtrl.errors?.['minlength']">Almeno 6 caratteri.</span>
+        </p>
       </div>
-    </div>
 
-    <div class="authfield">
-      <label>Codice del coach</label>
-      <div class="measure-input-wrap">
-        <input type="text" autocapitalize="characters" [(ngModel)]="coachCode" placeholder="ES. AB12CD" />
+      <div class="authfield">
+        <label>Codice del coach</label>
+        <div class="measure-input-wrap">
+          <input type="text" autocapitalize="characters" name="coachCode"
+            [(ngModel)]="coachCode" #codeCtrl="ngModel"
+            required pattern="^[A-Za-z0-9]{6}$" placeholder="ES. AB12CD" />
+        </div>
+        <p class="fielderr" *ngIf="codeCtrl.invalid && (codeCtrl.touched || f.submitted)">
+          <span *ngIf="codeCtrl.errors?.['required']">Il codice del coach e' obbligatorio.</span>
+          <span *ngIf="codeCtrl.errors?.['pattern']">Il codice deve avere esattamente 6 caratteri (lettere/numeri).</span>
+        </p>
       </div>
-    </div>
 
-    <p class="autherror" *ngIf="errorMsg">{{ errorMsg }}</p>
+      <p class="autherror" *ngIf="errorMsg">{{ errorMsg }}</p>
 
-    <button class="savebtn" [disabled]="loading" (click)="submit()">
-      {{ loading ? 'Creazione account…' : 'Crea account' }}
-    </button>
+      <button class="savebtn" type="submit" [disabled]="loading">
+        {{ loading ? 'Creazione account…' : 'Crea account' }}
+      </button>
+    </form>
 
     <a class="authlink" routerLink="/login">Hai gia' un account? Accedi</a>
   </div>

@@ -3,25 +3,39 @@
     <div class="authtitle">Imperial Gym</div>
     <div class="authsub">Accedi al tuo account</div>
 
-    <div class="authfield">
-      <label>Email</label>
-      <div class="measure-input-wrap">
-        <input type="email" autocomplete="email" [(ngModel)]="email" placeholder="nome@esempio.com" />
+    <form #f="ngForm" (ngSubmit)="submit(f)" novalidate>
+
+      <div class="authfield">
+        <label>Email</label>
+        <div class="measure-input-wrap">
+          <input type="email" autocomplete="email" name="email"
+            [(ngModel)]="email" #emailCtrl="ngModel"
+            required email placeholder="nome@esempio.com" />
+        </div>
+        <p class="fielderr" *ngIf="emailCtrl.invalid && (emailCtrl.touched || f.submitted)">
+          <span *ngIf="emailCtrl.errors?.['required']">L'email e' obbligatoria.</span>
+          <span *ngIf="emailCtrl.errors?.['email']">Email non valida.</span>
+        </p>
       </div>
-    </div>
 
-    <div class="authfield">
-      <label>Password</label>
-      <div class="measure-input-wrap">
-        <input type="password" autocomplete="current-password" [(ngModel)]="password" placeholder="••••••••" />
+      <div class="authfield">
+        <label>Password</label>
+        <div class="measure-input-wrap">
+          <input type="password" autocomplete="current-password" name="password"
+            [(ngModel)]="password" #passCtrl="ngModel"
+            required placeholder="••••••••" />
+        </div>
+        <p class="fielderr" *ngIf="passCtrl.invalid && (passCtrl.touched || f.submitted)">
+          <span *ngIf="passCtrl.errors?.['required']">La password e' obbligatoria.</span>
+        </p>
       </div>
-    </div>
 
-    <p class="autherror" *ngIf="errorMsg">{{ errorMsg }}</p>
+      <p class="autherror" *ngIf="errorMsg">{{ errorMsg }}</p>
 
-    <button class="savebtn" [disabled]="loading" (click)="submit()">
-      {{ loading ? 'Accesso in corso…' : 'Accedi' }}
-    </button>
+      <button class="savebtn" type="submit" [disabled]="loading">
+        {{ loading ? 'Accesso in corso…' : 'Accedi' }}
+      </button>
+    </form>
 
     <a class="authlink" routerLink="/registrati">Sei un cliente? Crea il tuo account</a>
     <a class="authlink" routerLink="/coach/registrati">Sei un coach? Crea il tuo account</a>
