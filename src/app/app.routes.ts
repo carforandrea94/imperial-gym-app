@@ -26,5 +26,17 @@ export const routes: Routes = [
     path: 'dieta',
     loadComponent: () => import('./pages/dieta/dieta.component').then(m => m.DietaComponent)
   },
+  {
+    path: 'misure',
+    loadComponent: () => import('./pages/misure/misure.component').then(m => m.MisureComponent)
+  },
+  {
+    path: 'misure/storico',
+    loadComponent: () => import('./pages/misure-storico/misure-storico.component').then(m => m.MisureStoricoComponent)
+  },
+  {
+    path: 'misure/storico/:key',
+    loadComponent: () => import('./pages/misure-storico-detail/misure-storico-detail.component').then(m => m.MisureStoricoDetailComponent)
+  },
   { path: '**', redirectTo: 'scheda' }
 ];

@@ -2,6 +2,8 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 
+type Tab = 'scheda' | 'dieta' | 'misure';
+
 @Component({
   selector: 'app-tabbar',
   standalone: true,
@@ -11,11 +13,14 @@ import { Router, RouterModule } from '@angular/router';
 export class TabbarComponent {
   constructor(private router: Router) {}
 
-  get activeTab(): 'scheda' | 'dieta' {
-    return this.router.url.startsWith('/dieta') ? 'dieta' : 'scheda';
+  get activeTab(): Tab {
+    const url = this.router.url;
+    if (url.startsWith('/dieta')) return 'dieta';
+    if (url.startsWith('/misure')) return 'misure';
+    return 'scheda';
   }
 
-  navigate(tab: 'scheda' | 'dieta'): void {
+  navigate(tab: Tab): void {
     this.router.navigate(['/' + tab]);
   }
 }

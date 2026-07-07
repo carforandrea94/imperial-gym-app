@@ -1,0 +1,62 @@
+<div *ngIf="!entry" class="history-empty">Misurazione non trovata.</div>
+
+<ng-container *ngIf="entry">
+  <div class="daymeta">
+    <span>Misurazione</span>
+    <span class="rec">{{ displayDate }}</span>
+  </div>
+
+  <ng-container *ngIf="hasValue(rows1)">
+    <p class="sectiontitle">Corpo</p>
+    <div class="infocard measure-card">
+      <div class="measure-readrow" *ngFor="let r of rows1">
+        <span class="mr-label">{{ r.field.label }}</span>
+        <span class="mr-value">
+          <ng-container *ngIf="r.value">{{ r.value }} {{ r.field.unit }}</ng-container>
+          <ng-container *ngIf="!r.value">—</ng-container>
+          <span *ngIf="r.delta !== null" [class]="r.delta < 0 ? 'delta down' : (r.delta > 0 ? 'delta up' : 'delta')">
+            {{ r.delta > 0 ? '+' : '' }}{{ r.delta }}
+          </span>
+        </span>
+      </div>
+    </div>
+  </ng-container>
+
+  <ng-container *ngIf="hasValue(rows2)">
+    <p class="sectiontitle">Pliche</p>
+    <div class="infocard measure-card">
+      <div class="measure-readrow" *ngFor="let r of rows2">
+        <span class="mr-label">{{ r.field.label }}</span>
+        <span class="mr-value">
+          <ng-container *ngIf="r.value">{{ r.value }} {{ r.field.unit }}</ng-container>
+          <ng-container *ngIf="!r.value">—</ng-container>
+          <span *ngIf="r.delta !== null" [class]="r.delta < 0 ? 'delta down' : (r.delta > 0 ? 'delta up' : 'delta')">
+            {{ r.delta > 0 ? '+' : '' }}{{ r.delta }}
+          </span>
+        </span>
+      </div>
+    </div>
+  </ng-container>
+
+  <ng-container *ngIf="hasValue(rows3)">
+    <p class="sectiontitle">Circonferenze</p>
+    <div class="infocard measure-card">
+      <div class="measure-readrow" *ngFor="let r of rows3">
+        <span class="mr-label">{{ r.field.label }}</span>
+        <span class="mr-value">
+          <ng-container *ngIf="r.value">{{ r.value }} {{ r.field.unit }}</ng-container>
+          <ng-container *ngIf="!r.value">—</ng-container>
+          <span *ngIf="r.delta !== null" [class]="r.delta < 0 ? 'delta down' : (r.delta > 0 ? 'delta up' : 'delta')">
+            {{ r.delta > 0 ? '+' : '' }}{{ r.delta }}
+          </span>
+        </span>
+      </div>
+    </div>
+  </ng-container>
+
+  <div class="savebar">
+    <button class="savebtn delete-session-btn" (click)="deleteEntry()">
+      Elimina questa misurazione
+    </button>
+  </div>
+</ng-container>

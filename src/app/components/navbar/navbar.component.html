@@ -9,14 +9,14 @@
       <p class="navsubtitle">{{ subtitle }}</p>
     </div>
 
-    <div class="navactions" [class.hide]="!showActions">
-      <button class="navicon" (click)="historyClick.emit()" title="Storico">
+    <div class="navactions" [class.hide]="!showHistory && !showInfo">
+      <button class="navicon" *ngIf="showHistory" (click)="historyClick.emit()" title="Storico">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10"/>
           <polyline points="12 6 12 12 16 14"/>
         </svg>
       </button>
-      <button class="navicon" (click)="infoClick.emit()" title="Info">
+      <button class="navicon" *ngIf="showInfo" (click)="infoClick.emit()" title="Info">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10"/>
           <line x1="12" y1="16" x2="12" y2="12"/>

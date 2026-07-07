@@ -19,7 +19,8 @@ export class App implements OnInit, OnDestroy {
   navTitle = 'Scheda';
   navSubtitle = '';
   showBack = false;
-  showActions = false;
+  showHistory = false;
+  showInfo = false;
 
   private routeSub: Subscription | null = null;
 
@@ -50,7 +51,26 @@ export class App implements OnInit, OnDestroy {
       this.navTitle = 'Dieta';
       this.navSubtitle = 'Piano alimentare';
       this.showBack = false;
-      this.showActions = false;
+      this.showHistory = false;
+      this.showInfo = false;
+      return;
+    }
+
+    if (u === '/misure') {
+      this.navTitle = 'Misure';
+      this.navSubtitle = 'Le tue misurazioni';
+      this.showBack = false;
+      this.showHistory = true;
+      this.showInfo = false;
+      return;
+    }
+
+    if (u === '/misure/storico') {
+      this.navTitle = 'Storico misure';
+      this.navSubtitle = 'Misurazioni salvate';
+      this.showBack = true;
+      this.showHistory = false;
+      this.showInfo = false;
       return;
     }
 
@@ -58,7 +78,8 @@ export class App implements OnInit, OnDestroy {
       this.navTitle = 'Storico';
       this.navSubtitle = 'Sedute salvate';
       this.showBack = true;
-      this.showActions = false;
+      this.showHistory = false;
+      this.showInfo = false;
       return;
     }
 
@@ -66,7 +87,8 @@ export class App implements OnInit, OnDestroy {
       this.navTitle = 'Info';
       this.navSubtitle = 'Il programma';
       this.showBack = true;
-      this.showActions = false;
+      this.showHistory = false;
+      this.showInfo = false;
       return;
     }
 
@@ -77,7 +99,8 @@ export class App implements OnInit, OnDestroy {
       this.navTitle = day ? `Giorno ${idx + 1}` : 'Allenamento';
       this.navSubtitle = day?.label ?? '';
       this.showBack = true;
-      this.showActions = false;
+      this.showHistory = false;
+      this.showInfo = false;
       return;
     }
 
@@ -86,7 +109,18 @@ export class App implements OnInit, OnDestroy {
       this.navTitle = 'Dettaglio seduta';
       this.navSubtitle = '';
       this.showBack = true;
-      this.showActions = false;
+      this.showHistory = false;
+      this.showInfo = false;
+      return;
+    }
+
+    const misureStoricoMatch = u.match(/^\/misure\/storico\/.+$/);
+    if (misureStoricoMatch) {
+      this.navTitle = 'Dettaglio misurazione';
+      this.navSubtitle = '';
+      this.showBack = true;
+      this.showHistory = false;
+      this.showInfo = false;
       return;
     }
 
@@ -94,20 +128,30 @@ export class App implements OnInit, OnDestroy {
     this.navTitle = 'Protocollo Cut';
     this.navSubtitle = 'Andrea Carfora';
     this.showBack = false;
-    this.showActions = true;
+    this.showHistory = true;
+    this.showInfo = true;
   }
 
   onBack(): void {
     const u = this.router.url.split('?')[0];
     if (u.match(/^\/scheda\/storico\/.+$/)) {
       this.router.navigate(['/scheda/storico']);
+    } else if (u.match(/^\/misure\/storico\/.+$/)) {
+      this.router.navigate(['/misure/storico']);
+    } else if (u === '/misure/storico') {
+      this.router.navigate(['/misure']);
     } else {
       this.router.navigate(['/scheda']);
     }
   }
 
   onHistory(): void {
-    this.router.navigate(['/scheda/storico']);
+    const u = this.router.url.split('?')[0];
+    if (u.startsWith('/misure')) {
+      this.router.navigate(['/misure/storico']);
+    } else {
+      this.router.navigate(['/scheda/storico']);
+    }
   }
 
   onInfo(): void {

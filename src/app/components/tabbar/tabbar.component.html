@@ -1,9 +1,9 @@
-<nav class="tabbar">
-  <div class="pill" [class.p1]="activeTab === 'dieta'"></div>
+<nav class="tabbar tabbar-3">
+  <div class="pill" [class.p1]="activeTab === 'dieta'" [class.p2]="activeTab === 'misure'"></div>
 
   <button class="tabbtn" [class.active]="activeTab === 'scheda'" (click)="navigate('scheda')">
     <span class="ic">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="3" y="3" width="18" height="18" rx="3"/>
         <line x1="9" y1="9" x2="15" y2="9"/>
         <line x1="9" y1="12" x2="15" y2="12"/>
@@ -15,11 +15,21 @@
 
   <button class="tabbtn" [class.active]="activeTab === 'dieta'" (click)="navigate('dieta')">
     <span class="ic">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12c0-2.76 1.12-5.26 2.93-7.07"/>
         <path d="M8 12h8M12 8v8"/>
       </svg>
     </span>
     <span class="tl">Dieta</span>
+  </button>
+
+  <button class="tabbtn" [class.active]="activeTab === 'misure'" (click)="navigate('misure')">
+    <span class="ic">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4"/>
+        <line x1="4" y1="12" x2="20" y2="12"/>
+      </svg>
+    </span>
+    <span class="tl">Misure</span>
   </button>
 </nav>

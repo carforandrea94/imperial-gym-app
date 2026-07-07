@@ -11,7 +11,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
   @Input() title = '';
   @Input() subtitle = '';
   @Input() showBack = false;
-  @Input() showActions = false;
+  @Input() showHistory = false;
+  @Input() showInfo = false;
 
   @Output() backClick = new EventEmitter<void>();
   @Output() historyClick = new EventEmitter<void>();

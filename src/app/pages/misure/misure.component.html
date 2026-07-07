@@ -1,0 +1,53 @@
+<p class="sectiontitle">Corpo</p>
+<div class="infocard measure-card">
+  <div class="measure-grid cols-2">
+    <div class="measure-field" *ngFor="let f of card1">
+      <label>{{ f.label }}</label>
+      <div class="measure-input-wrap">
+        <input type="text" inputmode="decimal"
+          [(ngModel)]="entry[f.key]"
+          [placeholder]="placeholders[f.key] ?? '—'"
+          (input)="onInput()" />
+        <span class="unit">{{ f.unit }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="sectiontitle">Pliche</p>
+<div class="infocard measure-card">
+  <div class="measure-grid cols-2">
+    <div class="measure-field" *ngFor="let f of card2">
+      <label>{{ f.label }}</label>
+      <div class="measure-input-wrap">
+        <input type="text" inputmode="decimal"
+          [(ngModel)]="entry[f.key]"
+          [placeholder]="placeholders[f.key] ?? '—'"
+          (input)="onInput()" />
+        <span class="unit">{{ f.unit }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="sectiontitle">Circonferenze</p>
+<div class="infocard measure-card">
+  <div class="measure-grid cols-2">
+    <div class="measure-field" *ngFor="let f of card3">
+      <label>{{ f.label }}</label>
+      <div class="measure-input-wrap">
+        <input type="text" inputmode="decimal"
+          [(ngModel)]="entry[f.key]"
+          [placeholder]="placeholders[f.key] ?? '—'"
+          (input)="onInput()" />
+        <span class="unit">{{ f.unit }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="savebar">
+  <button [class]="getSaveBtnClass()" (click)="saveMeasures()">
+    {{ getSaveBtnText() }}
+  </button>
+</div>
