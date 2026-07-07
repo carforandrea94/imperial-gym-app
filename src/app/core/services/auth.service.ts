@@ -16,7 +16,8 @@ import {
   query,
   collection,
   where,
-  getDocs
+  getDocs,
+  getFirestore
 } from 'firebase/firestore';
 import { FirebaseService } from './firebase.service';
 import { UserProfile, UserRole } from '../models/user.model';
@@ -142,6 +143,7 @@ export class AuthService {
     const secondaryApp = initializeApp(environment.firebase, `secondary-${Date.now()}`);
     try {
       const secondaryAuth = getAuth(secondaryApp);
+      const secondaryDb = getFirestore(secondaryApp);
       const cred = await createUserWithEmailAndPassword(secondaryAuth, email.trim(), tempPassword);
 
       const profile: UserProfile = {
@@ -154,9 +156,11 @@ export class AuthService {
         paired: false,
         createdAt: new Date().toISOString()
       };
-      // Scritto mentre l'utente autenticato sull'app secondaria e' il client stesso
-      // appena creato: puo' creare il proprio documento (regola: self-write al primo setDoc).
-      await setDoc(doc(this.fb.db, 'users', profile.uid), profile);
+      // Scritto usando il Firestore dell'app SECONDARIA: la' l'utente autenticato
+      // e' il client appena creato, e la regola richiede request.auth.uid == uid.
+      // Usare il Firestore dell'app primaria scriverebbe come il coach, non
+      // come il client, e la regola rifiuterebbe la creazione.
+      await setDoc(doc(secondaryDb, 'users', profile.uid), profile);
       await signOut(secondaryAuth);
 
       return { email: profile.email, tempPassword, pairingCode };
