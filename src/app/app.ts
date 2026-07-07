@@ -68,6 +68,18 @@ export class App implements OnInit, OnDestroy {
       });
 
     this.swUpdate.checkForUpdate().catch(() => { /* offline o check fallito, ignora */ });
+
+    // Rete di sicurezza: se per qualsiasi motivo risultano registrazioni SW
+    // multiple/orfane per questa origine, le ripulisce cosi' non restano
+    // versioni vecchie in esecuzione in parallelo a quella corrente.
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(regs => {
+        if (regs.length > 1) {
+          console.warn(`Trovate ${regs.length} registrazioni service worker, ripulisco le obsolete.`);
+          regs.slice(1).forEach(r => r.unregister());
+        }
+      });
+    }
   }
 
   private updateNav(url: string): void {
