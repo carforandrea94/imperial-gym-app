@@ -51,11 +51,22 @@ export class CoachClientiComponent implements OnInit {
     if (!this.newName.trim() || !this.newEmail.trim()) return;
     this.creating = true;
     this.errorMsg = '';
+
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('TIMEOUT')), 15000)
+    );
+
     try {
-      this.createdResult = await this.auth.createClientAccount(this.newName, this.newEmail);
+      this.createdResult = await Promise.race([
+        this.auth.createClientAccount(this.newName, this.newEmail),
+        timeout
+      ]) as NewClientResult;
       await this.load();
     } catch (e: any) {
-      if (e?.code === 'auth/email-already-in-use') {
+      console.error('Errore creazione cliente:', e);
+      if (e?.message === 'TIMEOUT') {
+        this.errorMsg = 'La richiesta sta impiegando troppo tempo. Riprova.';
+      } else if (e?.code === 'auth/email-already-in-use') {
         this.errorMsg = 'Questa email e\' gia\' registrata.';
       } else {
         this.errorMsg = e?.message || 'Errore durante la creazione. Riprova.';
