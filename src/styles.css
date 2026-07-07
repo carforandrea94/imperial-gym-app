@@ -211,6 +211,23 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .delta{font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:600;color:var(--label-3);}
 .delta.up{color:#FF6961;}
 .delta.down{color:#30D158;}
+
+/* ===================== MISURE — ANALYTICS ===================== */
+.chart-card{margin-bottom:18px;overflow:hidden;}
+.chart-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:14px;}
+.chart-title{font-family:'Inter',sans-serif;font-weight:700;font-size:16px;color:var(--label);}
+.chart-sub{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--label-3);margin-top:3px;}
+.chart-wrap{width:100%;line-height:0;}
+.chart-wrap svg{width:100%;height:auto;display:block;}
+.chart-empty{padding:24px 4px;text-align:center;font-family:'Inter',sans-serif;font-size:13px;color:var(--label-3);}
+
+.measure-selectlist{margin-bottom:16px;}
+.measure-selectrow{padding:12px 14px;min-height:0;}
+.measure-selectrow .lbl{font-family:'Inter',sans-serif;font-weight:600;font-size:14px;color:var(--label);}
+.measure-selectrow .meta{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--label-3);margin-top:2px;}
+.measure-selectrow.selected{border-color:var(--accent);background:var(--accent-dim);}
+.ms-dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--content-glass-border);flex-shrink:0;transition:border-color .2s ease,background .2s ease;}
+.ms-dot.on{border-color:var(--accent);background:var(--accent);box-shadow:inset 0 0 0 3px var(--bg-card);}
 .suggestion-chip{font-size:12.5px;line-height:1.45;color:var(--label);padding:10px 12px;border-radius:12px;background:var(--accent-dim);border:1px solid var(--accent);}
 .suggestion-chip b{color:var(--accent);font-weight:700;}
 .savebar{margin-top:16px;}

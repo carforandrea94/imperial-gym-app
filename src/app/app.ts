@@ -21,6 +21,7 @@ export class App implements OnInit, OnDestroy {
   showBack = false;
   showHistory = false;
   showInfo = false;
+  showAnalytics = false;
 
   private routeSub: Subscription | null = null;
 
@@ -53,6 +54,7 @@ export class App implements OnInit, OnDestroy {
       this.showBack = false;
       this.showHistory = false;
       this.showInfo = false;
+      this.showAnalytics = false;
       return;
     }
 
@@ -62,6 +64,7 @@ export class App implements OnInit, OnDestroy {
       this.showBack = false;
       this.showHistory = true;
       this.showInfo = false;
+      this.showAnalytics = true;
       return;
     }
 
@@ -71,6 +74,17 @@ export class App implements OnInit, OnDestroy {
       this.showBack = true;
       this.showHistory = false;
       this.showInfo = false;
+      this.showAnalytics = false;
+      return;
+    }
+
+    if (u === '/misure/analytics') {
+      this.navTitle = 'Andamento';
+      this.navSubtitle = 'Analisi misure';
+      this.showBack = true;
+      this.showHistory = false;
+      this.showInfo = false;
+      this.showAnalytics = false;
       return;
     }
 
@@ -80,6 +94,7 @@ export class App implements OnInit, OnDestroy {
       this.showBack = true;
       this.showHistory = false;
       this.showInfo = false;
+      this.showAnalytics = false;
       return;
     }
 
@@ -89,6 +104,7 @@ export class App implements OnInit, OnDestroy {
       this.showBack = true;
       this.showHistory = false;
       this.showInfo = false;
+      this.showAnalytics = false;
       return;
     }
 
@@ -101,6 +117,7 @@ export class App implements OnInit, OnDestroy {
       this.showBack = true;
       this.showHistory = false;
       this.showInfo = false;
+      this.showAnalytics = false;
       return;
     }
 
@@ -111,6 +128,7 @@ export class App implements OnInit, OnDestroy {
       this.showBack = true;
       this.showHistory = false;
       this.showInfo = false;
+      this.showAnalytics = false;
       return;
     }
 
@@ -121,6 +139,7 @@ export class App implements OnInit, OnDestroy {
       this.showBack = true;
       this.showHistory = false;
       this.showInfo = false;
+      this.showAnalytics = false;
       return;
     }
 
@@ -130,6 +149,7 @@ export class App implements OnInit, OnDestroy {
     this.showBack = false;
     this.showHistory = true;
     this.showInfo = true;
+    this.showAnalytics = false;
   }
 
   onBack(): void {
@@ -138,7 +158,7 @@ export class App implements OnInit, OnDestroy {
       this.router.navigate(['/scheda/storico']);
     } else if (u.match(/^\/misure\/storico\/.+$/)) {
       this.router.navigate(['/misure/storico']);
-    } else if (u === '/misure/storico') {
+    } else if (u === '/misure/storico' || u === '/misure/analytics') {
       this.router.navigate(['/misure']);
     } else {
       this.router.navigate(['/scheda']);
@@ -156,5 +176,9 @@ export class App implements OnInit, OnDestroy {
 
   onInfo(): void {
     this.router.navigate(['/scheda/info']);
+  }
+
+  onAnalytics(): void {
+    this.router.navigate(['/misure/analytics']);
   }
 }

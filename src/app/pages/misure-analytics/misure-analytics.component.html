@@ -1,0 +1,70 @@
+<div *ngIf="!hasAnyHistory" class="history-empty">
+  Nessuna misurazione salvata.<br>Inserisci le tue misure per vedere qui l'andamento nel tempo.
+</div>
+
+<ng-container *ngIf="hasAnyHistory">
+
+  <!-- Grafico unico -->
+  <div class="infocard chart-card">
+    <div class="chart-head">
+      <div>
+        <div class="chart-title">{{ selectedField?.label }}</div>
+        <div class="chart-sub" *ngIf="hasEnoughData">
+          {{ firstValue }} → {{ lastValue }} {{ selectedField?.unit }}
+        </div>
+        <div class="chart-sub" *ngIf="!hasEnoughData">Servono almeno 2 misurazioni per il grafico</div>
+      </div>
+      <span *ngIf="delta !== null" [class]="getDeltaClass()">
+        {{ delta! > 0 ? '+' : '' }}{{ delta }} {{ selectedField?.unit }}
+      </span>
+    </div>
+
+    <div class="chart-wrap" *ngIf="hasEnoughData">
+      <div [innerHTML]="chartSvg"></div>
+    </div>
+    <div class="chart-empty" *ngIf="!hasEnoughData">
+      <span *ngIf="lastValue">Ultimo valore: {{ lastValue }} {{ selectedField?.unit }}</span>
+    </div>
+  </div>
+
+  <!-- Lista misure selezionabili -->
+  <p class="sectiontitle">Corpo</p>
+  <div class="grouplist measure-selectlist">
+    <div class="daycard press-fx measure-selectrow" *ngFor="let o of group1"
+      [class.selected]="isSelected(o.field)" (click)="selectField(o.field)">
+      <div class="ms-dot" [class.on]="isSelected(o.field)"></div>
+      <div class="info">
+        <div class="lbl">{{ o.field.label }}</div>
+        <div class="meta" *ngIf="o.lastValue">{{ o.lastValue }} {{ o.field.unit }}</div>
+        <div class="meta" *ngIf="!o.lastValue">Nessun dato</div>
+      </div>
+    </div>
+  </div>
+
+  <p class="sectiontitle">Pliche</p>
+  <div class="grouplist measure-selectlist">
+    <div class="daycard press-fx measure-selectrow" *ngFor="let o of group2"
+      [class.selected]="isSelected(o.field)" (click)="selectField(o.field)">
+      <div class="ms-dot" [class.on]="isSelected(o.field)"></div>
+      <div class="info">
+        <div class="lbl">{{ o.field.label }}</div>
+        <div class="meta" *ngIf="o.lastValue">{{ o.lastValue }} {{ o.field.unit }}</div>
+        <div class="meta" *ngIf="!o.lastValue">Nessun dato</div>
+      </div>
+    </div>
+  </div>
+
+  <p class="sectiontitle">Circonferenze</p>
+  <div class="grouplist measure-selectlist">
+    <div class="daycard press-fx measure-selectrow" *ngFor="let o of group3"
+      [class.selected]="isSelected(o.field)" (click)="selectField(o.field)">
+      <div class="ms-dot" [class.on]="isSelected(o.field)"></div>
+      <div class="info">
+        <div class="lbl">{{ o.field.label }}</div>
+        <div class="meta" *ngIf="o.lastValue">{{ o.lastValue }} {{ o.field.unit }}</div>
+        <div class="meta" *ngIf="!o.lastValue">Nessun dato</div>
+      </div>
+    </div>
+  </div>
+
+</ng-container>

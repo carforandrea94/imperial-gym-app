@@ -35,6 +35,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/misure-storico/misure-storico.component').then(m => m.MisureStoricoComponent)
   },
   {
+    path: 'misure/analytics',
+    loadComponent: () => import('./pages/misure-analytics/misure-analytics.component').then(m => m.MisureAnalyticsComponent)
+  },
+  {
     path: 'misure/storico/:key',
     loadComponent: () => import('./pages/misure-storico-detail/misure-storico-detail.component').then(m => m.MisureStoricoDetailComponent)
   },
