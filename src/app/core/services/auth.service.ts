@@ -142,6 +142,20 @@ export class AuthService {
     return snap.docs.map(d => d.data() as UserProfile);
   }
 
+  /**
+   * Ripara gli account coach creati prima dell'introduzione della mappa
+   * pubblica coachCodes: se manca la voce di lookup per il proprio codice,
+   * la ricrea. Idempotente, sicuro da richiamare ad ogni apertura pagina.
+   */
+  async ensureCoachCode(): Promise<void> {
+    const coach = this.currentUser();
+    if (!coach || coach.role !== 'coach' || !coach.pairingCode) return;
+    const codeSnap = await getDoc(doc(this.fb.db, 'coachCodes', coach.pairingCode));
+    if (!codeSnap.exists()) {
+      await setDoc(doc(this.fb.db, 'coachCodes', coach.pairingCode), { coachId: coach.uid });
+    }
+  }
+
   get isCoach(): boolean {
     return this.currentUser()?.role === 'coach';
   }
