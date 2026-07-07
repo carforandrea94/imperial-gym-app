@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AnnouncementsService } from '../../core/services/announcements.service';
+import { AnnouncementsService } from '../../services/announcements.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { Announcement } from '../../core/models/user.model';
 
@@ -17,20 +17,37 @@ export class CoachBachecaComponent implements OnInit {
   newText = '';
   loading = true;
   posting = false;
+  errorMsg = '';
 
   constructor(
     private svc: AnnouncementsService,
-    private confirm: ConfirmDialogService
+    private confirm: ConfirmDialogService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     this.load();
   }
 
-  private async load(): Promise<void> {
+  async load(): Promise<void> {
     this.loading = true;
-    this.announcements = await this.svc.listForCoach();
-    this.loading = false;
+    this.errorMsg = '';
+
+    const timeout = new Promise<Announcement[]>((_, reject) =>
+      setTimeout(() => reject(new Error('TIMEOUT')), 12000)
+    );
+
+    try {
+      this.announcements = await Promise.race([this.svc.listForCoach(), timeout]);
+    } catch (e: any) {
+      console.error('Errore caricamento bacheca:', e);
+      this.errorMsg = e?.message === 'TIMEOUT'
+        ? 'La connessione sta impiegando troppo tempo. Controlla la rete e riprova.'
+        : 'Errore nel caricamento. Riprova.';
+    } finally {
+      this.loading = false;
+      this.cdr.detectChanges();
+    }
   }
 
   async post(): Promise<void> {
@@ -43,6 +60,7 @@ export class CoachBachecaComponent implements OnInit {
       await this.load();
     } finally {
       this.posting = false;
+      this.cdr.detectChanges();
     }
   }
 

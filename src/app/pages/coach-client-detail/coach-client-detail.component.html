@@ -1,6 +1,13 @@
 <div *ngIf="loading" class="history-empty">Caricamento…</div>
 
-<ng-container *ngIf="!loading">
+<div *ngIf="!loading && errorMsg" class="history-empty">
+  {{ errorMsg }}
+  <div style="margin-top:12px">
+    <button class="confirmbtn cancel" (click)="load()">Riprova</button>
+  </div>
+</div>
+
+<ng-container *ngIf="!loading && !errorMsg">
   <p class="sectiontitle">Cliente</p>
   <div class="infocard" style="margin-bottom:16px">
     <div class="lbl" style="font-size:16px;font-weight:700">{{ client?.displayName }}</div>

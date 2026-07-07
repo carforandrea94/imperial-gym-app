@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -36,7 +36,8 @@ export class CoachProtocolBuilderComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private protocolSvc: ProtocolService,
-    public workoutData: WorkoutDataService
+    public workoutData: WorkoutDataService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -46,6 +47,7 @@ export class CoachProtocolBuilderComponent implements OnInit {
     this.protocol = await this.protocolSvc.get(this.clientId, this.protocolId);
     if (!this.protocol) { this.router.navigate(['/coach/clienti', this.clientId]); return; }
     this.loading = false;
+    this.cdr.detectChanges();
   }
 
   // ===== Scheda =====

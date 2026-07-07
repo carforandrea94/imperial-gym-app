@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -17,7 +17,11 @@ export class CoachClientiComponent implements OnInit {
   errorMsg = '';
   copied = false;
 
-  constructor(public auth: AuthService, private router: Router) {}
+  constructor(
+    public auth: AuthService,
+    private router: Router,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
     this.auth.ensureCoachCode().catch(e => console.error('Errore ensureCoachCode:', e));
@@ -41,6 +45,7 @@ export class CoachClientiComponent implements OnInit {
         : 'Errore nel caricamento dei clienti. Riprova.';
     } finally {
       this.loading = false;
+      this.cdr.detectChanges();
     }
   }
 
