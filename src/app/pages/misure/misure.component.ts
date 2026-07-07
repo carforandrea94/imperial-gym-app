@@ -31,17 +31,21 @@ export class MisureComponent implements OnInit, OnDestroy {
 
   private draftTimer: ReturnType<typeof setTimeout> | null = null;
 
+  loading = true;
+
   constructor(
     private data: MeasurementDataService,
     private router: Router
   ) {}
 
-  ngOnInit(): void {
-    this.placeholders = this.data.getLastValues();
-    const draft = this.data.loadDraft();
+  async ngOnInit(): Promise<void> {
+    this.loading = true;
+    this.placeholders = await this.data.getLastValues();
+    const draft = await this.data.loadDraft();
     if (draft) {
       this.entry = draft;
     }
+    this.loading = false;
   }
 
   ngOnDestroy(): void {
@@ -67,13 +71,13 @@ export class MisureComponent implements OnInit, OnDestroy {
       .some(f => !!this.entry[f.key]);
   }
 
-  saveMeasures(): void {
+  async saveMeasures(): Promise<void> {
     if (!this.hasAnyValue()) return;
     this.entry.date = this.todayISO();
-    const ok = this.data.saveEntry(this.entry);
+    const ok = await this.data.saveEntry(this.entry);
     if (ok) {
-      this.data.clearDraft();
-      this.placeholders = this.data.getLastValues();
+      await this.data.clearDraft();
+      this.placeholders = await this.data.getLastValues();
       this.entry = emptyMeasurementEntry(this.todayISO());
       this.saveStatus = 'saved';
       setTimeout(() => { this.saveStatus = 'idle'; }, 2000);

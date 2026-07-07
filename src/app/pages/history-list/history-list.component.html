@@ -1,10 +1,12 @@
 <p class="sectiontitle">Sedute salvate</p>
 
-<div *ngIf="sessions.length === 0" class="history-empty">
+<div *ngIf="loading" class="history-empty">Caricamento…</div>
+
+<div *ngIf="!loading && sessions.length === 0" class="history-empty">
   Nessuna seduta salvata.<br>Completa il primo allenamento per vedere lo storico qui.
 </div>
 
-<div *ngIf="sessions.length > 0" class="grouplist">
+<div *ngIf="!loading && sessions.length > 0" class="grouplist">
   <div class="daycard press-fx" *ngFor="let s of sessions" (click)="goToDetail(s.key)">
     <div class="badge" style="font-size:12px">{{ s.session.dayId.replace('day','G') }}</div>
     <div class="info">

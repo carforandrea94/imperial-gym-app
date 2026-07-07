@@ -1,9 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { WorkoutDataService } from '../../services/workout-data.service';
 import { WorkoutStateService } from '../../services/workout-state.service';
-import { StorageService } from '../../services/storage.service';
+import { AppStateService } from '../../services/app-state.service';
 
 @Component({
   selector: 'app-scheda-list',
@@ -12,19 +12,26 @@ import { StorageService } from '../../services/storage.service';
   templateUrl: './scheda-list.component.html',
   styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
 })
-export class SchedaListComponent {
+export class SchedaListComponent implements OnInit {
   readonly days;
   readonly currentWeek;
   readonly weeks = [1,2,3,4,5,6,7,8];
+
+  private draftDayIds = new Set<string>();
 
   constructor(
     public workoutData: WorkoutDataService,
     public state: WorkoutStateService,
     private router: Router,
-    private storage: StorageService
+    private appState: AppStateService
   ) {
     this.days = workoutData.days;
     this.currentWeek = state.currentWeek;
+  }
+
+  async ngOnInit(): Promise<void> {
+    const s = await this.appState.load();
+    this.draftDayIds = new Set(Object.keys(s.workoutDrafts ?? {}));
   }
 
   goToDay(idx: number): void {
@@ -36,7 +43,7 @@ export class SchedaListComponent {
   }
 
   hasDraft(dayId: string): boolean {
-    return this.storage.get(`draft:${dayId}`) !== null;
+    return this.draftDayIds.has(dayId);
   }
 
   getWaveInfo(): string {

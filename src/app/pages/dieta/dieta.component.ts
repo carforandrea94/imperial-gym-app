@@ -1,4 +1,4 @@
-import { Component, computed } from '@angular/core';
+import { Component, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DietDataService } from '../../services/diet-data.service';
 import { WorkoutStateService } from '../../services/workout-state.service';
@@ -19,7 +19,7 @@ interface MealVM {
   templateUrl: './dieta.component.html',
   styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
 })
-export class DietaComponent {
+export class DietaComponent implements OnInit {
   readonly mealOrder = ['colazione', 'spuntino', 'pranzo', 'merenda', 'cena'];
   readonly mealLabels = MEAL_LABELS;
 
@@ -38,6 +38,10 @@ export class DietaComponent {
     this.meals.forEach(vm => {
       vm.altOpen = this.getItems(vm).map(() => true);
     });
+  }
+
+  async ngOnInit(): Promise<void> {
+    await this.state.loadDietMode();
   }
 
   get mode() { return this.state.dietMode(); }

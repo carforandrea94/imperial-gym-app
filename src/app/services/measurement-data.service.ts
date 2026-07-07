@@ -1,57 +1,71 @@
 import { Injectable } from '@angular/core';
-import { StorageService } from './storage.service';
+import { doc, getDoc, setDoc, deleteDoc, collection, getDocs } from 'firebase/firestore';
+import { FirebaseService } from '../core/services/firebase.service';
+import { AuthService } from '../core/services/auth.service';
+import { AppStateService } from './app-state.service';
 import { MeasurementEntry, ALL_MEASURE_FIELDS, MeasurementKey } from '../models/measurement.model';
 
-const HISTORY_PREFIX = 'misure:';
-const DRAFT_KEY = 'misure:draft';
-
+/**
+ * Dati misure su Firestore:
+ * - storico: users/{uid}/measurements/{isoDate}
+ * - bozza in corso: campo measureDraft del doc users/{uid}/state/app
+ */
 @Injectable({ providedIn: 'root' })
 export class MeasurementDataService {
 
-  constructor(private storage: StorageService) {}
+  constructor(
+    private fb: FirebaseService,
+    private auth: AuthService,
+    private appState: AppStateService
+  ) {}
 
-  historyKey(date: string): string {
-    return `${HISTORY_PREFIX}${date}`;
+  private col() {
+    const uid = this.auth.currentUser()!.uid;
+    return collection(this.fb.db, 'users', uid, 'measurements');
   }
 
-  get draftKey(): string {
-    return DRAFT_KEY;
+  async loadDraft(): Promise<MeasurementEntry | null> {
+    const state = await this.appState.load();
+    return (state.measureDraft as unknown as MeasurementEntry) ?? null;
   }
 
-  loadDraft(): MeasurementEntry | null {
-    return this.storage.getJSON<MeasurementEntry>(DRAFT_KEY);
+  async saveDraft(entry: MeasurementEntry): Promise<void> {
+    await this.appState.patch({ measureDraft: entry as any });
   }
 
-  saveDraft(entry: MeasurementEntry): void {
-    this.storage.setJSON(DRAFT_KEY, entry);
-  }
-
-  clearDraft(): void {
-    this.storage.delete(DRAFT_KEY);
+  async clearDraft(): Promise<void> {
+    await this.appState.patch({ measureDraft: null });
   }
 
   /** Tutte le voci storiche, ordinate dalla piu' recente. */
-  loadHistory(): MeasurementEntry[] {
-    const keys = this.storage.list(HISTORY_PREFIX)
-      .filter(k => k !== DRAFT_KEY)
-      .sort()
-      .reverse();
-    return keys
-      .map(k => this.storage.getJSON<MeasurementEntry>(k))
-      .filter((e): e is MeasurementEntry => !!e);
+  async loadHistory(): Promise<MeasurementEntry[]> {
+    const snap = await getDocs(this.col());
+    return snap.docs
+      .map(d => d.data() as MeasurementEntry)
+      .sort((a, b) => b.date.localeCompare(a.date));
   }
 
-  saveEntry(entry: MeasurementEntry): boolean {
-    return this.storage.setJSON(this.historyKey(entry.date), entry);
+  async saveEntry(entry: MeasurementEntry): Promise<boolean> {
+    try {
+      await setDoc(doc(this.col(), entry.date), entry);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
-  deleteEntry(date: string): boolean {
-    return this.storage.delete(this.historyKey(date));
+  async deleteEntry(date: string): Promise<boolean> {
+    try {
+      await deleteDoc(doc(this.col(), date));
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /** Per ogni campo, l'ultimo valore registrato nello storico (per i placeholder in form). */
-  getLastValues(): Partial<Record<MeasurementKey, string>> {
-    const history = this.loadHistory();
+  async getLastValues(): Promise<Partial<Record<MeasurementKey, string>>> {
+    const history = await this.loadHistory();
     const out: Partial<Record<MeasurementKey, string>> = {};
     for (const field of ALL_MEASURE_FIELDS) {
       for (const entry of history) {
@@ -63,8 +77,8 @@ export class MeasurementDataService {
   }
 
   /** L'ultima voce storica precedente a una certa data (per calcolare le variazioni). */
-  getPreviousEntry(beforeDate?: string): MeasurementEntry | null {
-    const history = this.loadHistory();
+  async getPreviousEntry(beforeDate?: string): Promise<MeasurementEntry | null> {
+    const history = await this.loadHistory();
     if (!beforeDate) return history[0] ?? null;
     return history.find(e => e.date < beforeDate) ?? null;
   }

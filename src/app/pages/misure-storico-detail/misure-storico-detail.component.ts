@@ -40,15 +40,16 @@ export class MisureStoricoDetailComponent implements OnInit {
     private confirm: ConfirmDialogService
   ) {}
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     this.date = this.route.snapshot.paramMap.get('key') ?? '';
-    this.entry = this.data.loadHistory().find(e => e.date === this.date) ?? null;
+    const history = await this.data.loadHistory();
+    this.entry = history.find(e => e.date === this.date) ?? null;
     if (!this.entry) { this.router.navigate(['/misure/storico']); return; }
 
     const d = new Date(this.entry.date + 'T00:00:00');
     this.displayDate = d.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
-    const prev = this.data.getPreviousEntry(this.entry.date);
+    const prev = await this.data.getPreviousEntry(this.entry.date);
     this.rows1 = this.buildRows(MEASURE_CARD_1, this.entry, prev);
     this.rows2 = this.buildRows(MEASURE_CARD_2, this.entry, prev);
     this.rows3 = this.buildRows(MEASURE_CARD_3, this.entry, prev);
@@ -73,7 +74,7 @@ export class MisureStoricoDetailComponent implements OnInit {
   async deleteEntry(): Promise<void> {
     const ok = await this.confirm.confirm('Eliminare questa misurazione dallo storico?');
     if (ok) {
-      this.data.deleteEntry(this.date);
+      await this.data.deleteEntry(this.date);
       this.router.navigate(['/misure/storico']);
     }
   }

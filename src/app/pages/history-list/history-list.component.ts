@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { StorageService } from '../../services/storage.service';
+import { WorkoutSessionsService } from '../../services/workout-sessions.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { WorkoutSession } from '../../models/workout.model';
 
@@ -21,9 +21,10 @@ interface SessionEntry {
 })
 export class HistoryListComponent implements OnInit {
   sessions: SessionEntry[] = [];
+  loading = true;
 
   constructor(
-    private storage: StorageService,
+    private sessionsSvc: WorkoutSessionsService,
     private confirm: ConfirmDialogService,
     private router: Router
   ) {}
@@ -32,16 +33,17 @@ export class HistoryListComponent implements OnInit {
     this.loadSessions();
   }
 
-  private loadSessions(): void {
-    const keys = this.storage.list('workout:').sort().reverse();
-    this.sessions = keys.map(key => {
-      const session = this.storage.getJSON<WorkoutSession>(key)!;
+  private async loadSessions(): Promise<void> {
+    this.loading = true;
+    const all = await this.sessionsSvc.listAll();
+    this.sessions = all.map(({ id, session }) => {
       const date = new Date(session.date);
       const displayDate = date.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
       const completedSets = session.exercises.reduce((acc, ex) =>
         acc + ex.sets.filter(s => s.done).length, 0);
-      return { key, session, displayDate, completedSets };
+      return { key: id, session, displayDate, completedSets };
     });
+    this.loading = false;
   }
 
   goToDetail(key: string): void {
@@ -52,8 +54,8 @@ export class HistoryListComponent implements OnInit {
     event.stopPropagation();
     const ok = await this.confirm.confirm('Eliminare questa seduta dallo storico?');
     if (ok) {
-      this.storage.delete(key);
-      this.loadSessions();
+      await this.sessionsSvc.delete(key);
+      await this.loadSessions();
     }
   }
 }

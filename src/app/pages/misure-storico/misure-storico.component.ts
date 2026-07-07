@@ -20,6 +20,7 @@ interface EntryRow {
 })
 export class MisureStoricoComponent implements OnInit {
   rows: EntryRow[] = [];
+  loading = true;
 
   constructor(
     private data: MeasurementDataService,
@@ -31,8 +32,9 @@ export class MisureStoricoComponent implements OnInit {
     this.load();
   }
 
-  private load(): void {
-    const history = this.data.loadHistory(); // dalla piu' recente
+  private async load(): Promise<void> {
+    this.loading = true;
+    const history = await this.data.loadHistory(); // dalla piu' recente
     this.rows = history.map((entry, i) => {
       const date = new Date(entry.date + 'T00:00:00');
       const displayDate = date.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -44,6 +46,7 @@ export class MisureStoricoComponent implements OnInit {
       }
       return { entry, displayDate, pesoDelta };
     });
+    this.loading = false;
   }
 
   goToDetail(date: string): void {
@@ -54,8 +57,8 @@ export class MisureStoricoComponent implements OnInit {
     event.stopPropagation();
     const ok = await this.confirm.confirm('Eliminare questa misurazione dallo storico?');
     if (ok) {
-      this.data.deleteEntry(date);
-      this.load();
+      await this.data.deleteEntry(date);
+      await this.load();
     }
   }
 }

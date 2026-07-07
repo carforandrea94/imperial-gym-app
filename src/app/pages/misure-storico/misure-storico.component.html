@@ -1,10 +1,12 @@
 <p class="sectiontitle">Misurazioni salvate</p>
 
-<div *ngIf="rows.length === 0" class="history-empty">
+<div *ngIf="loading" class="history-empty">Caricamento…</div>
+
+<div *ngIf="!loading && rows.length === 0" class="history-empty">
   Nessuna misurazione salvata.<br>Inserisci le tue misure nella sezione Misure per vederle qui.
 </div>
 
-<div *ngIf="rows.length > 0" class="grouplist">
+<div *ngIf="!loading && rows.length > 0" class="grouplist">
   <div class="daycard press-fx" *ngFor="let r of rows" (click)="goToDetail(r.entry.date)">
     <div class="badge" style="font-size:12px">{{ r.entry.date.slice(8,10) }}/{{ r.entry.date.slice(5,7) }}</div>
     <div class="info">

@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
-import { StorageService } from '../../services/storage.service';
+import { WorkoutSessionsService } from '../../services/workout-sessions.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { WorkoutSession } from '../../models/workout.model';
 import { WorkoutDataService } from '../../services/workout-data.service';
@@ -23,7 +23,7 @@ export class HistoryDetailComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private storage: StorageService,
+    private sessionsSvc: WorkoutSessionsService,
     private confirm: ConfirmDialogService,
     public workoutData: WorkoutDataService,
     private sanitizer: DomSanitizer
@@ -36,10 +36,10 @@ export class HistoryDetailComponent implements OnInit {
     );
   }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     const rawKey = this.route.snapshot.paramMap.get('key') ?? '';
     this.key = decodeURIComponent(rawKey);
-    this.session = this.storage.getJSON<WorkoutSession>(this.key);
+    this.session = await this.sessionsSvc.get(this.key);
     if (this.session) {
       const date = new Date(this.session.date);
       this.displayDate = date.toLocaleDateString('it-IT', {
@@ -68,7 +68,7 @@ export class HistoryDetailComponent implements OnInit {
   async deleteSession(): Promise<void> {
     const ok = await this.confirm.confirm('Eliminare questa seduta dallo storico?');
     if (ok) {
-      this.storage.delete(this.key);
+      await this.sessionsSvc.delete(this.key);
       this.router.navigate(['/scheda/storico']);
     }
   }

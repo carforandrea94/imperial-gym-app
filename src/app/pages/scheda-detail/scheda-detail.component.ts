@@ -5,7 +5,8 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { WorkoutDataService } from '../../services/workout-data.service';
 import { WorkoutStateService } from '../../services/workout-state.service';
-import { StorageService } from '../../services/storage.service';
+import { AppStateService, WorkoutDraftRow } from '../../services/app-state.service';
+import { WorkoutSessionsService } from '../../services/workout-sessions.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { Day, Exercise, WorkoutSession, ExInsight } from '../../models/workout.model';
 
@@ -37,6 +38,7 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
   day!: Day;
   dayIndex = 0;
   exercises: ExerciseVM[] = [];
+  loading = true;
   saveStatus: 'idle' | 'saved' | 'err' = 'idle';
   private draftTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -49,26 +51,35 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
     private router: Router,
     public workoutData: WorkoutDataService,
     public state: WorkoutStateService,
-    private storage: StorageService,
+    private appState: AppStateService,
+    private sessions: WorkoutSessionsService,
     private confirm: ConfirmDialogService,
     private sanitizer: DomSanitizer
   ) {}
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     const n = parseInt(this.route.snapshot.paramMap.get('n') ?? '0', 10);
     this.dayIndex = n;
     this.day = this.workoutData.days[n];
     if (!this.day) { this.router.navigate(['/scheda']); return; }
-    this.buildExercises();
-    this.loadDraft();
-    this.loadInsights();
+
+    this.loading = true;
+    const [appState, daySessions] = await Promise.all([
+      this.appState.load(),
+      this.sessions.listForDay(this.day.id)
+    ]);
+
+    this.buildExercises(appState.restOverrides);
+    this.loadDraft(appState.workoutDrafts[this.day.id]);
+    this.loadInsights(daySessions);
+    this.loading = false;
   }
 
   ngOnDestroy(): void {
     if (this.draftTimer) clearTimeout(this.draftTimer);
   }
 
-  private buildExercises(): void {
+  private buildExercises(restOverrides: Record<string, number>): void {
     const week = this.state.currentWeek;
     const protocolDefault = this.parseRecSeconds(this.day.rec);
     this.exercises = this.day.ex.map(ex => {
@@ -80,7 +91,7 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
         ripPlaceholder: String(reps[i] ?? ''),
         loadPlaceholder: ''
       }));
-      const override = this.storage.getJSON<number>(this.restKey(ex.name));
+      const override = restOverrides[this.restKey(ex.name)];
       const restSeconds = override && override > 0 ? override : protocolDefault;
       return { ex, rows, open: true, insightVisible: false, insight: null, restSeconds };
     });
@@ -96,13 +107,12 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
   }
 
   private restKey(exName: string): string {
-    return `rest:${this.day.id}:${exName}`;
+    return `${this.day.id}:${exName}`;
   }
 
-  private loadDraft(): void {
-    const draft = this.storage.getJSON<{ exercises: { rows: SerieRow[] }[] }>(`draft:${this.day.id}`);
+  private loadDraft(draft: { rows: WorkoutDraftRow[] }[] | undefined): void {
     if (!draft) return;
-    draft.exercises.forEach((dex, i) => {
+    draft.forEach((dex, i) => {
       if (this.exercises[i]) {
         dex.rows.forEach((row, j) => {
           if (this.exercises[i].rows[j]) {
@@ -115,13 +125,11 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  private loadInsights(): void {
-    const keys = this.storage.list(`workout:${this.day.id}:`).sort();
-    if (keys.length === 0) return;
+  private loadInsights(daySessions: { id: string; session: WorkoutSession }[]): void {
+    if (daySessions.length === 0) return;
+    const sessions = daySessions.map(s => s.session);
 
-    const sessions = keys.map(k => this.storage.getJSON<WorkoutSession>(k)).filter(Boolean) as WorkoutSession[];
-
-    this.exercises.forEach((vm, exIdx) => {
+    this.exercises.forEach((vm) => {
       const exName = vm.ex.name;
 
       // Collect max loads per session for this exercise
@@ -146,13 +154,11 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
         });
       }
 
-      const lastKey = keys[keys.length - 1];
       const lastSession = sessions[sessions.length - 1];
       const lastEx = lastSession?.exercises.find(e => e.name === exName);
       let lastText = '';
-      if (lastEx && lastKey) {
-        const dateStr = lastKey.split(':')[2] ?? '';
-        const d = dateStr ? new Date(dateStr) : null;
+      if (lastEx && lastSession) {
+        const d = lastSession.date ? new Date(lastSession.date) : null;
         const dd = d ? `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}` : '';
         const maxLoad = Math.max(...lastEx.sets.map(s => parseFloat(s.load ?? '') || 0).filter(l => l > 0));
         lastText = dd ? `Ultimo (${dd}): ${maxLoad > 0 ? maxLoad + ' kg' : '—'}` : '';
@@ -208,8 +214,8 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
   }
 
   private saveDraft(): void {
-    const data = { exercises: this.exercises.map(vm => ({ rows: vm.rows })) };
-    this.storage.setJSON(`draft:${this.day.id}`, data);
+    const data = this.exercises.map(vm => ({ rows: vm.rows }));
+    this.appState.patchField(`workoutDrafts.${this.day.id}`, data);
   }
 
   getDoneCount(vm: ExerciseVM): number {
@@ -257,10 +263,10 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
     this.restModalValue = this.parseRecSeconds(this.day.rec);
   }
 
-  saveRestModal(): void {
+  async saveRestModal(): Promise<void> {
     if (!this.restModalVm) return;
     this.restModalVm.restSeconds = this.restModalValue;
-    this.storage.setJSON(this.restKey(this.restModalVm.ex.name), this.restModalValue);
+    await this.appState.patchField(`restOverrides.${this.restKey(this.restModalVm.ex.name)}`, this.restModalValue);
     this.closeRestModal();
   }
 
@@ -287,10 +293,9 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
         sets: vm.rows.map(r => ({ load: r.load || null, reps: r.reps || null, done: r.done }))
       }))
     };
-    const key = `workout:${this.day.id}:${isoDate}`;
-    const ok = this.storage.setJSON(key, session);
+    const ok = await this.sessions.save(session);
     if (ok) {
-      this.storage.delete(`draft:${this.day.id}`);
+      await this.appState.deleteFieldPath(`workoutDrafts.${this.day.id}`);
       this.saveStatus = 'saved';
       setTimeout(() => { this.saveStatus = 'idle'; }, 2000);
     } else {

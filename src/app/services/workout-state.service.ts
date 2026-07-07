@@ -1,5 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { DietMode } from '../models/diet.model';
+import { AppStateService } from './app-state.service';
 
 export interface RestTimerState {
   show: boolean;
@@ -24,9 +25,18 @@ export class WorkoutStateService {
 
   private ticker: ReturnType<typeof setInterval> | null = null;
   private closeTimeout: ReturnType<typeof setTimeout> | null = null;
+  private dietModeLoaded = false;
 
-  constructor() {
+  constructor(private appState: AppStateService) {
     this.currentWeek = this.computeAutoWeek(this.DEFAULT_PROGRAM_START);
+  }
+
+  /** Carica la modalita' dieta persistita su Firestore (idempotente, la carica una sola volta). */
+  async loadDietMode(): Promise<void> {
+    if (this.dietModeLoaded) return;
+    const state = await this.appState.load();
+    this.dietMode.set(state.dietMode ?? 'on');
+    this.dietModeLoaded = true;
   }
 
   private computeAutoWeek(startISO: string): number {
@@ -68,7 +78,9 @@ export class WorkoutStateService {
   }
 
   toggleDietMode(): void {
-    this.dietMode.set(this.dietMode() === 'on' ? 'off' : 'on');
+    const next = this.dietMode() === 'on' ? 'off' : 'on';
+    this.dietMode.set(next);
+    this.appState.patch({ dietMode: next });
   }
 
   formatTime(s: number): string {

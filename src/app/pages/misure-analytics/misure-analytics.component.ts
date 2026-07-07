@@ -39,18 +39,22 @@ export class MisureAnalyticsComponent implements OnInit {
   lastValue: string | null = null;
   delta: number | null = null;
 
+  private allEntries: import('../../models/measurement.model').MeasurementEntry[] = [];
   private allHistory: { date: string; value: number }[] = [];
+  loading = true;
 
   constructor(
     private data: MeasurementDataService,
     private sanitizer: DomSanitizer
   ) {}
 
-  ngOnInit(): void {
-    const history = this.data.loadHistory();
+  async ngOnInit(): Promise<void> {
+    this.loading = true;
+    const history = await this.data.loadHistory();
+    this.allEntries = history;
     this.hasAnyHistory = history.length > 0;
 
-    const lastValues = this.data.getLastValues();
+    const lastValues = await this.data.getLastValues();
     const buildGroup = (fields: MeasureField[]): FieldOption[] =>
       fields.map(field => ({
         field,
@@ -66,13 +70,14 @@ export class MisureAnalyticsComponent implements OnInit {
     const allOptions = [...this.group1, ...this.group2, ...this.group3];
     const firstWithData = allOptions.find(o => o.hasData);
     this.selectField(firstWithData ? firstWithData.field : this.group1[0].field);
+    this.loading = false;
   }
 
   selectField(field: MeasureField): void {
     this.selectedKey = field.key;
     this.selectedField = field;
 
-    const history = this.data.loadHistory().slice().reverse(); // dal piu' vecchio al piu' recente
+    const history = this.allEntries.slice().reverse(); // dal piu' vecchio al piu' recente
     const points = history
       .filter(e => !!e[field.key])
       .map(e => ({ date: e.date, value: parseFloat(e[field.key] as string) }))

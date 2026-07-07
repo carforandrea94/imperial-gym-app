@@ -1,9 +1,11 @@
-<div class="daymeta" *ngIf="day">
+<div *ngIf="loading" class="history-empty">Caricamento…</div>
+
+<div class="daymeta" *ngIf="day && !loading">
   <span>{{ day.label }}</span>
   <span class="rec">rec {{ day.rec }}</span>
 </div>
 
-<div class="exlist" *ngIf="day">
+<div class="exlist" *ngIf="day && !loading">
   <div class="ex" *ngFor="let vm of exercises; let i = index" [class.open]="vm.open">
 
     <div class="ex-summary" (click)="toggleEx(vm)">
@@ -79,7 +81,7 @@
   </div>
 </div>
 
-<div class="savebar" *ngIf="day">
+<div class="savebar" *ngIf="day && !loading">
   <button [class]="getSaveBtnClass()" (click)="saveWorkout()">
     {{ getSaveBtnText() }}
   </button>
