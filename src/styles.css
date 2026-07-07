@@ -257,7 +257,8 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 /* ===== CONFIRM DIALOG ===== */
 .confirmoverlay{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);padding:24px;}
 .confirmoverlay.show{display:flex;}
-.confirmbox{width:100%;max-width:320px;border-radius:20px;padding:22px 20px 16px;background:var(--content-glass-bg);backdrop-filter:blur(28px) saturate(200%);-webkit-backdrop-filter:blur(28px) saturate(200%);border:1px solid var(--content-glass-border);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 20px 50px rgba(0,0,0,.5);}
+.confirmbox{position:relative;width:100%;max-width:320px;border-radius:20px;padding:22px 20px 16px;background:var(--content-glass-bg);backdrop-filter:blur(28px) saturate(200%);-webkit-backdrop-filter:blur(28px) saturate(200%);border:1px solid var(--content-glass-border);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 20px 50px rgba(0,0,0,.5);}
+.confirmbox > *{position:relative;z-index:1;}
 .confirmtext{font-size:14.5px;color:var(--label);line-height:1.5;text-align:center;margin-bottom:18px;}
 .confirmbtns{display:flex;gap:10px;}
 .confirmbtn{flex:1;padding:12px;border-radius:14px;border:1px solid var(--content-glass-border);font-family:'Inter',sans-serif;font-weight:700;font-size:14.5px;cursor:pointer;}
