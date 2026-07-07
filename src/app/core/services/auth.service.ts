@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, NgZone } from '@angular/core';
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -17,6 +17,7 @@ import {
 } from 'firebase/firestore';
 import { FirebaseService } from './firebase.service';
 import { UserProfile } from '../models/user.model';
+import { inZone } from '../utils/zone.util';
 
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // esclusi 0/O/1/I/L per leggibilita'
 
@@ -36,18 +37,23 @@ export class AuthService {
   private readyResolve!: () => void;
   readonly ready: Promise<void> = new Promise(res => { this.readyResolve = res; });
 
-  constructor(private fb: FirebaseService) {
+  constructor(private fb: FirebaseService, private zone: NgZone) {
     onAuthStateChanged(this.fb.auth, async (fbUser: User | null) => {
-      if (!fbUser) {
-        this.currentUser.set(null);
-      } else {
-        const profile = await this.loadProfile(fbUser.uid);
-        this.currentUser.set(profile);
-      }
-      if (!this.authReady()) {
-        this.authReady.set(true);
-        this.readyResolve();
-      }
+      // L'SDK Firebase puo' invocare questo callback fuori dalla zone di
+      // Angular: senza zone.run() i signal si aggiornerebbero ma la vista
+      // (navbar/tabbar/guard) non si ridisegnerebbe di conseguenza.
+      await this.zone.run(async () => {
+        if (!fbUser) {
+          this.currentUser.set(null);
+        } else {
+          const profile = await this.loadProfile(fbUser.uid);
+          this.currentUser.set(profile);
+        }
+        if (!this.authReady()) {
+          this.authReady.set(true);
+          this.readyResolve();
+        }
+      });
     });
   }
 
@@ -56,22 +62,26 @@ export class AuthService {
     return snap.exists() ? (snap.data() as UserProfile) : null;
   }
 
-  async login(email: string, password: string): Promise<UserProfile> {
-    const cred = await signInWithEmailAndPassword(this.fb.auth, email.trim(), password);
-    const profile = await this.loadProfile(cred.user.uid);
+  login(email: string, password: string): Promise<UserProfile> {
+    return inZone(this.zone, (async () => {
+      const cred = await signInWithEmailAndPassword(this.fb.auth, email.trim(), password);
+      const profile = await this.loadProfile(cred.user.uid);
 
-    if (!profile) {
-      await signOut(this.fb.auth);
-      throw new Error('Profilo utente non trovato.');
-    }
+      if (!profile) {
+        await signOut(this.fb.auth);
+        throw new Error('Profilo utente non trovato.');
+      }
 
-    this.currentUser.set(profile);
-    return profile;
+      this.currentUser.set(profile);
+      return profile;
+    })());
   }
 
-  async logout(): Promise<void> {
-    await signOut(this.fb.auth);
-    this.currentUser.set(null);
+  logout(): Promise<void> {
+    return inZone(this.zone, (async () => {
+      await signOut(this.fb.auth);
+      this.currentUser.set(null);
+    })());
   }
 
   /**
@@ -79,23 +89,25 @@ export class AuthService {
    * (coachCodes/{code} -> coachId), che il coach comunichera' ai propri
    * client perche' possano accoppiarsi in fase di registrazione.
    */
-  async registerCoach(email: string, password: string, displayName: string): Promise<UserProfile> {
-    const cred = await createUserWithEmailAndPassword(this.fb.auth, email.trim(), password);
-    const pairingCode = generateCode();
-    const profile: UserProfile = {
-      uid: cred.user.uid,
-      email: email.trim(),
-      displayName: displayName.trim(),
-      role: 'coach',
-      pairingCode,
-      coachId: null,
-      paired: true,
-      createdAt: new Date().toISOString()
-    };
-    await setDoc(doc(this.fb.db, 'users', profile.uid), profile);
-    await setDoc(doc(this.fb.db, 'coachCodes', pairingCode), { coachId: profile.uid });
-    this.currentUser.set(profile);
-    return profile;
+  registerCoach(email: string, password: string, displayName: string): Promise<UserProfile> {
+    return inZone(this.zone, (async () => {
+      const cred = await createUserWithEmailAndPassword(this.fb.auth, email.trim(), password);
+      const pairingCode = generateCode();
+      const profile: UserProfile = {
+        uid: cred.user.uid,
+        email: email.trim(),
+        displayName: displayName.trim(),
+        role: 'coach',
+        pairingCode,
+        coachId: null,
+        paired: true,
+        createdAt: new Date().toISOString()
+      };
+      await setDoc(doc(this.fb.db, 'users', profile.uid), profile);
+      await setDoc(doc(this.fb.db, 'coachCodes', pairingCode), { coachId: profile.uid });
+      this.currentUser.set(profile);
+      return profile;
+    })());
   }
 
   /**
@@ -103,43 +115,47 @@ export class AuthService {
    * codice univoco del proprio coach (verificato tramite coachCodes,
    * leggibile pubblicamente anche prima di avere un account).
    */
-  async registerClient(displayName: string, email: string, password: string, coachCode: string): Promise<UserProfile> {
-    const code = coachCode.trim().toUpperCase();
-    if (!code) throw new Error('Inserisci il codice del tuo coach.');
+  registerClient(displayName: string, email: string, password: string, coachCode: string): Promise<UserProfile> {
+    return inZone(this.zone, (async () => {
+      const code = coachCode.trim().toUpperCase();
+      if (!code) throw new Error('Inserisci il codice del tuo coach.');
 
-    const codeSnap = await getDoc(doc(this.fb.db, 'coachCodes', code));
-    if (!codeSnap.exists()) {
-      throw new Error('Codice coach non valido. Controlla di averlo scritto correttamente.');
-    }
-    const coachId = (codeSnap.data() as { coachId: string }).coachId;
+      const codeSnap = await getDoc(doc(this.fb.db, 'coachCodes', code));
+      if (!codeSnap.exists()) {
+        throw new Error('Codice coach non valido. Controlla di averlo scritto correttamente.');
+      }
+      const coachId = (codeSnap.data() as { coachId: string }).coachId;
 
-    const cred = await createUserWithEmailAndPassword(this.fb.auth, email.trim(), password);
-    const profile: UserProfile = {
-      uid: cred.user.uid,
-      email: email.trim(),
-      displayName: displayName.trim(),
-      role: 'client',
-      pairingCode: generateCode(),
-      coachId,
-      paired: true,
-      createdAt: new Date().toISOString()
-    };
-    await setDoc(doc(this.fb.db, 'users', profile.uid), profile);
-    this.currentUser.set(profile);
-    return profile;
+      const cred = await createUserWithEmailAndPassword(this.fb.auth, email.trim(), password);
+      const profile: UserProfile = {
+        uid: cred.user.uid,
+        email: email.trim(),
+        displayName: displayName.trim(),
+        role: 'client',
+        pairingCode: generateCode(),
+        coachId,
+        paired: true,
+        createdAt: new Date().toISOString()
+      };
+      await setDoc(doc(this.fb.db, 'users', profile.uid), profile);
+      this.currentUser.set(profile);
+      return profile;
+    })());
   }
 
   /** Lista dei clienti associati al coach loggato. */
-  async listClients(): Promise<UserProfile[]> {
-    const coach = this.currentUser();
-    if (!coach || coach.role !== 'coach') return [];
-    const q = query(
-      collection(this.fb.db, 'users'),
-      where('role', '==', 'client'),
-      where('coachId', '==', coach.uid)
-    );
-    const snap = await getDocs(q);
-    return snap.docs.map(d => d.data() as UserProfile);
+  listClients(): Promise<UserProfile[]> {
+    return inZone(this.zone, (async () => {
+      const coach = this.currentUser();
+      if (!coach || coach.role !== 'coach') return [];
+      const q = query(
+        collection(this.fb.db, 'users'),
+        where('role', '==', 'client'),
+        where('coachId', '==', coach.uid)
+      );
+      const snap = await getDocs(q);
+      return snap.docs.map(d => d.data() as UserProfile);
+    })());
   }
 
   /**
@@ -147,13 +163,15 @@ export class AuthService {
    * pubblica coachCodes: se manca la voce di lookup per il proprio codice,
    * la ricrea. Idempotente, sicuro da richiamare ad ogni apertura pagina.
    */
-  async ensureCoachCode(): Promise<void> {
-    const coach = this.currentUser();
-    if (!coach || coach.role !== 'coach' || !coach.pairingCode) return;
-    const codeSnap = await getDoc(doc(this.fb.db, 'coachCodes', coach.pairingCode));
-    if (!codeSnap.exists()) {
-      await setDoc(doc(this.fb.db, 'coachCodes', coach.pairingCode), { coachId: coach.uid });
-    }
+  ensureCoachCode(): Promise<void> {
+    return inZone(this.zone, (async () => {
+      const coach = this.currentUser();
+      if (!coach || coach.role !== 'coach' || !coach.pairingCode) return;
+      const codeSnap = await getDoc(doc(this.fb.db, 'coachCodes', coach.pairingCode));
+      if (!codeSnap.exists()) {
+        await setDoc(doc(this.fb.db, 'coachCodes', coach.pairingCode), { coachId: coach.uid });
+      }
+    })());
   }
 
   get isCoach(): boolean {

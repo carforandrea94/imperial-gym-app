@@ -1,7 +1,8 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { doc, getDoc, setDoc, updateDoc, deleteField } from 'firebase/firestore';
 import { FirebaseService } from '../core/services/firebase.service';
 import { AuthService } from '../core/services/auth.service';
+import { inZone } from '../core/utils/zone.util';
 
 export interface WorkoutDraftRow {
   reps: string;
@@ -31,18 +32,20 @@ function emptyState(): AppState {
 export class AppStateService {
   private cache: AppState | null = null;
 
-  constructor(private fb: FirebaseService, private auth: AuthService) {}
+  constructor(private fb: FirebaseService, private auth: AuthService, private zone: NgZone) {}
 
   private ref() {
     const uid = this.auth.currentUser()!.uid;
     return doc(this.fb.db, 'users', uid, 'state', 'app');
   }
 
-  async load(): Promise<AppState> {
-    if (this.cache) return this.cache;
-    const snap = await getDoc(this.ref());
-    this.cache = snap.exists() ? { ...emptyState(), ...(snap.data() as AppState) } : emptyState();
-    return this.cache;
+  load(): Promise<AppState> {
+    if (this.cache) return Promise.resolve(this.cache);
+    return inZone(this.zone, (async () => {
+      const snap = await getDoc(this.ref());
+      this.cache = snap.exists() ? { ...emptyState(), ...(snap.data() as AppState) } : emptyState();
+      return this.cache;
+    })());
   }
 
   private async ensureDoc(): Promise<void> {
@@ -52,24 +55,30 @@ export class AppStateService {
     }
   }
 
-  async patch(partial: Partial<AppState>): Promise<void> {
-    await this.ensureDoc();
-    await updateDoc(this.ref(), partial as any);
-    this.cache = { ...(this.cache ?? emptyState()), ...partial };
+  patch(partial: Partial<AppState>): Promise<void> {
+    return inZone(this.zone, (async () => {
+      await this.ensureDoc();
+      await updateDoc(this.ref(), partial as any);
+      this.cache = { ...(this.cache ?? emptyState()), ...partial };
+    })());
   }
 
   /** Aggiorna un campo annidato tramite dot-notation (es. 'workoutDrafts.day0'). */
-  async patchField(path: string, value: unknown): Promise<void> {
-    await this.ensureDoc();
-    await updateDoc(this.ref(), { [path]: value } as any);
-    this.invalidateCache();
+  patchField(path: string, value: unknown): Promise<void> {
+    return inZone(this.zone, (async () => {
+      await this.ensureDoc();
+      await updateDoc(this.ref(), { [path]: value } as any);
+      this.invalidateCache();
+    })());
   }
 
   /** Rimuove un campo annidato tramite dot-notation. */
-  async deleteFieldPath(path: string): Promise<void> {
-    await this.ensureDoc();
-    await updateDoc(this.ref(), { [path]: deleteField() } as any);
-    this.invalidateCache();
+  deleteFieldPath(path: string): Promise<void> {
+    return inZone(this.zone, (async () => {
+      await this.ensureDoc();
+      await updateDoc(this.ref(), { [path]: deleteField() } as any);
+      this.invalidateCache();
+    })());
   }
 
   invalidateCache(): void {

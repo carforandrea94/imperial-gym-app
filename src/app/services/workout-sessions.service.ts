@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import {
   doc,
   getDoc,
@@ -12,6 +12,7 @@ import {
 import { FirebaseService } from '../core/services/firebase.service';
 import { AuthService } from '../core/services/auth.service';
 import { WorkoutSession } from '../models/workout.model';
+import { inZone } from '../core/utils/zone.util';
 
 /**
  * Storico allenamenti (users/{uid}/sessions/{id}), id = `${dayId}_${isoDate}`
@@ -20,7 +21,7 @@ import { WorkoutSession } from '../models/workout.model';
  */
 @Injectable({ providedIn: 'root' })
 export class WorkoutSessionsService {
-  constructor(private fb: FirebaseService, private auth: AuthService) {}
+  constructor(private fb: FirebaseService, private auth: AuthService, private zone: NgZone) {}
 
   private col() {
     const uid = this.auth.currentUser()!.uid;
@@ -31,39 +32,47 @@ export class WorkoutSessionsService {
     return `${dayId}_${isoDate}`;
   }
 
-  async save(session: WorkoutSession): Promise<boolean> {
-    try {
-      const id = this.sessionId(session.dayId, session.date);
-      await setDoc(doc(this.col(), id), session);
-      return true;
-    } catch {
-      return false;
-    }
+  save(session: WorkoutSession): Promise<boolean> {
+    return inZone(this.zone, (async () => {
+      try {
+        const id = this.sessionId(session.dayId, session.date);
+        await setDoc(doc(this.col(), id), session);
+        return true;
+      } catch {
+        return false;
+      }
+    })());
   }
 
-  async get(id: string): Promise<WorkoutSession | null> {
-    const snap = await getDoc(doc(this.col(), id));
-    return snap.exists() ? (snap.data() as WorkoutSession) : null;
+  get(id: string): Promise<WorkoutSession | null> {
+    return inZone(this.zone, (async () => {
+      const snap = await getDoc(doc(this.col(), id));
+      return snap.exists() ? (snap.data() as WorkoutSession) : null;
+    })());
   }
 
-  async delete(id: string): Promise<void> {
-    await deleteDoc(doc(this.col(), id));
+  delete(id: string): Promise<void> {
+    return inZone(this.zone, deleteDoc(doc(this.col(), id)));
   }
 
   /** Tutte le sessioni salvate (storico completo), piu' recenti prima. */
-  async listAll(): Promise<{ id: string; session: WorkoutSession }[]> {
-    const snap = await getDocs(this.col());
-    return snap.docs
-      .map(d => ({ id: d.id, session: d.data() as WorkoutSession }))
-      .sort((a, b) => b.session.date.localeCompare(a.session.date));
+  listAll(): Promise<{ id: string; session: WorkoutSession }[]> {
+    return inZone(this.zone, (async () => {
+      const snap = await getDocs(this.col());
+      return snap.docs
+        .map(d => ({ id: d.id, session: d.data() as WorkoutSession }))
+        .sort((a, b) => b.session.date.localeCompare(a.session.date));
+    })());
   }
 
   /** Sessioni salvate per un giorno specifico (usato per gli insight di progressione). */
-  async listForDay(dayId: string): Promise<{ id: string; session: WorkoutSession }[]> {
-    const q = query(this.col(), where('dayId', '==', dayId));
-    const snap = await getDocs(q);
-    return snap.docs
-      .map(d => ({ id: d.id, session: d.data() as WorkoutSession }))
-      .sort((a, b) => a.session.date.localeCompare(b.session.date));
+  listForDay(dayId: string): Promise<{ id: string; session: WorkoutSession }[]> {
+    return inZone(this.zone, (async () => {
+      const q = query(this.col(), where('dayId', '==', dayId));
+      const snap = await getDocs(q);
+      return snap.docs
+        .map(d => ({ id: d.id, session: d.data() as WorkoutSession }))
+        .sort((a, b) => a.session.date.localeCompare(b.session.date));
+    })());
   }
 }

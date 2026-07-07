@@ -1,4 +1,4 @@
-import { Component, OnInit, NgZone, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -17,12 +17,7 @@ export class CoachClientiComponent implements OnInit {
   errorMsg = '';
   copied = false;
 
-  constructor(
-    public auth: AuthService,
-    private router: Router,
-    private zone: NgZone,
-    private cdr: ChangeDetectorRef
-  ) {}
+  constructor(public auth: AuthService, private router: Router) {}
 
   ngOnInit(): void {
     this.auth.ensureCoachCode().catch(e => console.error('Errore ensureCoachCode:', e));
@@ -38,21 +33,15 @@ export class CoachClientiComponent implements OnInit {
     );
 
     try {
-      const result = await Promise.race([this.auth.listClients(), timeout]);
-      this.zone.run(() => {
-        this.clients = result;
-        this.loading = false;
-      });
+      this.clients = await Promise.race([this.auth.listClients(), timeout]);
     } catch (e: any) {
       console.error('Errore caricamento clienti:', e);
-      this.zone.run(() => {
-        this.errorMsg = e?.message === 'TIMEOUT'
-          ? 'La connessione sta impiegando troppo tempo. Controlla la rete e riprova.'
-          : 'Errore nel caricamento dei clienti. Riprova.';
-        this.loading = false;
-      });
+      this.errorMsg = e?.message === 'TIMEOUT'
+        ? 'La connessione sta impiegando troppo tempo. Controlla la rete e riprova.'
+        : 'Errore nel caricamento dei clienti. Riprova.';
+    } finally {
+      this.loading = false;
     }
-    this.cdr.detectChanges();
   }
 
   openClient(c: UserProfile): void {

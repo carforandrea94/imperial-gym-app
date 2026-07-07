@@ -1,9 +1,10 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { doc, getDoc, setDoc, deleteDoc, collection, getDocs } from 'firebase/firestore';
 import { FirebaseService } from '../core/services/firebase.service';
 import { AuthService } from '../core/services/auth.service';
 import { AppStateService } from './app-state.service';
 import { MeasurementEntry, ALL_MEASURE_FIELDS, MeasurementKey } from '../models/measurement.model';
+import { inZone } from '../core/utils/zone.util';
 
 /**
  * Dati misure su Firestore:
@@ -16,7 +17,8 @@ export class MeasurementDataService {
   constructor(
     private fb: FirebaseService,
     private auth: AuthService,
-    private appState: AppStateService
+    private appState: AppStateService,
+    private zone: NgZone
   ) {}
 
   private col() {
@@ -38,29 +40,35 @@ export class MeasurementDataService {
   }
 
   /** Tutte le voci storiche, ordinate dalla piu' recente. */
-  async loadHistory(): Promise<MeasurementEntry[]> {
-    const snap = await getDocs(this.col());
-    return snap.docs
-      .map(d => d.data() as MeasurementEntry)
-      .sort((a, b) => b.date.localeCompare(a.date));
+  loadHistory(): Promise<MeasurementEntry[]> {
+    return inZone(this.zone, (async () => {
+      const snap = await getDocs(this.col());
+      return snap.docs
+        .map(d => d.data() as MeasurementEntry)
+        .sort((a, b) => b.date.localeCompare(a.date));
+    })());
   }
 
-  async saveEntry(entry: MeasurementEntry): Promise<boolean> {
-    try {
-      await setDoc(doc(this.col(), entry.date), entry);
-      return true;
-    } catch {
-      return false;
-    }
+  saveEntry(entry: MeasurementEntry): Promise<boolean> {
+    return inZone(this.zone, (async () => {
+      try {
+        await setDoc(doc(this.col(), entry.date), entry);
+        return true;
+      } catch {
+        return false;
+      }
+    })());
   }
 
-  async deleteEntry(date: string): Promise<boolean> {
-    try {
-      await deleteDoc(doc(this.col(), date));
-      return true;
-    } catch {
-      return false;
-    }
+  deleteEntry(date: string): Promise<boolean> {
+    return inZone(this.zone, (async () => {
+      try {
+        await deleteDoc(doc(this.col(), date));
+        return true;
+      } catch {
+        return false;
+      }
+    })());
   }
 
   /** Per ogni campo, l'ultimo valore registrato nello storico (per i placeholder in form). */
