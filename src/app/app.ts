@@ -259,8 +259,8 @@ export class App implements OnInit, OnDestroy {
     }
 
     // Default: /scheda
-    this.navTitle = 'Protocollo Cut';
-    this.navSubtitle = 'Andrea Carfora';
+    this.navTitle = this.workoutData.hasCustomProtocol ? (this.workoutData.protocolName || 'Scheda') : 'Scheda';
+    this.navSubtitle = this.auth.currentUser()?.displayName ?? '';
     this.showBack = false;
     this.showHistory = true;
     this.showInfo = true;

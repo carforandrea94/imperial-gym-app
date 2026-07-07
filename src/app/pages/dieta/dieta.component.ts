@@ -62,6 +62,10 @@ export class DietaComponent implements OnInit {
     }
   }
 
+  get hasAnyFood(): boolean {
+    return this.meals.some(vm => this.getItems(vm).length > 0);
+  }
+
   hasVariants(vm: MealVM): boolean {
     return !!(this.getMeal(vm.key)?.variants?.length);
   }

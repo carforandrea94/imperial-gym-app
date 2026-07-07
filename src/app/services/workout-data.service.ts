@@ -50,48 +50,10 @@ export class WorkoutDataService {
 
   DEFAULT_PROGRAM_START = '2026-07-05';
   hasCustomProtocol = false;
+  infoNote = '';
+  protocolName = '';
 
-  days: Day[] = [
-    {
-      id: 'day1', label: 'Petto · Spalle · Tricipiti', rec: '60–90"',
-      ex: [
-        { name: 'Spinte manubri panca piana', scheme: 'wave', sets: 6, muscle: 'Petto' },
-        { name: 'Dips machine / parallele', scheme: 'wave', sets: 6, muscle: 'Petto' },
-        { name: 'Chest press', scheme: 'plain', text: '3×12-10-8', sets: 3, muscle: 'Petto', reps: [12, 10, 8] },
-        { name: 'Alzate laterali manubri in piedi', scheme: 'wave', sets: 6, muscle: 'Spalle' },
-        { name: 'Alzate manubri, petto su panca a 45°', scheme: 'plain', text: '3×10/12', sets: 3, muscle: 'Spalle', reps: ['10-12', '10-12', '10-12'] },
-        { name: 'French press manubri, sdraiato', scheme: 'wave', sets: 6, muscle: 'Tricipiti' },
-        { name: 'Push down girato di schiena al pacco pesi', scheme: 'plain', text: '3×8/12', sets: 3, muscle: 'Tricipiti', reps: ['8-12', '8-12', '8-12'] },
-        { name: 'Flessioni del busto al cavo o alla lat machine', scheme: 'plain', text: '4×12/15', sets: 4, muscle: 'Core', reps: ['12-15', '12-15', '12-15', '12-15'] },
-        { name: 'Inversi su panca', scheme: 'plain', text: '3×MAX', sets: 3, muscle: 'Core', reps: ['MAX', 'MAX', 'MAX'] }
-      ]
-    },
-    {
-      id: 'day2', label: 'Dorso · Delt. Post. · Bicipiti', rec: '60–90"',
-      ex: [
-        { name: 'Lat machine avanti', scheme: 'plain', text: '5×8', sets: 5, muscle: 'Dorso', reps: [8, 8, 8, 8, 8] },
-        { name: 'T bar', scheme: 'wave', sets: 6, muscle: 'Dorso' },
-        { name: 'Rematore manubrio', scheme: 'wave', sets: 6, muscle: 'Dorso' },
-        { name: 'Lat inversa', scheme: 'plain', text: '4×10/12', sets: 4, muscle: 'Spalle', reps: ['10-12', '10-12', '10-12', '10-12'] },
-        { name: 'Croci ai cavi incrociati', scheme: 'plain', text: '3×12/15', sets: 3, muscle: 'Spalle', reps: ['12-15', '12-15', '12-15'] },
-        { name: 'Curl bilanciere', scheme: 'wave', sets: 6, muscle: 'Bicipiti' },
-        { name: 'Curl manubri a martello', scheme: 'plain', text: '4×10', note: '+ ultima serie in strip, carico ridotto meno del 30%', sets: 4, muscle: 'Bicipiti', reps: [10, 10, 10, 10] },
-        { name: 'Crunch su fitball', scheme: 'plain', text: '3×2\'', sets: 3, muscle: 'Core', reps: ["2'", "2'", "2'"] },
-        { name: 'Ginocchia al petto da seduto', scheme: 'plain', text: '3×MAX', sets: 3, muscle: 'Core', reps: ['MAX', 'MAX', 'MAX'] }
-      ]
-    },
-    {
-      id: 'day3', label: 'Gambe', rec: '60–90"',
-      ex: [
-        { name: 'Squat al M.Power', scheme: 'wave', sets: 6, muscle: 'Gambe' },
-        { name: 'Leg press 45°', scheme: 'plain', text: '4×8/12', sets: 4, muscle: 'Gambe', reps: ['8-12', '8-12', '8-12', '8-12'] },
-        { name: 'Split squat al M.Power', scheme: 'plain', text: '3×12/15', note: 'fermo in basso di 2"', sets: 3, muscle: 'Gambe', reps: ['12-15', '12-15', '12-15'] },
-        { name: 'Leg extension unilaterale', scheme: 'plain', text: '2×8 + 1×20', sets: 3, muscle: 'Gambe', reps: [8, 8, 20] },
-        { name: 'Leg curl in piedi', scheme: 'plain', text: '4×8/12', sets: 4, muscle: 'Gambe', reps: ['8-12', '8-12', '8-12', '8-12'] },
-        { name: 'Hip thrust con bilanciere + affondi camminando', scheme: 'plain', text: '3×(12+12)', sets: 3, muscle: 'Gambe', reps: ['12+12', '12+12', '12+12'] }
-      ]
-    }
-  ];
+  days: Day[] = [];
 
   /** Sostituisce i dati demo con il protocollo attivo del client caricato da Firestore. */
   applyProtocol(wp: WorkoutProtocol): void {

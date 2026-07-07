@@ -7,7 +7,13 @@
 
 <p class="sectiontitle">Piano alimentare — Giorno {{ mode.toUpperCase() }}</p>
 
+<div *ngIf="!hasAnyFood" class="history-empty">
+  Il tuo coach non ha ancora caricato il tuo piano alimentare.<br>
+  Torna a controllare più tardi.
+</div>
+
 <!-- Meals -->
+<ng-container *ngIf="hasAnyFood">
 <div *ngFor="let vm of meals">
   <div class="meal" [class.open]="vm.open">
     <div class="meal-summary" (click)="toggleMeal(vm)">
@@ -69,3 +75,4 @@
     <li>In caso di fame eccessiva aggiungi verdure fresche illimitate</li>
   </ul>
 </div>
+</ng-container>

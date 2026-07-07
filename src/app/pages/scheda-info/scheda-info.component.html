@@ -1,41 +1,47 @@
-<div class="infocard">
-  <h3>Il programma</h3>
-  <p>Programma di forza ipertrofia su <b>3 giorni</b> con wave loading su 8 settimane. I giorni sono:</p>
-  <p><b>Giorno 1</b> — Petto · Spalle · Tricipiti</p>
-  <p><b>Giorno 2</b> — Dorso · Delt. Post. · Bicipiti</p>
-  <p><b>Giorno 3</b> — Gambe</p>
+<div *ngIf="!workoutData.hasCustomProtocol" class="history-empty">
+  Il tuo coach non ha ancora caricato il tuo programma.<br>
+  Torna a controllare più tardi.
 </div>
 
-<div class="infocard">
-  <h3>Onda di carico (Wave Loading)</h3>
-  <p>Gli esercizi <b>wave</b> seguono questa progressione di 8 settimane:</p>
-  <div class="infowave" *ngFor="let wp of weekPlan; let i = index">
-    S{{ i + 1 }} → {{ wp.sets }}×{{ wp.reps }} reps
-    <span *ngIf="i + 1 === currentWeek" style="margin-left:8px;color:#30D158">← sei qui</span>
+<ng-container *ngIf="workoutData.hasCustomProtocol">
+
+  <div class="infocard" *ngIf="workoutData.infoNote">
+    <h3>Note dal tuo coach</h3>
+    <p style="white-space:pre-wrap">{{ workoutData.infoNote }}</p>
   </div>
-</div>
 
-<div class="infocard">
-  <h3>Settimana automatica</h3>
-  <p>La settimana corrente viene calcolata automaticamente dalla data di inizio programma: <b>5 luglio 2026</b>.</p>
-  <p>Settimana attuale: <b>S{{ currentWeek }}</b></p>
-</div>
+  <div class="infocard" *ngIf="weekPlan.length > 0">
+    <h3>Onda di carico (Wave Loading)</h3>
+    <p>Gli esercizi <b>wave</b> seguono questa progressione:</p>
+    <div class="infowave" *ngFor="let wp of weekPlan; let i = index">
+      S{{ i + 1 }} → {{ wp.sets }}×{{ wp.reps }} reps
+      <span *ngIf="i + 1 === currentWeek" style="margin-left:8px;color:#30D158">← sei qui</span>
+    </div>
+  </div>
 
-<div class="infocard">
-  <h3>Storico e carichi</h3>
-  <p>Ogni allenamento completato viene salvato localmente. Nella scheda dettaglio puoi vedere:</p>
-  <p>— L'ultimo carico usato per ogni esercizio (suggerito come placeholder)</p>
-  <p>— Il grafico sparkline della progressione dei carichi</p>
-  <p>— Un suggerimento di carico per gli esercizi wave</p>
-</div>
+  <div class="infocard">
+    <h3>Settimana automatica</h3>
+    <p>La settimana corrente viene calcolata automaticamente dalla data di inizio del tuo programma.</p>
+    <p>Settimana attuale: <b>S{{ currentWeek }}</b></p>
+  </div>
 
-<div class="consigli">
-  <h3>Consigli generali</h3>
-  <ul>
-    <li>Recupero tra le serie: 60–90 secondi (timer automatico)</li>
-    <li>Progressione: aumenta il carico quando completi tutte le serie con buona tecnica</li>
-    <li>Per gli esercizi wave: aumenta di 2.5–5 kg quando completi tutte le serie</li>
-    <li>Bevi almeno 2L di acqua al giorno, di più nei giorni di allenamento</li>
-    <li>Assicurati di dormire almeno 7–8 ore per ottimizzare il recupero</li>
-  </ul>
-</div>
+  <div class="infocard">
+    <h3>Storico e carichi</h3>
+    <p>Ogni allenamento completato viene salvato sul tuo account. Nella scheda dettaglio puoi vedere:</p>
+    <p>— L'ultimo carico usato per ogni esercizio (suggerito come placeholder)</p>
+    <p>— Il grafico sparkline della progressione dei carichi</p>
+    <p>— Un suggerimento di carico per gli esercizi wave</p>
+  </div>
+
+  <div class="consigli">
+    <h3>Consigli generali</h3>
+    <ul>
+      <li>Recupero tra le serie: segui i tempi indicati (timer automatico)</li>
+      <li>Progressione: aumenta il carico quando completi tutte le serie con buona tecnica</li>
+      <li>Per gli esercizi wave: aumenta di 2.5–5 kg quando completi tutte le serie</li>
+      <li>Bevi almeno 2L di acqua al giorno, di più nei giorni di allenamento</li>
+      <li>Assicurati di dormire almeno 7–8 ore per ottimizzare il recupero</li>
+    </ul>
+  </div>
+
+</ng-container>

@@ -1,24 +1,31 @@
-<div class="weekpicker">
-  <div class="wk-info">
-    <div class="wk-label">Settimana {{ currentWeek }} di 8 &nbsp;·&nbsp; {{ getWaveInfo() }}</div>
-    <div class="wk-sub">WAVE LOADING — S{{ currentWeek }}</div>
-    <div class="weekdots">
-      <span *ngFor="let w of weeks" [class.active]="w === currentWeek"></span>
-    </div>
-  </div>
-</div>
-
-<p class="sectiontitle">Allenamenti</p>
-
-<div class="grouplist">
-  <div class="daycard press-fx" *ngFor="let day of days; let i = index" (click)="goToDay(i)">
-    <div class="badge">{{ i + 1 }}</div>
-    <div class="info">
-      <div class="lbl">{{ day.label }}</div>
-      <div class="meta">{{ getExCount(i) }} esercizi &nbsp;·&nbsp; rec {{ day.rec }}
-        <span *ngIf="hasDraft(day.id)" style="color:var(--accent);margin-left:6px">● bozza</span>
+<ng-container *ngIf="days.length > 0">
+  <div class="weekpicker">
+    <div class="wk-info">
+      <div class="wk-label">Settimana {{ currentWeek }} di 8 &nbsp;·&nbsp; {{ getWaveInfo() }}</div>
+      <div class="wk-sub">WAVE LOADING — S{{ currentWeek }}</div>
+      <div class="weekdots">
+        <span *ngFor="let w of weeks" [class.active]="w === currentWeek"></span>
       </div>
     </div>
-    <span class="chev">›</span>
   </div>
+
+  <p class="sectiontitle">Allenamenti</p>
+
+  <div class="grouplist">
+    <div class="daycard press-fx" *ngFor="let day of days; let i = index" (click)="goToDay(i)">
+      <div class="badge">{{ i + 1 }}</div>
+      <div class="info">
+        <div class="lbl">{{ day.label }}</div>
+        <div class="meta">{{ getExCount(i) }} esercizi &nbsp;·&nbsp; rec {{ day.rec }}
+          <span *ngIf="hasDraft(day.id)" style="color:var(--accent);margin-left:6px">● bozza</span>
+        </div>
+      </div>
+      <span class="chev">›</span>
+    </div>
+  </div>
+</ng-container>
+
+<div *ngIf="days.length === 0" class="history-empty">
+  Il tuo coach non ha ancora caricato il tuo programma di allenamento.<br>
+  Torna a controllare più tardi.
 </div>

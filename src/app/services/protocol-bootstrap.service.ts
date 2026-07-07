@@ -27,6 +27,8 @@ export class ProtocolBootstrapService {
       const active = await this.protocolSvc.getActiveForClient(user.uid);
       if (active) {
         this.workoutData.applyProtocol(active.workout);
+        this.workoutData.infoNote = active.infoNote ?? '';
+        this.workoutData.protocolName = active.name ?? '';
         this.dietData.applyDiet(active.diet);
         this.workoutState.recomputeWeek(active.workout.programStart, active.workout.weekPlan.length);
       }
