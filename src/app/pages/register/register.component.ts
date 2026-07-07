@@ -5,15 +5,17 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
-  selector: 'app-login',
+  selector: 'app-register',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
-  templateUrl: './login.component.html',
+  templateUrl: './register.component.html',
   styles: [`:host { display: block; }`]
 })
-export class LoginComponent {
+export class RegisterComponent {
+  displayName = '';
   email = '';
   password = '';
+  coachCode = '';
 
   loading = false;
   errorMsg = '';
@@ -21,7 +23,11 @@ export class LoginComponent {
   constructor(private auth: AuthService, private router: Router) {}
 
   async submit(): Promise<void> {
-    if (!this.email || !this.password) return;
+    if (!this.displayName || !this.email || !this.password || !this.coachCode) return;
+    if (this.password.length < 6) {
+      this.errorMsg = 'La password deve avere almeno 6 caratteri.';
+      return;
+    }
     this.loading = true;
     this.errorMsg = '';
 
@@ -30,23 +36,21 @@ export class LoginComponent {
     );
 
     try {
-      const profile = await Promise.race([
-        this.auth.login(this.email, this.password),
+      await Promise.race([
+        this.auth.registerClient(this.displayName, this.email, this.password, this.coachCode),
         timeout
-      ]) as Awaited<ReturnType<AuthService['login']>>;
-      if (profile.role === 'coach') {
-        this.router.navigate(['/coach/bacheca']);
-      } else {
-        this.router.navigate(['/scheda']);
-      }
+      ]);
+      this.router.navigate(['/scheda']);
     } catch (e: any) {
-      console.error('Errore login:', e);
+      console.error('Errore registrazione cliente:', e);
       if (e?.message === 'TIMEOUT') {
         this.errorMsg = 'La richiesta sta impiegando troppo tempo. Riprova.';
-      } else if (e?.code === 'auth/invalid-credential' || e?.code === 'auth/wrong-password' || e?.code === 'auth/user-not-found') {
-        this.errorMsg = 'Email o password non corrette.';
+      } else if (e?.code === 'auth/email-already-in-use') {
+        this.errorMsg = 'Questa email e\' gia\' registrata.';
+      } else if (e?.message?.startsWith('Codice coach')) {
+        this.errorMsg = e.message;
       } else {
-        this.errorMsg = e?.message || 'Errore durante l\'accesso. Riprova.';
+        this.errorMsg = e?.message || 'Errore durante la registrazione. Riprova.';
       }
     } finally {
       this.loading = false;

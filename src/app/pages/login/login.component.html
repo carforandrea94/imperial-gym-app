@@ -17,19 +17,13 @@
       </div>
     </div>
 
-    <div class="authfield" *ngIf="needsCode">
-      <label>Codice di accoppiamento (primo accesso)</label>
-      <div class="measure-input-wrap">
-        <input type="text" autocapitalize="characters" [(ngModel)]="pairingCode" placeholder="ES. AB12CD" />
-      </div>
-    </div>
-
     <p class="autherror" *ngIf="errorMsg">{{ errorMsg }}</p>
 
     <button class="savebtn" [disabled]="loading" (click)="submit()">
       {{ loading ? 'Accesso in corso…' : 'Accedi' }}
     </button>
 
+    <a class="authlink" routerLink="/registrati">Sei un cliente? Crea il tuo account</a>
     <a class="authlink" routerLink="/coach/registrati">Sei un coach? Crea il tuo account</a>
   </div>
 </div>

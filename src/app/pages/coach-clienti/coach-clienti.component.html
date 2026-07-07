@@ -1,79 +1,30 @@
-<ng-container *ngIf="!showForm">
-  <div class="savebar" style="margin-top:0;margin-bottom:16px">
-    <button class="savebtn" (click)="openForm()">+ Aggiungi cliente</button>
+<p class="sectiontitle">Il tuo codice</p>
+<div class="infocard mycode-card">
+  <p class="bacheca-text" style="margin-bottom:12px">
+    Comunica questo codice ai tuoi clienti: lo useranno in fase di registrazione per accoppiarsi a te.
+  </p>
+  <div class="mycode-row">
+    <span class="mycode-value">{{ myCode }}</span>
+    <button class="confirmbtn cancel mycode-copybtn" (click)="copyCode()">
+      {{ copied ? 'Copiato ✓' : 'Copia' }}
+    </button>
   </div>
+</div>
 
-  <p class="sectiontitle">I tuoi clienti</p>
+<p class="sectiontitle">I tuoi clienti</p>
 
-  <div *ngIf="loading" class="history-empty">Caricamento…</div>
+<div *ngIf="loading" class="history-empty">Caricamento…</div>
 
-  <div *ngIf="!loading && clients.length === 0" class="history-empty">
-    Nessun cliente ancora.<br>Tocca "Aggiungi cliente" per creare il primo account.
-  </div>
+<div *ngIf="!loading && clients.length === 0" class="history-empty">
+  Nessun cliente ancora.<br>Condividi il tuo codice: appariranno qui non appena si registrano.
+</div>
 
-  <div *ngIf="!loading && clients.length > 0" class="grouplist">
-    <div class="daycard" *ngFor="let c of clients">
-      <div class="badge" style="font-size:14px">{{ c.displayName.charAt(0).toUpperCase() }}</div>
-      <div class="info">
-        <div class="lbl">{{ c.displayName }}</div>
-        <div class="meta">{{ c.email }}</div>
-      </div>
-      <span class="client-status" [class.on]="c.paired">{{ c.paired ? 'Accoppiato' : 'In attesa' }}</span>
+<div *ngIf="!loading && clients.length > 0" class="grouplist">
+  <div class="daycard" *ngFor="let c of clients">
+    <div class="badge" style="font-size:14px">{{ c.displayName.charAt(0).toUpperCase() }}</div>
+    <div class="info">
+      <div class="lbl">{{ c.displayName }}</div>
+      <div class="meta">{{ c.email }}</div>
     </div>
   </div>
-</ng-container>
-
-<ng-container *ngIf="showForm">
-
-  <ng-container *ngIf="!createdResult">
-    <p class="sectiontitle">Nuovo cliente</p>
-    <div class="infocard">
-      <div class="authfield">
-        <label>Nome</label>
-        <div class="measure-input-wrap">
-          <input type="text" [(ngModel)]="newName" placeholder="Nome del cliente" />
-        </div>
-      </div>
-      <div class="authfield" style="margin-top:12px">
-        <label>Email</label>
-        <div class="measure-input-wrap">
-          <input type="email" [(ngModel)]="newEmail" placeholder="email@esempio.com" />
-        </div>
-      </div>
-
-      <p class="autherror" *ngIf="errorMsg">{{ errorMsg }}</p>
-
-      <div style="display:flex;gap:10px;margin-top:16px">
-        <button class="confirmbtn cancel" style="flex:1" (click)="cancelForm()">Annulla</button>
-        <button class="savebtn" style="flex:1.4" [disabled]="creating || !newName.trim() || !newEmail.trim()" (click)="createClient()">
-          {{ creating ? 'Creazione…' : 'Crea account' }}
-        </button>
-      </div>
-    </div>
-  </ng-container>
-
-  <ng-container *ngIf="createdResult">
-    <p class="sectiontitle">Account creato</p>
-    <div class="infocard">
-      <p class="bacheca-text" style="margin-bottom:14px">
-        Comunica queste credenziali al cliente. Al primo accesso gli verranno richieste tutte e tre insieme.
-      </p>
-
-      <div class="credrow">
-        <span class="credlabel">Email</span>
-        <span class="credvalue">{{ createdResult.email }}</span>
-      </div>
-      <div class="credrow">
-        <span class="credlabel">Password temporanea</span>
-        <span class="credvalue mono">{{ createdResult.tempPassword }}</span>
-      </div>
-      <div class="credrow">
-        <span class="credlabel">Codice di accoppiamento</span>
-        <span class="credvalue mono">{{ createdResult.pairingCode }}</span>
-      </div>
-
-      <button class="savebtn" style="margin-top:18px" (click)="doneWithResult()">Fatto</button>
-    </div>
-  </ng-container>
-
-</ng-container>
+</div>

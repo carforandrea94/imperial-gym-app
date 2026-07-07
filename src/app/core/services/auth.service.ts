@@ -1,29 +1,22 @@
 import { Injectable, signal } from '@angular/core';
-import { initializeApp, deleteApp } from 'firebase/app';
 import {
-  getAuth,
   onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
-  setPersistence,
-  inMemoryPersistence,
   User
 } from 'firebase/auth';
 import {
   doc,
   getDoc,
   setDoc,
-  updateDoc,
   query,
   collection,
   where,
-  getDocs,
-  getFirestore
+  getDocs
 } from 'firebase/firestore';
 import { FirebaseService } from './firebase.service';
-import { UserProfile, UserRole } from '../models/user.model';
-import { environment } from '../../../environments/environment';
+import { UserProfile } from '../models/user.model';
 
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // esclusi 0/O/1/I/L per leggibilita'
 
@@ -33,16 +26,6 @@ function generateCode(length = 6): string {
     out += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
   }
   return out;
-}
-
-function generateTempPassword(): string {
-  return generateCode(4) + generateCode(4).toLowerCase() + Math.floor(Math.random() * 90 + 10);
-}
-
-export interface NewClientResult {
-  email: string;
-  tempPassword: string;
-  pairingCode: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -73,31 +56,13 @@ export class AuthService {
     return snap.exists() ? (snap.data() as UserProfile) : null;
   }
 
-  /**
-   * Login standard. Per un client al primo accesso (paired === false) e' obbligatorio
-   * passare anche il codice di accoppiamento fornito dal coach.
-   */
-  async login(email: string, password: string, pairingCode?: string): Promise<UserProfile> {
+  async login(email: string, password: string): Promise<UserProfile> {
     const cred = await signInWithEmailAndPassword(this.fb.auth, email.trim(), password);
     const profile = await this.loadProfile(cred.user.uid);
 
     if (!profile) {
       await signOut(this.fb.auth);
-      throw new Error('Profilo utente non trovato. Contatta il tuo coach.');
-    }
-
-    if (profile.role === 'client' && !profile.paired) {
-      const code = (pairingCode ?? '').trim().toUpperCase();
-      if (!code) {
-        await signOut(this.fb.auth);
-        throw new Error('CODE_REQUIRED');
-      }
-      if (code !== profile.pairingCode) {
-        await signOut(this.fb.auth);
-        throw new Error('Codice di accoppiamento non valido.');
-      }
-      await updateDoc(doc(this.fb.db, 'users', profile.uid), { paired: true });
-      profile.paired = true;
+      throw new Error('Profilo utente non trovato.');
     }
 
     this.currentUser.set(profile);
@@ -109,67 +74,59 @@ export class AuthService {
     this.currentUser.set(null);
   }
 
-  /** Registrazione di un nuovo coach (auto-generato il proprio codice, non necessario per l'accesso). */
+  /**
+   * Registrazione di un nuovo coach. Genera anche il suo codice univoco
+   * (coachCodes/{code} -> coachId), che il coach comunichera' ai propri
+   * client perche' possano accoppiarsi in fase di registrazione.
+   */
   async registerCoach(email: string, password: string, displayName: string): Promise<UserProfile> {
     const cred = await createUserWithEmailAndPassword(this.fb.auth, email.trim(), password);
+    const pairingCode = generateCode();
     const profile: UserProfile = {
       uid: cred.user.uid,
       email: email.trim(),
       displayName: displayName.trim(),
       role: 'coach',
-      pairingCode: generateCode(),
+      pairingCode,
       coachId: null,
+      paired: true,
+      createdAt: new Date().toISOString()
+    };
+    await setDoc(doc(this.fb.db, 'users', profile.uid), profile);
+    await setDoc(doc(this.fb.db, 'coachCodes', pairingCode), { coachId: profile.uid });
+    this.currentUser.set(profile);
+    return profile;
+  }
+
+  /**
+   * Registrazione di un nuovo client: si accoppia da solo inserendo il
+   * codice univoco del proprio coach (verificato tramite coachCodes,
+   * leggibile pubblicamente anche prima di avere un account).
+   */
+  async registerClient(displayName: string, email: string, password: string, coachCode: string): Promise<UserProfile> {
+    const code = coachCode.trim().toUpperCase();
+    if (!code) throw new Error('Inserisci il codice del tuo coach.');
+
+    const codeSnap = await getDoc(doc(this.fb.db, 'coachCodes', code));
+    if (!codeSnap.exists()) {
+      throw new Error('Codice coach non valido. Controlla di averlo scritto correttamente.');
+    }
+    const coachId = (codeSnap.data() as { coachId: string }).coachId;
+
+    const cred = await createUserWithEmailAndPassword(this.fb.auth, email.trim(), password);
+    const profile: UserProfile = {
+      uid: cred.user.uid,
+      email: email.trim(),
+      displayName: displayName.trim(),
+      role: 'client',
+      pairingCode: generateCode(),
+      coachId,
       paired: true,
       createdAt: new Date().toISOString()
     };
     await setDoc(doc(this.fb.db, 'users', profile.uid), profile);
     this.currentUser.set(profile);
     return profile;
-  }
-
-  /**
-   * Crea l'account di un nuovo cliente da parte del coach loggato.
-   * Usa una istanza Firebase secondaria e temporanea per non perdere
-   * la sessione del coach (createUserWithEmailAndPassword altrimenti
-   * autenticherebbe il nuovo utente al posto del coach nell'app principale).
-   */
-  async createClientAccount(displayName: string, email: string): Promise<NewClientResult> {
-    const coach = this.currentUser();
-    if (!coach || coach.role !== 'coach') {
-      throw new Error('Solo un coach puo\' creare un account cliente.');
-    }
-
-    const tempPassword = generateTempPassword();
-    const pairingCode = generateCode();
-
-    const secondaryApp = initializeApp(environment.firebase, `secondary-${Date.now()}`);
-    try {
-      const secondaryAuth = getAuth(secondaryApp);
-      await setPersistence(secondaryAuth, inMemoryPersistence);
-      const secondaryDb = getFirestore(secondaryApp);
-      const cred = await createUserWithEmailAndPassword(secondaryAuth, email.trim(), tempPassword);
-
-      const profile: UserProfile = {
-        uid: cred.user.uid,
-        email: email.trim(),
-        displayName: displayName.trim(),
-        role: 'client',
-        pairingCode,
-        coachId: coach.uid,
-        paired: false,
-        createdAt: new Date().toISOString()
-      };
-      // Scritto usando il Firestore dell'app SECONDARIA: la' l'utente autenticato
-      // e' il client appena creato, e la regola richiede request.auth.uid == uid.
-      // Usare il Firestore dell'app primaria scriverebbe come il coach, non
-      // come il client, e la regola rifiuterebbe la creazione.
-      await setDoc(doc(secondaryDb, 'users', profile.uid), profile);
-      await signOut(secondaryAuth);
-
-      return { email: profile.email, tempPassword, pairingCode };
-    } finally {
-      await deleteApp(secondaryApp);
-    }
   }
 
   /** Lista dei clienti associati al coach loggato. */

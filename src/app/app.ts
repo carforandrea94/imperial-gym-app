@@ -52,7 +52,7 @@ export class App implements OnInit, OnDestroy {
   private updateNav(url: string): void {
     const u = url.split('?')[0];
 
-    if (u === '/login' || u === '/coach/registrati') {
+    if (u === '/login' || u === '/registrati' || u === '/coach/registrati') {
       this.showChrome = false;
       return;
     }

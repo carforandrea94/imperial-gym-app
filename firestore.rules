@@ -61,5 +61,14 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.resource.data.coachId == request.auth.uid;
       allow update, delete: if isSignedIn() && resource.data.coachId == request.auth.uid;
     }
+
+    // Mappa pubblica codice-coach -> uid coach. Serve al client per trovare il proprio
+    // coach in fase di registrazione, PRIMA di avere un account (quindi lettura libera).
+    // Non contiene dati personali, solo il riferimento all'uid del coach.
+    match /coachCodes/{code} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.coachId;
+      allow update, delete: if false;
+    }
   }
 }
