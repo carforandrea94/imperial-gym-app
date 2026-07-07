@@ -33,14 +33,7 @@ export function emptyWorkoutProtocol(): WorkoutProtocol {
 }
 
 export function emptyDiet(): Diet {
-  const emptyDay = () => ({
-    colazione: { items: [] },
-    spuntino: { items: [] },
-    pranzo: { items: [] },
-    merenda: { items: [] },
-    cena: { items: [] }
-  });
-  return { on: emptyDay(), off: emptyDay() };
+  return [];
 }
 
 export function emptyProtocol(clientId: string, coachId: string): Omit<Protocol, 'id'> {

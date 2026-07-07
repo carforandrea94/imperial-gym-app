@@ -6,7 +6,7 @@ import { ProtocolService } from '../../services/protocol.service';
 import { WorkoutDataService } from '../../services/workout-data.service';
 import { Protocol } from '../../models/protocol.model';
 import { Day, Exercise } from '../../models/workout.model';
-import { DietDay, Meal, FoodItem, MEAL_LABELS } from '../../models/diet.model';
+import { Meal, FoodItem, MEAL_LABELS, DietPlan, newDietPlan } from '../../models/diet.model';
 
 type Tab = 'scheda' | 'dieta' | 'info';
 
@@ -26,7 +26,7 @@ export class CoachProtocolBuilderComponent implements OnInit {
   saveMsg = '';
 
   tab: Tab = 'scheda';
-  dietMode: 'on' | 'off' = 'on';
+  editingPlan: DietPlan | null = null;
 
   readonly mealOrder = ['colazione', 'spuntino', 'pranzo', 'merenda', 'cena'] as const;
   readonly mealLabels = MEAL_LABELS;
@@ -105,9 +105,39 @@ export class CoachProtocolBuilderComponent implements OnInit {
 
   // ===== Dieta =====
 
+  addDietPlan(): void {
+    if (!this.protocol) return;
+    const plan = newDietPlan('Nuova dieta');
+    this.protocol.diet.push(plan);
+    this.editingPlan = plan;
+  }
+
+  openPlan(plan: DietPlan): void {
+    this.editingPlan = plan;
+  }
+
+  closePlan(): void {
+    this.editingPlan = null;
+  }
+
+  removePlan(plan: DietPlan, event: Event): void {
+    event.stopPropagation();
+    if (!this.protocol) return;
+    this.protocol.diet = this.protocol.diet.filter(p => p.id !== plan.id);
+    if (this.editingPlan?.id === plan.id) this.editingPlan = null;
+  }
+
+  countPlanItems(plan: DietPlan): number {
+    return (Object.keys(MEAL_LABELS) as (keyof typeof MEAL_LABELS)[]).reduce((acc, key) => {
+      const meal = (plan as any)[key] as Meal;
+      const fromItems = meal.items?.length ?? 0;
+      const fromVariants = meal.variants?.reduce((a, v) => a + (v.items?.length ?? 0), 0) ?? 0;
+      return acc + fromItems + fromVariants;
+    }, 0);
+  }
+
   getMeal(key: string): Meal {
-    const day: DietDay = this.protocol!.diet[this.dietMode];
-    return (day as any)[key] as Meal;
+    return (this.editingPlan as any)[key] as Meal;
   }
 
   addItem(key: string): void {

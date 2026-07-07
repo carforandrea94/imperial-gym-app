@@ -1,14 +1,13 @@
 import { Injectable } from '@angular/core';
 import * as pdfjsLib from 'pdfjs-dist';
 import { Day, Exercise } from '../models/workout.model';
-import { Diet, DietDay, MEAL_LABELS } from '../models/diet.model';
-import { emptyDiet } from '../models/protocol.model';
+import { Diet, DietMeals, MEAL_LABELS, newDietPlan } from '../models/diet.model';
 
 // Worker servito da CDN (evita di dover gestire il bundling del worker separatamente)
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${(pdfjsLib as any).version}/pdf.worker.min.mjs`;
 
-const MEAL_KEYWORDS: Record<string, keyof DietDay> = {
+const MEAL_KEYWORDS: Record<string, keyof DietMeals> = {
   'colazione': 'colazione',
   'spuntino': 'spuntino',
   'spuntino mattutino': 'spuntino',
@@ -92,13 +91,12 @@ export class PdfImportService {
    * dall'ultimo blocco numerico+unita' della riga. Da rivedere nel builder.
    */
   parseDietText(text: string): Diet {
-    const diet = emptyDiet();
-    const target: DietDay = diet.on; // il parsing riempie la modalita' ON, l'OFF resta da compilare a mano
+    const plan = newDietPlan('Dieta (da PDF)');
 
     const rawLines = text.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
     const qtyRegex = /^(.+?)\s+([\d.,]+\s?(?:g|kg|ml|l|cucchiai|cucchiaino|fette|pz|uova)\.?)$/i;
 
-    let currentMealKey: keyof DietDay | null = null;
+    let currentMealKey: keyof DietMeals | null = null;
 
     for (const line of rawLines) {
       const lower = line.toLowerCase().replace(/[:：]/g, '').trim();
@@ -109,7 +107,7 @@ export class PdfImportService {
       }
       if (!currentMealKey) continue;
 
-      const meal = target[currentMealKey];
+      const meal = plan[currentMealKey];
       if (!meal.items) meal.items = [];
 
       const m = line.match(qtyRegex);
@@ -120,6 +118,6 @@ export class PdfImportService {
       }
     }
 
-    return diet;
+    return [plan];
   }
 }

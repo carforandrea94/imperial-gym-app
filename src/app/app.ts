@@ -173,9 +173,9 @@ export class App implements OnInit, OnDestroy {
       return;
     }
 
-    if (u === '/dieta/on' || u === '/dieta/off') {
-      this.navTitle = u === '/dieta/on' ? 'Giorno ON' : 'Giorno OFF';
-      this.navSubtitle = u === '/dieta/on' ? 'Giorno di allenamento' : 'Giorno di riposo';
+    if (/^\/dieta\/(?!lista-spesa$)[^/]+$/.test(u)) {
+      this.navTitle = 'Piano alimentare';
+      this.navSubtitle = '';
       this.showBack = true;
       this.showHistory = false;
       this.showInfo = false;
@@ -296,7 +296,7 @@ export class App implements OnInit, OnDestroy {
       this.router.navigate(['/coach/clienti', clientId]);
     } else if (/^\/coach\/clienti\/[^/]+$/.test(u)) {
       this.router.navigate(['/coach/clienti']);
-    } else if (u === '/dieta/lista-spesa' || u === '/dieta/on' || u === '/dieta/off') {
+    } else if (u === '/dieta/lista-spesa' || /^\/dieta\/(?!lista-spesa$)[^/]+$/.test(u)) {
       this.router.navigate(['/dieta']);
     } else {
       this.router.navigate(['/scheda']);

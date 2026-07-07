@@ -1,4 +1,4 @@
-<p class="sectiontitle">Piano alimentare — Giorno {{ mode.toUpperCase() }}</p>
+<p class="sectiontitle">{{ plan?.name }}</p>
 
 <!-- Meals -->
 <div *ngFor="let vm of meals">
@@ -55,7 +55,6 @@
 <div class="consigli">
   <h3>Consigli di base</h3>
   <ul>
-    <li>Giorno ON = giorno di allenamento, giorno OFF = giorno di riposo</li>
     <li>Bevi almeno 2–3 L di acqua al giorno</li>
     <li>Prepara i pasti in anticipo per rispettare le quantità</li>
     <li>Pesare gli alimenti a crudo per maggiore precisione</li>

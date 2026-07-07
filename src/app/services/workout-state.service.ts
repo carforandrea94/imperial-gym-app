@@ -1,5 +1,4 @@
 import { Injectable, signal } from '@angular/core';
-import { DietMode } from '../models/diet.model';
 import { AppStateService } from './app-state.service';
 
 export interface RestTimerState {
@@ -17,26 +16,15 @@ export class WorkoutStateService {
   DEFAULT_PROGRAM_START = '2026-07-05';
   currentWeek: number;
 
-  dietMode = signal<DietMode>('on');
-
   restTimer = signal<RestTimerState>({
     show: false, remaining: REST_DURATION, finished: false, fillPct: 100
   });
 
   private ticker: ReturnType<typeof setInterval> | null = null;
   private closeTimeout: ReturnType<typeof setTimeout> | null = null;
-  private dietModeLoaded = false;
 
   constructor(private appState: AppStateService) {
     this.currentWeek = this.computeAutoWeek(this.DEFAULT_PROGRAM_START);
-  }
-
-  /** Carica la modalita' dieta persistita su Firestore (idempotente, la carica una sola volta). */
-  async loadDietMode(): Promise<void> {
-    if (this.dietModeLoaded) return;
-    const state = await this.appState.load();
-    this.dietMode.set(state.dietMode ?? 'on');
-    this.dietModeLoaded = true;
   }
 
   /** Ricalcola la settimana corrente in base a un nuovo inizio programma (dal protocollo attivo). */
@@ -81,12 +69,6 @@ export class WorkoutStateService {
       this.closeTimeout = null;
     }
     this.restTimer.set({ show: false, remaining: REST_DURATION, finished: false, fillPct: 100 });
-  }
-
-  toggleDietMode(): void {
-    const next = this.dietMode() === 'on' ? 'off' : 'on';
-    this.dietMode.set(next);
-    this.appState.patch({ dietMode: next });
   }
 
   formatTime(s: number): string {

@@ -132,25 +132,63 @@
 
   <!-- ===================== DIETA ===================== -->
   <ng-container *ngIf="tab === 'dieta'">
-    <div class="rocker" [class.off]="dietMode === 'off'" (click)="dietMode = dietMode === 'on' ? 'off' : 'on'">
-      <div class="knob"></div>
-      <span class="lbl" [class.active]="dietMode === 'on'">ON</span>
-      <span class="lbl" [class.active]="dietMode === 'off'">OFF</span>
-    </div>
 
-    <div class="infocard builder-meal" *ngFor="let key of mealOrder">
-      <p class="sectiontitle" style="margin-top:0">{{ mealLabels[key] }}</p>
-      <div class="builder-item" *ngFor="let item of getMeal(key).items; let ii = index">
-        <div class="measure-input-wrap">
-          <input type="text" [(ngModel)]="item.name" placeholder="Alimento" />
-        </div>
-        <div class="measure-input-wrap builder-qty">
-          <input type="text" [(ngModel)]="item.qty" placeholder="Quantita'" />
-        </div>
-        <button class="delete-btn" (click)="removeItem(key, ii)">✕</button>
+    <!-- Lista piani -->
+    <ng-container *ngIf="!editingPlan">
+      <p class="sectiontitle" style="margin-top:0">Piani alimentari</p>
+
+      <div *ngIf="protocol.diet.length === 0" class="history-empty">
+        Nessun piano ancora.<br>Aggiungine uno (es. "Giorno ON", "Giorno OFF", "Rifeed"...).
       </div>
-      <button class="confirmbtn cancel" style="width:100%;margin-top:6px" (click)="addItem(key)">+ Aggiungi alimento</button>
-    </div>
+
+      <div class="grouplist" *ngIf="protocol.diet.length > 0">
+        <div class="daycard press-fx protocol-row" *ngFor="let plan of protocol.diet" (click)="openPlan(plan)">
+          <div class="info">
+            <div class="lbl">{{ plan.name }}</div>
+            <div class="meta">{{ countPlanItems(plan) }} alimenti</div>
+          </div>
+          <button class="delete-btn" (click)="removePlan(plan, $event)" title="Elimina">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
+            </svg>
+          </button>
+          <span class="chev">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+          </span>
+        </div>
+      </div>
+
+      <div class="savebar">
+        <button class="savebtn" (click)="addDietPlan()">+ Aggiungi piano alimentare</button>
+      </div>
+    </ng-container>
+
+    <!-- Editor del piano selezionato -->
+    <ng-container *ngIf="editingPlan">
+      <button class="confirmbtn cancel" style="margin-bottom:14px" (click)="closePlan()">← Torna ai piani</button>
+
+      <div class="authfield" style="margin-bottom:16px">
+        <label>Nome del piano</label>
+        <div class="measure-input-wrap">
+          <input type="text" [(ngModel)]="editingPlan.name" placeholder='Es. "Giorno ON"' />
+        </div>
+      </div>
+
+      <div class="infocard builder-meal" *ngFor="let key of mealOrder">
+        <p class="sectiontitle" style="margin-top:0">{{ mealLabels[key] }}</p>
+        <div class="builder-item" *ngFor="let item of getMeal(key).items; let ii = index">
+          <div class="measure-input-wrap">
+            <input type="text" [(ngModel)]="item.name" placeholder="Alimento" />
+          </div>
+          <div class="measure-input-wrap builder-qty">
+            <input type="text" [(ngModel)]="item.qty" placeholder="Quantita'" />
+          </div>
+          <button class="delete-btn" (click)="removeItem(key, ii)">✕</button>
+        </div>
+        <button class="confirmbtn cancel" style="width:100%;margin-top:6px" (click)="addItem(key)">+ Aggiungi alimento</button>
+      </div>
+    </ng-container>
+
   </ng-container>
 
   <!-- ===================== INFO ===================== -->

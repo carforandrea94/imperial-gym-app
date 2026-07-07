@@ -14,7 +14,7 @@ export interface Meal {
   variants?: MealVariant[];
 }
 
-export interface DietDay {
+export interface DietMeals {
   colazione: Meal;
   spuntino: Meal;
   pranzo: Meal;
@@ -22,12 +22,14 @@ export interface DietDay {
   cena: Meal;
 }
 
-export interface Diet {
-  on: DietDay;
-  off: DietDay;
+/** Un piano dieta con nome libero (es. "Giorno ON", "Giorno OFF", "Rifeed", "Vacanza"...). */
+export interface DietPlan extends DietMeals {
+  id: string;
+  name: string;
 }
 
-export type DietMode = 'on' | 'off';
+/** Il protocollo puo' contenere piu' diete, non piu' fisse a due (ON/OFF). */
+export type Diet = DietPlan[];
 
 export const MEAL_LABELS: Record<string, string> = {
   colazione: 'Colazione',
@@ -36,3 +38,17 @@ export const MEAL_LABELS: Record<string, string> = {
   merenda: 'Merenda',
   cena: 'Cena'
 };
+
+export function emptyMeals(): DietMeals {
+  return {
+    colazione: { items: [] },
+    spuntino: { items: [] },
+    pranzo: { items: [] },
+    merenda: { items: [] },
+    cena: { items: [] }
+  };
+}
+
+export function newDietPlan(name: string): DietPlan {
+  return { id: `diet_${Date.now()}_${Math.floor(Math.random() * 1000)}`, name, ...emptyMeals() };
+}

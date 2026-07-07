@@ -7,7 +7,7 @@
   </div>
 
   <div *ngIf="items.length === 0" class="history-empty">
-    Nessun alimento trovato nel piano {{ mode === 'on' ? 'ON' : 'OFF' }}.<br>
+    Nessun alimento trovato nei tuoi piani alimentari.<br>
     Aggiungi alimenti alla dieta per vederli qui.
   </div>
 
@@ -19,7 +19,7 @@
       <div class="info">
         <div class="lbl">{{ item.name }}</div>
         <div class="meta">
-          <ng-container *ngIf="item.qtys.length">{{ item.qtys.join(' + ') }} · </ng-container>{{ item.meals.join(', ') }}
+          <ng-container *ngIf="item.qtys.length">{{ item.qtys.join(' + ') }} · </ng-container>{{ item.sources.join(', ') }}
         </div>
       </div>
     </div>
