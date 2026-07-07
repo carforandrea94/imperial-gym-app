@@ -14,6 +14,7 @@ import { UserProfile } from '../../core/models/user.model';
 export class CoachClientiComponent implements OnInit {
   clients: UserProfile[] = [];
   loading = true;
+  errorMsg = '';
   copied = false;
 
   constructor(public auth: AuthService, private router: Router) {}
@@ -23,10 +24,24 @@ export class CoachClientiComponent implements OnInit {
     this.load();
   }
 
-  private async load(): Promise<void> {
+  async load(): Promise<void> {
     this.loading = true;
-    this.clients = await this.auth.listClients();
-    this.loading = false;
+    this.errorMsg = '';
+
+    const timeout = new Promise<UserProfile[]>((_, reject) =>
+      setTimeout(() => reject(new Error('TIMEOUT')), 12000)
+    );
+
+    try {
+      this.clients = await Promise.race([this.auth.listClients(), timeout]);
+    } catch (e: any) {
+      console.error('Errore caricamento clienti:', e);
+      this.errorMsg = e?.message === 'TIMEOUT'
+        ? 'La connessione sta impiegando troppo tempo. Controlla la rete e riprova.'
+        : 'Errore nel caricamento dei clienti. Riprova.';
+    } finally {
+      this.loading = false;
+    }
   }
 
   openClient(c: UserProfile): void {
