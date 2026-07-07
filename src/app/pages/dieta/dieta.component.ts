@@ -66,6 +66,20 @@ export class DietaComponent implements OnInit {
     return this.meals.some(vm => this.getItems(vm).length > 0);
   }
 
+  /** True se il protocollo ha almeno un alimento in una qualsiasi delle due modalita' (ON o OFF).
+   *  Se falso, non ha senso mostrare il toggle ON/OFF: non c'e' ancora nessun piano assegnato. */
+  get hasAnyDietData(): boolean {
+    const days: DietDay[] = [this.dietData.diet.on, this.dietData.diet.off];
+    return days.some(day =>
+      this.mealOrder.some(key => {
+        const meal = (day as any)[key] as Meal;
+        const fromItems = meal.items?.length ?? 0;
+        const fromVariants = meal.variants?.some(v => v.items?.length) ?? false;
+        return fromItems > 0 || fromVariants;
+      })
+    );
+  }
+
   hasVariants(vm: MealVM): boolean {
     return !!(this.getMeal(vm.key)?.variants?.length);
   }

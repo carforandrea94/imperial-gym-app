@@ -1,19 +1,24 @@
-<!-- Rocker ON/OFF -->
-<div class="rocker" [class.off]="mode === 'off'" (click)="toggleMode()">
+<!-- Rocker ON/OFF: ha senso solo se il coach ha gia' caricato un piano -->
+<div class="rocker" *ngIf="hasAnyDietData" [class.off]="mode === 'off'" (click)="toggleMode()">
   <div class="knob"></div>
   <span class="lbl" [class.active]="mode === 'on'">ON</span>
   <span class="lbl" [class.active]="mode === 'off'">OFF</span>
 </div>
 
-<p class="sectiontitle">Piano alimentare — Giorno {{ mode.toUpperCase() }}</p>
+<p class="sectiontitle" *ngIf="hasAnyDietData">Piano alimentare — Giorno {{ mode.toUpperCase() }}</p>
 
-<div *ngIf="!hasAnyFood" class="history-empty">
+<div *ngIf="!hasAnyDietData" class="history-empty">
   Il tuo coach non ha ancora caricato il tuo piano alimentare.<br>
   Torna a controllare più tardi.
 </div>
 
+<div *ngIf="hasAnyDietData && !hasAnyFood" class="history-empty">
+  Nessun alimento per la modalità {{ mode.toUpperCase() }}.<br>
+  Prova a passare all'altra modalità con il toggle qui sopra.
+</div>
+
 <!-- Meals -->
-<ng-container *ngIf="hasAnyFood">
+<ng-container *ngIf="hasAnyDietData && hasAnyFood">
 <div *ngFor="let vm of meals">
   <div class="meal" [class.open]="vm.open">
     <div class="meal-summary" (click)="toggleMeal(vm)">
