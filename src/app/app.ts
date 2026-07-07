@@ -173,6 +173,16 @@ export class App implements OnInit, OnDestroy {
       return;
     }
 
+    if (u === '/dieta/on' || u === '/dieta/off') {
+      this.navTitle = u === '/dieta/on' ? 'Giorno ON' : 'Giorno OFF';
+      this.navSubtitle = u === '/dieta/on' ? 'Giorno di allenamento' : 'Giorno di riposo';
+      this.showBack = true;
+      this.showHistory = false;
+      this.showInfo = false;
+      this.showAnalytics = false;
+      return;
+    }
+
     if (u === '/misure') {
       this.navTitle = 'Misure';
       this.navSubtitle = 'Le tue misurazioni';
@@ -286,7 +296,7 @@ export class App implements OnInit, OnDestroy {
       this.router.navigate(['/coach/clienti', clientId]);
     } else if (/^\/coach\/clienti\/[^/]+$/.test(u)) {
       this.router.navigate(['/coach/clienti']);
-    } else if (u === '/dieta/lista-spesa') {
+    } else if (u === '/dieta/lista-spesa' || u === '/dieta/on' || u === '/dieta/off') {
       this.router.navigate(['/dieta']);
     } else {
       this.router.navigate(['/scheda']);

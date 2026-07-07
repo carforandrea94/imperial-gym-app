@@ -1,15 +1,16 @@
-import { Component, OnInit, computed } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { DietDataService } from '../../services/diet-data.service';
 import { WorkoutStateService } from '../../services/workout-state.service';
-import { DietDay, Meal, FoodItem, MEAL_LABELS } from '../../models/diet.model';
+import { DietDay, Meal, MEAL_LABELS, DietMode } from '../../models/diet.model';
 
-interface MealVM {
-  key: string;
+interface DietModeCard {
+  mode: DietMode;
   label: string;
-  open: boolean;
-  selectedVariant: number;
-  altOpen: boolean[];
+  sub: string;
+  itemCount: number;
+  hasData: boolean;
 }
 
 @Component({
@@ -20,97 +21,43 @@ interface MealVM {
   styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
 })
 export class DietaComponent implements OnInit {
-  readonly mealOrder = ['colazione', 'spuntino', 'pranzo', 'merenda', 'cena'];
-  readonly mealLabels = MEAL_LABELS;
-
-  meals: MealVM[] = this.mealOrder.map(key => ({
-    key,
-    label: MEAL_LABELS[key],
-    open: true,
-    selectedVariant: 0,
-    altOpen: []
-  }));
+  cards: DietModeCard[] = [];
 
   constructor(
     public dietData: DietDataService,
-    public state: WorkoutStateService
-  ) {
-    this.meals.forEach(vm => {
-      vm.altOpen = this.getItems(vm).map(() => true);
-    });
-  }
+    public state: WorkoutStateService,
+    private router: Router
+  ) {}
 
   async ngOnInit(): Promise<void> {
     await this.state.loadDietMode();
+    this.buildCards();
   }
 
-  get mode() { return this.state.dietMode(); }
-
-  get currentDiet(): DietDay {
-    return this.dietData.diet[this.mode];
+  private countItems(day: DietDay): number {
+    return (Object.keys(MEAL_LABELS) as (keyof DietDay)[]).reduce((acc, key) => {
+      const meal: Meal = day[key];
+      const fromItems = meal.items?.length ?? 0;
+      const fromVariants = meal.variants?.reduce((a, v) => a + (v.items?.length ?? 0), 0) ?? 0;
+      return acc + fromItems + fromVariants;
+    }, 0);
   }
 
-  getMeal(key: string): Meal {
-    return (this.currentDiet as any)[key] as Meal;
+  private buildCards(): void {
+    const onCount = this.countItems(this.dietData.diet.on);
+    const offCount = this.countItems(this.dietData.diet.off);
+    this.cards = [
+      { mode: 'on', label: 'Giorno ON', sub: 'Giorno di allenamento', itemCount: onCount, hasData: onCount > 0 },
+      { mode: 'off', label: 'Giorno OFF', sub: 'Giorno di riposo', itemCount: offCount, hasData: offCount > 0 }
+    ];
   }
 
-  toggleMeal(vm: MealVM): void {
-    vm.open = !vm.open;
-    if (vm.open) {
-      const items = this.getItems(vm);
-      vm.altOpen = items.map(() => true);
-    }
-  }
-
-  get hasAnyFood(): boolean {
-    return this.meals.some(vm => this.getItems(vm).length > 0);
-  }
-
-  /** True se il protocollo ha almeno un alimento in una qualsiasi delle due modalita' (ON o OFF).
-   *  Se falso, non ha senso mostrare il toggle ON/OFF: non c'e' ancora nessun piano assegnato. */
   get hasAnyDietData(): boolean {
-    const days: DietDay[] = [this.dietData.diet.on, this.dietData.diet.off];
-    return days.some(day =>
-      this.mealOrder.some(key => {
-        const meal = (day as any)[key] as Meal;
-        const fromItems = meal.items?.length ?? 0;
-        const fromVariants = meal.variants?.some(v => v.items?.length) ?? false;
-        return fromItems > 0 || fromVariants;
-      })
-    );
+    return this.cards.some(c => c.hasData);
   }
 
-  hasVariants(vm: MealVM): boolean {
-    return !!(this.getMeal(vm.key)?.variants?.length);
-  }
-
-  getItems(vm: MealVM): FoodItem[] {
-    const meal = this.getMeal(vm.key);
-    if (meal.variants?.length) {
-      return meal.variants[vm.selectedVariant]?.items ?? [];
-    }
-    return meal.items ?? [];
-  }
-
-  getVariants(vm: MealVM) {
-    return this.getMeal(vm.key)?.variants ?? [];
-  }
-
-  selectVariant(vm: MealVM, idx: number): void {
-    vm.selectedVariant = idx;
-    const items = this.getItems(vm);
-    vm.altOpen = items.map(() => true);
-  }
-
-  toggleAlt(vm: MealVM, idx: number): void {
-    if (!vm.altOpen[idx]) {
-      vm.altOpen[idx] = true;
-    } else {
-      vm.altOpen[idx] = false;
-    }
-  }
-
-  toggleMode(): void {
-    this.state.toggleDietMode();
+  openCard(card: DietModeCard): void {
+    if (!card.hasData) return;
+    this.router.navigate(['/dieta', card.mode]);
   }
 }

@@ -280,6 +280,9 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .shop-check{width:24px;height:24px;border-radius:7px;border:2px solid var(--content-glass-border);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#04140D;transition:border-color .2s ease,background .2s ease;}
 .shop-check.on{border-color:var(--accent);background:var(--accent);}
 
+.diet-card.disabled{opacity:.5;cursor:default;}
+.diet-card .badge{font-size:11px;letter-spacing:.02em;}
+
 .builder-tabs{margin-bottom:16px;}
 .builder-tabs button{flex:1;text-align:center;}
 

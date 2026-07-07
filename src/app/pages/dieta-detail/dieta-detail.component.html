@@ -1,0 +1,64 @@
+<p class="sectiontitle">Piano alimentare — Giorno {{ mode.toUpperCase() }}</p>
+
+<!-- Meals -->
+<div *ngFor="let vm of meals">
+  <div class="meal" [class.open]="vm.open">
+    <div class="meal-summary" (click)="toggleMeal(vm)">
+      <span>{{ vm.label }}</span>
+      <span class="chevron">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </span>
+    </div>
+
+    <div class="content-inner" *ngIf="vm.open">
+
+      <!-- Variant tabs (colazione) -->
+      <div class="variant-tabs" *ngIf="hasVariants(vm)">
+        <button
+          *ngFor="let v of getVariants(vm); let vi = index"
+          [class.active]="vm.selectedVariant === vi"
+          (click)="selectVariant(vm, vi)">
+          {{ v.label }}
+        </button>
+      </div>
+
+      <!-- Food items -->
+      <div class="fooditem" *ngFor="let item of getItems(vm); let fi = index">
+        <div class="row">
+          <span class="fname">{{ item.name }}</span>
+          <span class="fqty">{{ item.qty }}</span>
+        </div>
+
+        <!-- Alternatives -->
+        <ng-container *ngIf="item.alt && item.alt.length > 0">
+          <div class="altwrap" [class.open]="vm.altOpen[fi]">
+            <div class="altwrap-header" (click)="toggleAlt(vm, fi)">
+              <span>{{ vm.altOpen[fi] ? 'Nascondi alternative' : 'Alternative (' + item.alt.length + ')' }}</span>
+              <span class="chevron">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+              </span>
+            </div>
+            <div class="altlist" *ngIf="vm.altOpen[fi]">
+              <div class="row" *ngFor="let alt of item.alt">
+                <span>{{ alt.name }}</span>
+                <span>{{ alt.qty }}</span>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="consigli">
+  <h3>Consigli di base</h3>
+  <ul>
+    <li>Giorno ON = giorno di allenamento, giorno OFF = giorno di riposo</li>
+    <li>Bevi almeno 2–3 L di acqua al giorno</li>
+    <li>Prepara i pasti in anticipo per rispettare le quantità</li>
+    <li>Pesare gli alimenti a crudo per maggiore precisione</li>
+    <li>In caso di fame eccessiva aggiungi verdure fresche illimitate</li>
+  </ul>
+</div>

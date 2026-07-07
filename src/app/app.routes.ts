@@ -90,6 +90,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/lista-spesa/lista-spesa.component').then(m => m.ListaSpesaComponent)
   },
   {
+    path: 'dieta/:mode',
+    canActivate: [authGuard, clientGuard],
+    loadComponent: () => import('./pages/dieta-detail/dieta-detail.component').then(m => m.DietaDetailComponent)
+  },
+  {
     path: 'misure',
     canActivate: [authGuard, clientGuard],
     loadComponent: () => import('./pages/misure/misure.component').then(m => m.MisureComponent)
