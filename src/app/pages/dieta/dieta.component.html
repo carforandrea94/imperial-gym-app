@@ -12,7 +12,9 @@
   <div class="meal" [class.open]="vm.open">
     <div class="meal-summary" (click)="toggleMeal(vm)">
       <span>{{ vm.label }}</span>
-      <span class="chevron">▾</span>
+      <span class="chevron">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </span>
     </div>
 
     <div class="content-inner" *ngIf="vm.open">
@@ -39,7 +41,9 @@
           <div class="altwrap" [class.open]="vm.altOpen[fi]">
             <div class="altwrap-header" (click)="toggleAlt(vm, fi)">
               <span>{{ vm.altOpen[fi] ? 'Nascondi alternative' : 'Alternative (' + item.alt.length + ')' }}</span>
-              <span class="chevron">▾</span>
+              <span class="chevron">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+              </span>
             </div>
             <div class="altlist" *ngIf="vm.altOpen[fi]">
               <div class="row" *ngFor="let alt of item.alt">
