@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, NavigationEnd, RouterOutlet } from '@angular/router';
+import { SwUpdate } from '@angular/service-worker';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { NavbarComponent } from './components/navbar/navbar.component';
@@ -31,10 +32,12 @@ export class App implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     private workoutData: WorkoutDataService,
-    public auth: AuthService
+    public auth: AuthService,
+    private swUpdate: SwUpdate
   ) {}
 
   ngOnInit(): void {
+    this.setupAutoUpdate();
     this.routeSub = this.router.events.pipe(
       filter(e => e instanceof NavigationEnd)
     ).subscribe((e) => {
@@ -47,6 +50,23 @@ export class App implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.routeSub?.unsubscribe();
+  }
+
+  /**
+   * Se il service worker rileva una nuova versione deployata, la attiva e
+   * ricarica la pagina in automatico: evita che l'utente resti bloccato su
+   * codice vecchio in cache aspettando il normale ciclo "serve due refresh".
+   */
+  private setupAutoUpdate(): void {
+    if (!this.swUpdate.isEnabled) return;
+
+    this.swUpdate.versionUpdates
+      .pipe(filter((evt): evt is any => evt.type === 'VERSION_READY'))
+      .subscribe(() => {
+        this.swUpdate.activateUpdate().then(() => window.location.reload());
+      });
+
+    this.swUpdate.checkForUpdate().catch(() => { /* offline o check fallito, ignora */ });
   }
 
   private updateNav(url: string): void {
