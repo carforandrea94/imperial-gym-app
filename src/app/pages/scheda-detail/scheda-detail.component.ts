@@ -57,22 +57,30 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
     private sanitizer: DomSanitizer
   ) {}
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
     const n = parseInt(this.route.snapshot.paramMap.get('n') ?? '0', 10);
     this.dayIndex = n;
     this.day = this.workoutData.days[n];
     if (!this.day) { this.router.navigate(['/scheda']); return; }
 
-    this.loading = true;
+    // La lista esercizi e' dato statico locale: si mostra subito, senza
+    // aspettare Firestore. Bozze/override/insight arrivano dopo e
+    // aggiornano la vista gia' visibile.
+    this.buildExercises({});
+    this.loading = false;
+
+    this.loadRemoteData();
+  }
+
+  private async loadRemoteData(): Promise<void> {
     const [appState, daySessions] = await Promise.all([
       this.appState.load(),
       this.sessions.listForDay(this.day.id)
     ]);
 
-    this.buildExercises(appState.restOverrides);
+    this.applyRestOverrides(appState.restOverrides);
     this.loadDraft(appState.workoutDrafts[this.day.id]);
     this.loadInsights(daySessions);
-    this.loading = false;
   }
 
   ngOnDestroy(): void {
@@ -94,6 +102,14 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
       const override = restOverrides[this.restKey(ex.name)];
       const restSeconds = override && override > 0 ? override : protocolDefault;
       return { ex, rows, open: true, insightVisible: false, insight: null, restSeconds };
+    });
+  }
+
+  /** Applica gli override del tempo di recupero una volta arrivati da Firestore. */
+  private applyRestOverrides(restOverrides: Record<string, number>): void {
+    this.exercises.forEach(vm => {
+      const override = restOverrides[this.restKey(vm.ex.name)];
+      if (override && override > 0) vm.restSeconds = override;
     });
   }
 
