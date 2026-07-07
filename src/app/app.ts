@@ -25,6 +25,7 @@ export class App implements OnInit, OnDestroy {
   showHistory = false;
   showInfo = false;
   showAnalytics = false;
+  showShoppingList = false;
   showChrome = false;
 
   private routeSub: Subscription | null = null;
@@ -77,6 +78,7 @@ export class App implements OnInit, OnDestroy {
       return;
     }
     this.showChrome = true;
+    this.showShoppingList = false;
 
     if (u === '/coach/bacheca') {
       this.navTitle = 'Bacheca';
@@ -142,6 +144,17 @@ export class App implements OnInit, OnDestroy {
       this.navTitle = 'Dieta';
       this.navSubtitle = 'Piano alimentare';
       this.showBack = false;
+      this.showHistory = false;
+      this.showInfo = false;
+      this.showAnalytics = false;
+      this.showShoppingList = true;
+      return;
+    }
+
+    if (u === '/dieta/lista-spesa') {
+      this.navTitle = 'Lista della spesa';
+      this.navSubtitle = '';
+      this.showBack = true;
       this.showHistory = false;
       this.showInfo = false;
       this.showAnalytics = false;
@@ -261,6 +274,8 @@ export class App implements OnInit, OnDestroy {
       this.router.navigate(['/coach/clienti', clientId]);
     } else if (/^\/coach\/clienti\/[^/]+$/.test(u)) {
       this.router.navigate(['/coach/clienti']);
+    } else if (u === '/dieta/lista-spesa') {
+      this.router.navigate(['/dieta']);
     } else {
       this.router.navigate(['/scheda']);
     }
@@ -281,6 +296,10 @@ export class App implements OnInit, OnDestroy {
 
   onAnalytics(): void {
     this.router.navigate(['/misure/analytics']);
+  }
+
+  onShoppingList(): void {
+    this.router.navigate(['/dieta/lista-spesa']);
   }
 
   async onLogout(): Promise<void> {

@@ -15,10 +15,11 @@ export interface AppState {
   restOverrides: Record<string, number>;
   dietMode: 'on' | 'off';
   measureDraft: Record<string, string | null> | null;
+  shoppingChecked: Record<string, boolean>;
 }
 
 function emptyState(): AppState {
-  return { workoutDrafts: {}, restOverrides: {}, dietMode: 'on', measureDraft: null };
+  return { workoutDrafts: {}, restOverrides: {}, dietMode: 'on', measureDraft: null, shoppingChecked: {} };
 }
 
 /**

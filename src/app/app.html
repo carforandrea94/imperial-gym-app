@@ -7,11 +7,13 @@
   [showInfo]="showInfo"
   [showAnalytics]="showAnalytics"
   [showLogout]="true"
+  [showShoppingList]="showShoppingList"
   (backClick)="onBack()"
   (historyClick)="onHistory()"
   (infoClick)="onInfo()"
   (analyticsClick)="onAnalytics()"
-  (logoutClick)="onLogout()">
+  (logoutClick)="onLogout()"
+  (shoppingListClick)="onShoppingList()">
 </app-navbar>
 
 <div class="content" [class.no-chrome]="!showChrome">

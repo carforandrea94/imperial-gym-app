@@ -85,6 +85,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/dieta/dieta.component').then(m => m.DietaComponent)
   },
   {
+    path: 'dieta/lista-spesa',
+    canActivate: [authGuard, clientGuard],
+    loadComponent: () => import('./pages/lista-spesa/lista-spesa.component').then(m => m.ListaSpesaComponent)
+  },
+  {
     path: 'misure',
     canActivate: [authGuard, clientGuard],
     loadComponent: () => import('./pages/misure/misure.component').then(m => m.MisureComponent)

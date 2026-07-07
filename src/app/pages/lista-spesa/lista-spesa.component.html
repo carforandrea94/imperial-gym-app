@@ -1,0 +1,27 @@
+<div *ngIf="loading" class="history-empty">Caricamento…</div>
+
+<ng-container *ngIf="!loading">
+  <div class="shop-summary">
+    <span>{{ checkedCount }} / {{ items.length }} presi</span>
+    <button class="confirmbtn cancel shop-resetbtn" (click)="resetAll()" *ngIf="checkedCount > 0">Svuota spuntati</button>
+  </div>
+
+  <div *ngIf="items.length === 0" class="history-empty">
+    Nessun alimento trovato nel piano {{ mode === 'on' ? 'ON' : 'OFF' }}.<br>
+    Aggiungi alimenti alla dieta per vederli qui.
+  </div>
+
+  <div *ngIf="items.length > 0" class="grouplist">
+    <div class="daycard press-fx shop-item" [class.checked]="item.checked" *ngFor="let item of items" (click)="toggle(item)">
+      <div class="shop-check" [class.on]="item.checked">
+        <svg *ngIf="item.checked" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="info">
+        <div class="lbl">{{ item.name }}</div>
+        <div class="meta">
+          <ng-container *ngIf="item.qtys.length">{{ item.qtys.join(' + ') }} · </ng-container>{{ item.meals.join(', ') }}
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>
