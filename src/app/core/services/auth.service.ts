@@ -6,6 +6,8 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
+  setPersistence,
+  inMemoryPersistence,
   User
 } from 'firebase/auth';
 import {
@@ -143,6 +145,7 @@ export class AuthService {
     const secondaryApp = initializeApp(environment.firebase, `secondary-${Date.now()}`);
     try {
       const secondaryAuth = getAuth(secondaryApp);
+      await setPersistence(secondaryAuth, inMemoryPersistence);
       const secondaryDb = getFirestore(secondaryApp);
       const cred = await createUserWithEmailAndPassword(secondaryAuth, email.trim(), tempPassword);
 
