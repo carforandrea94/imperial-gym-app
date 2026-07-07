@@ -153,6 +153,19 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .ex.open .ex-chevron{transform:rotate(180deg);color:var(--accent);}
 .ex-counter{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--label-2);background:rgba(255,255,255,0.06);border:1px solid var(--content-glass-border);border-radius:20px;padding:3px 9px;transition:color .2s ease,border-color .2s ease;}
 .ex-counter.complete{color:#000;background:var(--accent);border-color:var(--accent);}
+.ex-chip.rest{color:var(--label-2);}
+.ex-restbtn{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;border:1px solid var(--content-glass-border);background:rgba(255,255,255,0.06);color:var(--label-2);cursor:pointer;transition:color .18s ease,background .18s ease,transform .18s ease;flex-shrink:0;}
+.ex-restbtn:active{transform:scale(0.9);}
+.ex-restbtn:hover{color:var(--label);background:rgba(255,255,255,0.1);}
+.restbox{max-width:340px;}
+.restmodal-title{font-weight:700;margin-bottom:16px;}
+.rest-stepper{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:14px;}
+.rest-stepbtn{width:44px;height:44px;border-radius:14px;border:1px solid var(--content-glass-border);background:rgba(255,255,255,0.07);color:var(--label);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13px;cursor:pointer;}
+.rest-stepbtn:active{transform:scale(0.92);}
+.rest-value{font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:700;color:var(--label);min-width:88px;text-align:center;}
+.rest-defaultbtn{width:100%;padding:10px;margin-bottom:16px;border-radius:12px;border:1px dashed var(--content-glass-border);background:transparent;color:var(--label-2);font-family:'Inter',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer;}
+.rest-defaultbtn:hover{color:var(--label);border-color:var(--label-2);}
+.confirmbtn.restsave{background:var(--accent);color:#000;}
 .ex .content-inner{padding:0 16px 16px;border-top:1px solid var(--separator);}
 .ex .note{font-size:12px;color:var(--label-3);margin-top:10px;line-height:1.4;}
 .settable-head{display:grid;grid-template-columns:38px 1fr 1fr 32px;gap:8px;align-items:center;padding:12px 2px 8px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--label-3);}

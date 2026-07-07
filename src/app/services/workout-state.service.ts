@@ -38,15 +38,16 @@ export class WorkoutStateService {
     return Math.min(Math.max(week, 1), 8);
   }
 
-  startRestTimer(): void {
+  startRestTimer(durationSeconds?: number): void {
     this.stopRestTimer();
-    let remaining = REST_DURATION;
+    const duration = durationSeconds && durationSeconds > 0 ? durationSeconds : REST_DURATION;
+    let remaining = duration;
 
     this.restTimer.set({ show: true, remaining, finished: false, fillPct: 100 });
 
     this.ticker = setInterval(() => {
       remaining--;
-      const fillPct = (remaining / REST_DURATION) * 100;
+      const fillPct = (remaining / duration) * 100;
       this.restTimer.set({ show: true, remaining, finished: remaining <= 0, fillPct: Math.max(fillPct, 0) });
 
       if (remaining <= 0) {

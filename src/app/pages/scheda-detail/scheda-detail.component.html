@@ -19,8 +19,15 @@
           {{ vm.ex.muscle }}
         </span>
         <span class="ex-chip" *ngIf="vm.ex.text">{{ vm.ex.text }}</span>
+        <span class="ex-chip rest">⏱ {{ formatRest(vm.restSeconds) }}</span>
       </div>
       <div class="ex-meta">
+        <button class="ex-restbtn" (click)="openRestModal(vm, $event)" aria-label="Imposta tempo di recupero">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
         <span class="ex-schemebadge">{{ vm.ex.scheme === 'wave' ? 'WAVE' : 'FISSO' }}</span>
         <span class="ex-counter" [class.complete]="isComplete(vm)">
           {{ getDoneCount(vm) }}/{{ vm.rows.length }}
@@ -74,4 +81,24 @@
   <button [class]="getSaveBtnClass()" (click)="saveWorkout()">
     {{ getSaveBtnText() }}
   </button>
+</div>
+
+<div class="confirmoverlay" [class.show]="restModalOpen" (click)="onRestOverlayClick($event)">
+  <div class="confirmbox restbox" *ngIf="restModalVm">
+    <p class="confirmtext restmodal-title">
+      Recupero — {{ restModalVm.ex.name }}
+    </p>
+    <div class="rest-stepper">
+      <button class="rest-stepbtn" (click)="adjustRestModalValue(-15)">–15</button>
+      <div class="rest-value">{{ formatRest(restModalValue) }}</div>
+      <button class="rest-stepbtn" (click)="adjustRestModalValue(15)">+15</button>
+    </div>
+    <button class="rest-defaultbtn" (click)="resetRestModalToDefault()">
+      Usa il default del protocollo ({{ formatRest(parseRecSecondsPublic()) }})
+    </button>
+    <div class="confirmbtns">
+      <button class="confirmbtn cancel" (click)="closeRestModal()">Annulla</button>
+      <button class="confirmbtn danger restsave" (click)="saveRestModal()">Salva</button>
+    </div>
+  </div>
 </div>

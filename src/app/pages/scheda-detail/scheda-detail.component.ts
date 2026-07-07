@@ -23,6 +23,7 @@ interface ExerciseVM {
   open: boolean;
   insightVisible: boolean;
   insight: ExInsight | null;
+  restSeconds: number;
 }
 
 @Component({
@@ -38,6 +39,10 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
   exercises: ExerciseVM[] = [];
   saveStatus: 'idle' | 'saved' | 'err' = 'idle';
   private draftTimer: ReturnType<typeof setTimeout> | null = null;
+
+  restModalOpen = false;
+  restModalVm: ExerciseVM | null = null;
+  restModalValue = 90;
 
   constructor(
     private route: ActivatedRoute,
@@ -65,6 +70,7 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
 
   private buildExercises(): void {
     const week = this.state.currentWeek;
+    const protocolDefault = this.parseRecSeconds(this.day.rec);
     this.exercises = this.day.ex.map(ex => {
       const { sets, reps } = this.workoutData.getExSetsReps(ex, week);
       const rows: SerieRow[] = Array.from({ length: sets }, (_, i) => ({
@@ -74,8 +80,23 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
         ripPlaceholder: String(reps[i] ?? ''),
         loadPlaceholder: ''
       }));
-      return { ex, rows, open: true, insightVisible: false, insight: null };
+      const override = this.storage.getJSON<number>(this.restKey(ex.name));
+      const restSeconds = override && override > 0 ? override : protocolDefault;
+      return { ex, rows, open: true, insightVisible: false, insight: null, restSeconds };
     });
+  }
+
+  /** Converte la stringa del protocollo (es. "60-90" oppure "90") nel numero di secondi di default. */
+  private parseRecSeconds(rec: string | undefined): number {
+    if (!rec) return 90;
+    const nums = (rec.match(/\d+/g) ?? []).map(n => parseInt(n, 10));
+    if (nums.length === 0) return 90;
+    if (nums.length === 1) return nums[0];
+    return Math.round((nums[0] + nums[1]) / 2);
+  }
+
+  private restKey(exName: string): string {
+    return `rest:${this.day.id}:${exName}`;
   }
 
   private loadDraft(): void {
@@ -173,7 +194,7 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
     vm.rows[rowIdx].done = !vm.rows[rowIdx].done;
     this.scheduleDraft();
     if (vm.rows[rowIdx].done) {
-      this.state.startRestTimer();
+      this.state.startRestTimer(vm.restSeconds);
     }
   }
 
@@ -207,6 +228,52 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
     return this.sanitizer.bypassSecurityTrustHtml(
       this.workoutData.MUSCLE_ICONS[muscle] ?? this.workoutData.MUSCLE_ICONS['Core']
     );
+  }
+
+  openRestModal(vm: ExerciseVM, event: Event): void {
+    event.stopPropagation();
+    this.restModalVm = vm;
+    this.restModalValue = vm.restSeconds;
+    this.restModalOpen = true;
+  }
+
+  closeRestModal(): void {
+    this.restModalOpen = false;
+    this.restModalVm = null;
+  }
+
+  onRestOverlayClick(event: MouseEvent): void {
+    if ((event.target as HTMLElement).classList.contains('confirmoverlay')) {
+      this.closeRestModal();
+    }
+  }
+
+  adjustRestModalValue(delta: number): void {
+    this.restModalValue = Math.min(600, Math.max(5, this.restModalValue + delta));
+  }
+
+  resetRestModalToDefault(): void {
+    if (!this.restModalVm) return;
+    this.restModalValue = this.parseRecSeconds(this.day.rec);
+  }
+
+  saveRestModal(): void {
+    if (!this.restModalVm) return;
+    this.restModalVm.restSeconds = this.restModalValue;
+    this.storage.setJSON(this.restKey(this.restModalVm.ex.name), this.restModalValue);
+    this.closeRestModal();
+  }
+
+  /** Wrapper pubblico per il template: default del protocollo per il giorno corrente. */
+  parseRecSecondsPublic(): number {
+    return this.parseRecSeconds(this.day.rec);
+  }
+
+  formatRest(seconds: number): string {
+    if (seconds % 60 === 0) return `${seconds / 60}:00`;
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return m > 0 ? `${m}:${s.toString().padStart(2, '0')}` : `${s}s`;
   }
 
   async saveWorkout(): Promise<void> {
