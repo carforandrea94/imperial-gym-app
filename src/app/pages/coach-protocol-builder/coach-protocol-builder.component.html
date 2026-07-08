@@ -211,6 +211,7 @@
       <div class="infocard meal-preview-card" *ngFor="let meal of editingPlan.meals" (click)="openMeal(meal)">
         <div class="meal-preview-header">
           <div class="lbl">{{ meal.name || 'Pasto senza nome' }}</div>
+          <span class="protocol-status ps-draft" *ngIf="meal.combinations.length > 1">{{ meal.combinations.length }} combinazioni</span>
           <button class="delete-btn" (click)="removeMeal(meal, $event)" title="Elimina pasto">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
@@ -220,22 +221,22 @@
 
         <div *ngIf="countMealItems(meal) === 0" class="meal-preview-empty">Nessun alimento ancora</div>
 
-        <div class="meal-preview-cat" *ngFor="let cat of categoriesWithItems(meal)">
+        <div class="meal-preview-cat" *ngFor="let cat of categoriesWithItems(meal.combinations[0])">
           <span class="meal-preview-catlabel">{{ foodCategoryLabels[cat] }}</span>
           <div class="meal-preview-item">
-            <span class="fname">{{ firstItem(meal, cat)?.name }}</span>
-            <span class="fqty">{{ firstItem(meal, cat)?.qty }}</span>
+            <span class="fname">{{ firstItem(meal.combinations[0], cat)?.name }}</span>
+            <span class="fqty">{{ firstItem(meal.combinations[0], cat)?.qty }}</span>
           </div>
 
-          <ng-container *ngIf="restItems(meal, cat).length > 0">
-            <div class="altwrap-header" (click)="toggleCatExpanded(meal, cat, $event)">
-              <span>{{ isCatExpanded(meal, cat) ? 'Nascondi' : '+' + restItems(meal, cat).length + ' altri' }}</span>
+          <ng-container *ngIf="restItems(meal.combinations[0], cat).length > 0">
+            <div class="altwrap-header" (click)="toggleCatExpanded(meal.combinations[0], cat, $event)">
+              <span>{{ isCatExpanded(meal.combinations[0], cat) ? 'Nascondi' : '+' + restItems(meal.combinations[0], cat).length + ' altri' }}</span>
               <span class="chevron">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
               </span>
             </div>
-            <div class="altlist" *ngIf="isCatExpanded(meal, cat)">
-              <div class="meal-preview-item" *ngFor="let it of restItems(meal, cat)">
+            <div class="altlist" *ngIf="isCatExpanded(meal.combinations[0], cat)">
+              <div class="meal-preview-item" *ngFor="let it of restItems(meal.combinations[0], cat)">
                 <span class="fname">{{ it.name }}</span>
                 <span class="fqty">{{ it.qty }}</span>
               </div>
@@ -260,19 +261,41 @@
         </div>
       </div>
 
+      <p class="sectiontitle" style="margin-top:0">Combinazioni</p>
+      <div class="variant-tabs">
+        <button *ngFor="let combo of em.combinations"
+          [class.active]="getActiveCombo(em).id === combo.id"
+          (click)="setActiveCombo(em, combo)">
+          {{ combo.label }}
+        </button>
+        <button (click)="addCombination(em)" title="Aggiungi combinazione alternativa">+ Alternativa</button>
+      </div>
+
+      <ng-container *ngIf="em.combinations.length > 1">
+        <div class="authfield">
+          <label>Nome combinazione</label>
+          <div class="measure-input-wrap" style="display:flex;gap:8px">
+            <input type="text" [ngModel]="getActiveCombo(em).label" (ngModelChange)="getActiveCombo(em).label = $event" placeholder="Es. Alternativa 1" style="flex:1" />
+          </div>
+        </div>
+        <button class="confirmbtn cancel" style="width:100%;margin-bottom:16px" (click)="removeCombination(em, getActiveCombo(em), $event)">
+          Rimuovi questa combinazione
+        </button>
+      </ng-container>
+
       <ng-container *ngFor="let cat of foodCategories">
         <p class="sectiontitle" style="margin-top:16px">{{ foodCategoryLabels[cat] }}</p>
         <div class="infocard">
-          <div class="builder-item" *ngFor="let item of itemsByCategory(em, cat)">
+          <div class="builder-item" *ngFor="let item of itemsByCategory(getActiveCombo(em), cat)">
             <div class="measure-input-wrap">
               <input type="text" [(ngModel)]="item.name" placeholder="Alimento" />
             </div>
             <div class="measure-input-wrap builder-qty">
               <input type="text" [(ngModel)]="item.qty" placeholder="Quantita'" />
             </div>
-            <button class="delete-btn" (click)="removeItem(em, item)">✕</button>
+            <button class="delete-btn" (click)="removeItem(getActiveCombo(em), item)">✕</button>
           </div>
-          <button class="confirmbtn cancel" style="width:100%;margin-top:6px" (click)="addItem(em, cat)">+ Aggiungi {{ foodCategoryLabels[cat].toLowerCase() }}</button>
+          <button class="confirmbtn cancel" style="width:100%;margin-top:6px" (click)="addItem(getActiveCombo(em), cat)">+ Aggiungi {{ foodCategoryLabels[cat].toLowerCase() }}</button>
         </div>
       </ng-container>
 

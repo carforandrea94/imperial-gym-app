@@ -12,13 +12,13 @@
 
     <div class="content-inner" *ngIf="vm.open">
 
-      <!-- Variant tabs (colazione) -->
-      <div class="variant-tabs" *ngIf="hasVariants(vm)">
+      <!-- Tab combinazioni (Base + alternative) -->
+      <div class="variant-tabs" *ngIf="hasMultipleCombinations(vm)">
         <button
-          *ngFor="let v of getVariants(vm); let vi = index"
-          [class.active]="vm.selectedVariant === vi"
-          (click)="selectVariant(vm, vi)">
-          {{ v.label }}
+          *ngFor="let combo of getCombinations(vm)"
+          [class.active]="vm.selectedComboId === combo.id"
+          (click)="selectCombo(vm, combo)">
+          {{ combo.label }}
         </button>
       </div>
 

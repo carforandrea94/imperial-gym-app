@@ -6,7 +6,7 @@ import { ProtocolService } from '../../services/protocol.service';
 import { WorkoutDataService } from '../../services/workout-data.service';
 import { Protocol } from '../../models/protocol.model';
 import { Day, Exercise } from '../../models/workout.model';
-import { FoodItem, DietPlan, NamedMeal, newDietPlan, newNamedMeal, FoodCategory, FOOD_CATEGORIES, FOOD_CATEGORY_LABELS } from '../../models/diet.model';
+import { FoodItem, DietPlan, NamedMeal, MealCombination, newDietPlan, newNamedMeal, newCombination, FoodCategory, FOOD_CATEGORIES, FOOD_CATEGORY_LABELS } from '../../models/diet.model';
 
 type Tab = 'scheda' | 'dieta' | 'info';
 
@@ -185,11 +185,7 @@ export class CoachProtocolBuilderComponent implements OnInit {
   }
 
   countPlanItems(plan: DietPlan): number {
-    return plan.meals.reduce((acc, meal) => {
-      const fromItems = meal.items?.length ?? 0;
-      const fromVariants = meal.variants?.reduce((a, v) => a + (v.items?.length ?? 0), 0) ?? 0;
-      return acc + fromItems + fromVariants;
-    }, 0);
+    return plan.meals.reduce((acc, meal) => acc + this.countMealItems(meal), 0);
   }
 
   addMeal(): void {
@@ -197,11 +193,13 @@ export class CoachProtocolBuilderComponent implements OnInit {
     const meal = newNamedMeal('Nuovo pasto');
     this.editingPlan.meals.push(meal);
     this.editingMeal = meal;
+    this.activeCombo[meal.id] = meal.combinations[0].id;
     this.cdr.detectChanges();
   }
 
   openMeal(meal: NamedMeal): void {
     this.editingMeal = meal;
+    if (!this.activeCombo[meal.id]) this.activeCombo[meal.id] = meal.combinations[0].id;
     this.cdr.detectChanges();
   }
 
@@ -225,52 +223,80 @@ export class CoachProtocolBuilderComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+  // ===== Combinazioni (Base + alternative) =====
+
+  activeCombo: Record<string, string> = {};
   expandedMealCats = new Set<string>();
 
-  countMealItems(meal: NamedMeal): number {
-    const fromItems = meal.items?.length ?? 0;
-    const fromVariants = meal.variants?.reduce((a, v) => a + (v.items?.length ?? 0), 0) ?? 0;
-    return fromItems + fromVariants;
+  getActiveCombo(meal: NamedMeal): MealCombination {
+    const id = this.activeCombo[meal.id];
+    return meal.combinations.find(c => c.id === id) ?? meal.combinations[0];
   }
 
-  categoriesWithItems(meal: NamedMeal): FoodCategory[] {
-    return this.foodCategories.filter(cat => this.itemsByCategory(meal, cat).length > 0);
+  setActiveCombo(meal: NamedMeal, combo: MealCombination, event?: Event): void {
+    event?.stopPropagation();
+    this.activeCombo[meal.id] = combo.id;
+    this.cdr.detectChanges();
   }
 
-  firstItem(meal: NamedMeal, cat: FoodCategory): FoodItem | null {
-    return this.itemsByCategory(meal, cat)[0] ?? null;
+  addCombination(meal: NamedMeal): void {
+    const n = meal.combinations.length + 1;
+    const combo = newCombination(`Alternativa ${n - 1}`);
+    meal.combinations.push(combo);
+    this.activeCombo[meal.id] = combo.id;
+    this.cdr.detectChanges();
   }
 
-  restItems(meal: NamedMeal, cat: FoodCategory): FoodItem[] {
-    return this.itemsByCategory(meal, cat).slice(1);
-  }
-
-  isCatExpanded(meal: NamedMeal, cat: FoodCategory): boolean {
-    return this.expandedMealCats.has(`${meal.id}:${cat}`);
-  }
-
-  toggleCatExpanded(meal: NamedMeal, cat: FoodCategory, event: Event): void {
+  removeCombination(meal: NamedMeal, combo: MealCombination, event: Event): void {
     event.stopPropagation();
-    const key = `${meal.id}:${cat}`;
+    if (meal.combinations.length <= 1) return; // deve restarne sempre almeno una (la base)
+    meal.combinations = meal.combinations.filter(c => c.id !== combo.id);
+    if (this.activeCombo[meal.id] === combo.id) this.activeCombo[meal.id] = meal.combinations[0].id;
+    this.cdr.detectChanges();
+  }
+
+  countMealItems(meal: NamedMeal): number {
+    return meal.combinations.reduce((acc, c) => acc + (c.items?.length ?? 0), 0);
+  }
+
+  categoriesWithItems(combo: MealCombination): FoodCategory[] {
+    return this.foodCategories.filter(cat => this.itemsByCategory(combo, cat).length > 0);
+  }
+
+  firstItem(combo: MealCombination, cat: FoodCategory): FoodItem | null {
+    return this.itemsByCategory(combo, cat)[0] ?? null;
+  }
+
+  restItems(combo: MealCombination, cat: FoodCategory): FoodItem[] {
+    return this.itemsByCategory(combo, cat).slice(1);
+  }
+
+  isCatExpanded(combo: MealCombination, cat: FoodCategory): boolean {
+    return this.expandedMealCats.has(`${combo.id}:${cat}`);
+  }
+
+  toggleCatExpanded(combo: MealCombination, cat: FoodCategory, event: Event): void {
+    event.stopPropagation();
+    const key = `${combo.id}:${cat}`;
     if (this.expandedMealCats.has(key)) this.expandedMealCats.delete(key);
     else this.expandedMealCats.add(key);
     this.cdr.detectChanges();
   }
 
-  itemsByCategory(meal: NamedMeal, category: FoodCategory): FoodItem[] {
-    if (!meal.items) meal.items = [];
-    return meal.items.filter(i => (i.category ?? 'carb') === category);
+  itemsByCategory(combo: MealCombination, category: FoodCategory): FoodItem[] {
+    if (!combo.items) combo.items = [];
+    return combo.items.filter(i => (i.category ?? 'carb') === category);
   }
 
-  addItem(meal: NamedMeal, category: FoodCategory): void {
-    if (!meal.items) meal.items = [];
-    meal.items.push({ name: '', qty: '', category });
+  addItem(combo: MealCombination, category: FoodCategory): void {
+    if (!combo.items) combo.items = [];
+    combo.items.push({ name: '', qty: '', category });
   }
 
-  removeItem(meal: NamedMeal, item: FoodItem): void {
-    if (!meal.items) return;
-    const idx = meal.items.indexOf(item);
-    if (idx >= 0) meal.items.splice(idx, 1);
+  removeItem(combo: MealCombination, item: FoodItem): void {
+    if (!combo.items) return;
+    const idx = combo.items.indexOf(item);
+    if (idx >= 0) combo.items.splice(idx, 1);
   }
 
   // ===== Salvataggio =====

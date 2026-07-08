@@ -15,17 +15,19 @@ export const FOOD_CATEGORY_LABELS: Record<FoodCategory, string> = {
 
 export const FOOD_CATEGORIES: FoodCategory[] = ['carb', 'protein', 'fat'];
 
-export interface MealVariant {
+/** Una combinazione di carbo+proteine+grassi per un pasto (es. "Opzione 1", "Combo pollo e riso"). */
+export interface MealCombination {
+  id: string;
   label: string;
   items: FoodItem[];
 }
 
-/** Un pasto con nome libero (Colazione, Spuntino, ma anche "Pre-workout", ecc.). */
+/** Un pasto con nome libero (Colazione, Spuntino, ma anche "Pre-workout", ecc.).
+ *  Ha sempre almeno una combinazione; se ce n'e' piu' di una vengono mostrate come tab. */
 export interface NamedMeal {
   id: string;
   name: string;
-  items?: FoodItem[];
-  variants?: MealVariant[];
+  combinations: MealCombination[];
 }
 
 /** Un piano dieta con nome libero (es. "Giorno ON", "Giorno OFF", "Rifeed", "Vacanza"...). */
@@ -40,12 +42,16 @@ export type Diet = DietPlan[];
 
 export const DEFAULT_MEAL_NAMES = ['Colazione', 'Spuntino', 'Pranzo', 'Merenda', 'Cena'];
 
-function newMealId(): string {
-  return `meal_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+function newId(prefix: string): string {
+  return `${prefix}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+}
+
+export function newCombination(label: string): MealCombination {
+  return { id: newId('combo'), label, items: [] };
 }
 
 export function newNamedMeal(name: string): NamedMeal {
-  return { id: newMealId(), name, items: [] };
+  return { id: newId('meal'), name, combinations: [newCombination('Base')] };
 }
 
 export function defaultMeals(): NamedMeal[] {
@@ -53,5 +59,5 @@ export function defaultMeals(): NamedMeal[] {
 }
 
 export function newDietPlan(name: string): DietPlan {
-  return { id: `diet_${Date.now()}_${Math.floor(Math.random() * 1000)}`, name, meals: defaultMeals() };
+  return { id: newId('diet'), name, meals: defaultMeals() };
 }

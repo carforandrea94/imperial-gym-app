@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import * as pdfjsLib from 'pdfjs-dist';
 import { Day, Exercise } from '../models/workout.model';
 import { Diet, DEFAULT_MEAL_NAMES, newDietPlan, newNamedMeal } from '../models/diet.model';
-
 // Worker servito da CDN (evita di dover gestire il bundling del worker separatamente)
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${(pdfjsLib as any).version}/pdf.worker.min.mjs`;
@@ -112,13 +111,14 @@ export class PdfImportService {
       if (!currentMealName) continue;
 
       const meal = plan.meals.find(m => m.name === currentMealName)!;
-      if (!meal.items) meal.items = [];
+      const base = meal.combinations[0];
+      if (!base.items) base.items = [];
 
       const m = line.match(qtyRegex);
       if (m) {
-        meal.items.push({ name: m[1].trim(), qty: m[2].trim() });
+        base.items.push({ name: m[1].trim(), qty: m[2].trim() });
       } else if (line.length > 1 && line.length < 80) {
-        meal.items.push({ name: line, qty: '' });
+        base.items.push({ name: line, qty: '' });
       }
     }
 

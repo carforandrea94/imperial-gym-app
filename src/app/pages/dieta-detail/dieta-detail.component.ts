@@ -2,12 +2,12 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DietDataService } from '../../services/diet-data.service';
-import { DietPlan, NamedMeal, FoodItem, FoodCategory, FOOD_CATEGORIES, FOOD_CATEGORY_LABELS } from '../../models/diet.model';
+import { DietPlan, NamedMeal, MealCombination, FoodItem, FoodCategory, FOOD_CATEGORIES, FOOD_CATEGORY_LABELS } from '../../models/diet.model';
 
 interface MealVM {
   meal: NamedMeal;
   open: boolean;
-  selectedVariant: number;
+  selectedComboId: string;
   altOpen: boolean[];
 }
 
@@ -39,7 +39,7 @@ export class DietaDetailComponent implements OnInit {
     this.meals = this.plan.meals.map(meal => ({
       meal,
       open: true,
-      selectedVariant: 0,
+      selectedComboId: meal.combinations[0]?.id ?? '',
       altOpen: []
     }));
     this.meals.forEach(vm => {
@@ -50,20 +50,29 @@ export class DietaDetailComponent implements OnInit {
   toggleMeal(vm: MealVM): void {
     vm.open = !vm.open;
     if (vm.open) {
-      const items = this.getItems(vm);
-      vm.altOpen = items.map(() => true);
+      vm.altOpen = this.getItems(vm).map(() => true);
     }
   }
 
-  hasVariants(vm: MealVM): boolean {
-    return !!(vm.meal.variants?.length);
+  hasMultipleCombinations(vm: MealVM): boolean {
+    return vm.meal.combinations.length > 1;
+  }
+
+  getCombinations(vm: MealVM): MealCombination[] {
+    return vm.meal.combinations;
+  }
+
+  getActiveCombo(vm: MealVM): MealCombination {
+    return vm.meal.combinations.find(c => c.id === vm.selectedComboId) ?? vm.meal.combinations[0];
+  }
+
+  selectCombo(vm: MealVM, combo: MealCombination): void {
+    vm.selectedComboId = combo.id;
+    vm.altOpen = this.getItems(vm).map(() => true);
   }
 
   getItems(vm: MealVM): FoodItem[] {
-    if (vm.meal.variants?.length) {
-      return vm.meal.variants[vm.selectedVariant]?.items ?? [];
-    }
-    return vm.meal.items ?? [];
+    return this.getActiveCombo(vm)?.items ?? [];
   }
 
   itemsByCategory(vm: MealVM, category: FoodCategory): FoodItem[] {
@@ -81,23 +90,13 @@ export class DietaDetailComponent implements OnInit {
   private expandedCats = new Set<string>();
 
   isCatExpanded(vm: MealVM, cat: FoodCategory): boolean {
-    return this.expandedCats.has(`${vm.meal.id}:${cat}`);
+    return this.expandedCats.has(`${vm.meal.id}:${vm.selectedComboId}:${cat}`);
   }
 
   toggleCatExpanded(vm: MealVM, cat: FoodCategory): void {
-    const key = `${vm.meal.id}:${cat}`;
+    const key = `${vm.meal.id}:${vm.selectedComboId}:${cat}`;
     if (this.expandedCats.has(key)) this.expandedCats.delete(key);
     else this.expandedCats.add(key);
-  }
-
-  getVariants(vm: MealVM) {
-    return vm.meal.variants ?? [];
-  }
-
-  selectVariant(vm: MealVM, idx: number): void {
-    vm.selectedVariant = idx;
-    const items = this.getItems(vm);
-    vm.altOpen = items.map(() => true);
   }
 
   toggleAlt(vm: MealVM, idx: number): void {

@@ -41,20 +41,18 @@ export class ListaSpesaComponent implements OnInit {
 
     for (const plan of this.dietData.diet) {
       for (const meal of plan.meals) {
-        const allFoods = [
-          ...(meal.items ?? []),
-          ...(meal.variants ?? []).flatMap(v => v.items)
-        ];
-        for (const food of allFoods) {
-          if (!food.name) continue;
-          const key = food.name.trim().toLowerCase();
-          if (!map.has(key)) {
-            map.set(key, { key, name: food.name.trim(), qtys: [], sources: [], checked: !!checked[this.safeKey(key)] });
+        for (const combo of meal.combinations) {
+          for (const food of combo.items ?? []) {
+            if (!food.name) continue;
+            const key = food.name.trim().toLowerCase();
+            if (!map.has(key)) {
+              map.set(key, { key, name: food.name.trim(), qtys: [], sources: [], checked: !!checked[this.safeKey(key)] });
+            }
+            const entry = map.get(key)!;
+            if (food.qty && !entry.qtys.includes(food.qty)) entry.qtys.push(food.qty);
+            const source = `${plan.name} · ${meal.name}`;
+            if (!entry.sources.includes(source)) entry.sources.push(source);
           }
-          const entry = map.get(key)!;
-          if (food.qty && !entry.qtys.includes(food.qty)) entry.qtys.push(food.qty);
-          const source = `${plan.name} · ${meal.name}`;
-          if (!entry.sources.includes(source)) entry.sources.push(source);
         }
       }
     }

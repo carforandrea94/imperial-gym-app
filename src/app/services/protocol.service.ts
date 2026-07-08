@@ -19,13 +19,26 @@ const LEGACY_MEAL_LABELS: Record<string, string> = {
   colazione: 'Colazione', spuntino: 'Spuntino', pranzo: 'Pranzo', merenda: 'Merenda', cena: 'Cena'
 };
 
+function normalizeMeal(meal: any): any {
+  if (Array.isArray(meal.combinations)) return meal;
+  console.warn(`Pasto "${meal.name}" in formato legacy (senza combinations[]), normalizzato.`);
+  const baseItems: any[] = meal.items ?? [];
+  const combinations = [{ id: meal.id ?? 'base', label: 'Base', items: baseItems }];
+  (meal.variants ?? []).forEach((v: any, i: number) => {
+    combinations.push({ id: `legacy_${i}`, label: v.label ?? `Opzione ${i + 2}`, items: v.items ?? [] });
+  });
+  return { id: meal.id, name: meal.name, combinations };
+}
+
 /**
  * Protocolli creati prima della migrazione dieta ON/OFF -> lista libera di
  * piani hanno ancora diet: {on:{...}, off:{...}} invece di un array.
  * Piani creati nella finestra intermedia (lista di piani, ma pasti ancora
  * a chiavi fisse colazione/spuntino/...) non hanno il campo meals[].
- * Normalizziamo entrambi i casi in lettura, cosi' il resto del codice puo'
- * sempre assumere che protocol.diet sia un array di piani con meals[].
+ * Pasti creati prima delle combinazioni non hanno combinations[].
+ * Normalizziamo tutti i casi in lettura, cosi' il resto del codice puo'
+ * sempre assumere che protocol.diet sia un array di piani con
+ * meals[].combinations[].
  */
 function normalizeProtocol(p: Protocol): Protocol {
   if (!Array.isArray(p.diet)) {
@@ -34,14 +47,14 @@ function normalizeProtocol(p: Protocol): Protocol {
     return p;
   }
   p.diet = p.diet.map((plan: any) => {
-    if (!Array.isArray(plan.meals)) {
+    let meals = plan.meals;
+    if (!Array.isArray(meals)) {
       console.warn(`Protocollo ${p.id}: piano "${plan.name}" in formato legacy (senza meals[]), normalizzato.`);
-      const meals = LEGACY_MEAL_KEYS
+      meals = LEGACY_MEAL_KEYS
         .filter(key => plan[key])
         .map(key => ({ id: key, name: LEGACY_MEAL_LABELS[key], ...plan[key] }));
-      return { id: plan.id, name: plan.name, meals };
     }
-    return plan;
+    return { id: plan.id, name: plan.name, meals: meals.map(normalizeMeal) };
   });
   return p;
 }
