@@ -27,6 +27,7 @@ export class CoachProtocolBuilderComponent implements OnInit {
 
   tab: Tab = 'scheda';
   editingPlan: DietPlan | null = null;
+  editingExercise: { day: Day; ex: Exercise; isNew: boolean } | null = null;
 
   readonly mealOrder = ['colazione', 'spuntino', 'pranzo', 'merenda', 'cena'] as const;
   readonly mealLabels = MEAL_LABELS;
@@ -63,18 +64,47 @@ export class CoachProtocolBuilderComponent implements OnInit {
     this.protocol?.workout.days.splice(i, 1);
   }
 
+  // --- Editor esercizio (nome, muscolo, schema, progressione settimanale se wave) ---
+
   addExercise(day: Day): void {
     const ex: Exercise = { name: '', scheme: 'plain', sets: 3, muscle: this.muscles[0], text: '', reps: ['', '', ''] };
-    day.ex.push(ex);
+    this.editingExercise = { day, ex, isNew: true };
+    this.cdr.detectChanges();
   }
 
-  removeExercise(day: Day, i: number): void {
-    day.ex.splice(i, 1);
+  editExercise(day: Day, ex: Exercise): void {
+    this.editingExercise = { day, ex, isNew: false };
+    this.cdr.detectChanges();
+  }
+
+  saveExercise(): void {
+    if (!this.editingExercise) return;
+    const { day, ex, isNew } = this.editingExercise;
+    if (isNew) day.ex.push(ex);
+    this.editingExercise = null;
+    this.cdr.detectChanges();
+  }
+
+  cancelExercise(): void {
+    this.editingExercise = null;
+    this.cdr.detectChanges();
+  }
+
+  removeExerciseFromEditor(): void {
+    if (!this.editingExercise) return;
+    const { day, ex } = this.editingExercise;
+    const idx = day.ex.indexOf(ex);
+    if (idx >= 0) day.ex.splice(idx, 1);
+    this.editingExercise = null;
+    this.cdr.detectChanges();
   }
 
   onSchemeChange(ex: Exercise): void {
     if (ex.scheme === 'plain' && (!ex.reps || ex.reps.length !== ex.sets)) {
       ex.reps = Array.from({ length: ex.sets }, () => '');
+    }
+    if (ex.scheme === 'wave' && (!ex.weekPlan || ex.weekPlan.length === 0)) {
+      ex.weekPlan = Array.from({ length: 8 }, () => ({ sets: 4, reps: 10 }));
     }
   }
 
@@ -95,12 +125,21 @@ export class CoachProtocolBuilderComponent implements OnInit {
     ex.reps = value.split(',').map(s => s.trim());
   }
 
-  addWeek(): void {
-    this.protocol?.workout.weekPlan.push({ sets: 4, reps: 10 });
+  addExWeek(ex: Exercise): void {
+    if (!ex.weekPlan) ex.weekPlan = [];
+    ex.weekPlan.push({ sets: 4, reps: 10 });
   }
 
-  removeWeek(i: number): void {
-    this.protocol?.workout.weekPlan.splice(i, 1);
+  removeExWeek(ex: Exercise, i: number): void {
+    ex.weekPlan?.splice(i, 1);
+  }
+
+  exerciseSummary(ex: Exercise): string {
+    if (ex.scheme === 'wave') {
+      const n = ex.weekPlan?.length ?? 0;
+      return n > 0 ? `Wave · ${n} settimane` : 'Wave · da configurare';
+    }
+    return `${ex.sets}×${(ex.reps ?? []).join('-') || '?'}`;
   }
 
   // ===== Dieta =====

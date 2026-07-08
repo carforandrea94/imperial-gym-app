@@ -11,6 +11,8 @@ export interface Exercise {
   text?: string;
   reps?: (number | string)[];
   note?: string;
+  /** Solo per scheme 'wave': progressione settimanale specifica di questo esercizio. */
+  weekPlan?: WeekPlan[];
 }
 
 export interface Day {

@@ -65,7 +65,8 @@ export class WorkoutDataService {
 
   getExSetsReps(ex: Exercise, week: number): { sets: number; reps: (number | string)[] } {
     if (ex.scheme === 'wave') {
-      const wp = this.WEEK_PLAN[week - 1];
+      const plan = ex.weekPlan && ex.weekPlan.length > 0 ? ex.weekPlan : this.WEEK_PLAN;
+      const wp = plan[Math.min(week, plan.length) - 1] ?? plan[0] ?? { sets: 3, reps: 10 };
       return {
         sets: wp.sets,
         reps: Array(wp.sets).fill(wp.reps)
