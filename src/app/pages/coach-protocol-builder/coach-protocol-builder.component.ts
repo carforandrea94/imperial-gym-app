@@ -58,10 +58,12 @@ export class CoachProtocolBuilderComponent implements OnInit {
     const n = this.protocol.workout.days.length + 1;
     const day: Day = { id: `day${n}`, label: `Giorno ${n}`, rec: '60-90"', ex: [] };
     this.protocol.workout.days.push(day);
+    this.cdr.detectChanges();
   }
 
   removeDay(i: number): void {
     this.protocol?.workout.days.splice(i, 1);
+    this.cdr.detectChanges();
   }
 
   // --- Editor esercizio (nome, muscolo, schema, progressione settimanale se wave) ---
@@ -106,6 +108,7 @@ export class CoachProtocolBuilderComponent implements OnInit {
     if (ex.scheme === 'wave' && (!ex.weekPlan || ex.weekPlan.length === 0)) {
       ex.weekPlan = Array.from({ length: 8 }, () => ({ sets: 4, reps: 10 }));
     }
+    this.cdr.detectChanges();
   }
 
   onSetsChange(ex: Exercise): void {
@@ -128,10 +131,12 @@ export class CoachProtocolBuilderComponent implements OnInit {
   addExWeek(ex: Exercise): void {
     if (!ex.weekPlan) ex.weekPlan = [];
     ex.weekPlan.push({ sets: 4, reps: 10 });
+    this.cdr.detectChanges();
   }
 
   removeExWeek(ex: Exercise, i: number): void {
     ex.weekPlan?.splice(i, 1);
+    this.cdr.detectChanges();
   }
 
   exerciseSummary(ex: Exercise): string {
