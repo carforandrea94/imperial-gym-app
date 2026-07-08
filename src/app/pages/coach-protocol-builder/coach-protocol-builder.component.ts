@@ -226,7 +226,6 @@ export class CoachProtocolBuilderComponent implements OnInit {
   // ===== Combinazioni (Base + alternative) =====
 
   activeCombo: Record<string, string> = {};
-  expandedMealCats = new Set<string>();
 
   getActiveCombo(meal: NamedMeal): MealCombination {
     const id = this.activeCombo[meal.id];
@@ -256,47 +255,51 @@ export class CoachProtocolBuilderComponent implements OnInit {
   }
 
   countMealItems(meal: NamedMeal): number {
-    return meal.combinations.reduce((acc, c) => acc + (c.items?.length ?? 0), 0);
+    const inCombos = meal.combinations.reduce((acc, c) =>
+      acc + (c.carb ? 1 : 0) + (c.protein ? 1 : 0) + (c.fat ? 1 : 0), 0);
+    const inAlt = this.foodCategories.reduce((acc, cat) => acc + meal.alternatives[cat].length, 0);
+    return inCombos + inAlt;
   }
 
-  categoriesWithItems(combo: MealCombination): FoodCategory[] {
-    return this.foodCategories.filter(cat => this.itemsByCategory(combo, cat).length > 0);
+  /** Ritorna l'alimento della combinazione per quella macro, creandolo (vuoto) se non esiste ancora. */
+  getComboItem(combo: MealCombination, cat: FoodCategory): FoodItem {
+    if (!combo[cat]) combo[cat] = { name: '', qty: '', category: cat };
+    return combo[cat]!;
   }
 
-  firstItem(combo: MealCombination, cat: FoodCategory): FoodItem | null {
-    return this.itemsByCategory(combo, cat)[0] ?? null;
-  }
-
-  restItems(combo: MealCombination, cat: FoodCategory): FoodItem[] {
-    return this.itemsByCategory(combo, cat).slice(1);
-  }
-
-  isCatExpanded(combo: MealCombination, cat: FoodCategory): boolean {
-    return this.expandedMealCats.has(`${combo.id}:${cat}`);
-  }
-
-  toggleCatExpanded(combo: MealCombination, cat: FoodCategory, event: Event): void {
+  clearComboItem(combo: MealCombination, cat: FoodCategory, event: Event): void {
     event.stopPropagation();
-    const key = `${combo.id}:${cat}`;
-    if (this.expandedMealCats.has(key)) this.expandedMealCats.delete(key);
-    else this.expandedMealCats.add(key);
+    combo[cat] = null;
     this.cdr.detectChanges();
   }
 
-  itemsByCategory(combo: MealCombination, category: FoodCategory): FoodItem[] {
-    if (!combo.items) combo.items = [];
-    return combo.items.filter(i => (i.category ?? 'carb') === category);
+  // --- Alternative per macro (a livello di pasto, non di combinazione) ---
+
+  expandedAlt = new Set<string>();
+
+  altItems(meal: NamedMeal, cat: FoodCategory): FoodItem[] {
+    return meal.alternatives[cat];
   }
 
-  addItem(combo: MealCombination, category: FoodCategory): void {
-    if (!combo.items) combo.items = [];
-    combo.items.push({ name: '', qty: '', category });
+  addAltItem(meal: NamedMeal, cat: FoodCategory): void {
+    meal.alternatives[cat].push({ name: '', qty: '', category: cat });
   }
 
-  removeItem(combo: MealCombination, item: FoodItem): void {
-    if (!combo.items) return;
-    const idx = combo.items.indexOf(item);
-    if (idx >= 0) combo.items.splice(idx, 1);
+  removeAltItem(meal: NamedMeal, cat: FoodCategory, item: FoodItem): void {
+    const arr = meal.alternatives[cat];
+    const idx = arr.indexOf(item);
+    if (idx >= 0) arr.splice(idx, 1);
+  }
+
+  isAltExpanded(meal: NamedMeal, cat: FoodCategory): boolean {
+    return this.expandedAlt.has(`${meal.id}:${cat}`);
+  }
+
+  toggleAltExpanded(meal: NamedMeal, cat: FoodCategory): void {
+    const key = `${meal.id}:${cat}`;
+    if (this.expandedAlt.has(key)) this.expandedAlt.delete(key);
+    else this.expandedAlt.add(key);
+    this.cdr.detectChanges();
   }
 
   // ===== Salvataggio =====
@@ -369,8 +372,8 @@ export class CoachProtocolBuilderComponent implements OnInit {
         for (let k = 0; k < expMeal.combinations.length; k++) {
           const expCombo = expMeal.combinations[k];
           const actCombo = actMeal.combinations[k];
-          const expCount = expCombo.items?.length ?? 0;
-          const actCount = actCombo?.items?.length ?? 0;
+          const expCount = (expCombo.carb ? 1 : 0) + (expCombo.protein ? 1 : 0) + (expCombo.fat ? 1 : 0);
+          const actCount = actCombo ? (actCombo.carb ? 1 : 0) + (actCombo.protein ? 1 : 0) + (actCombo.fat ? 1 : 0) : 0;
           if (expCount !== actCount) {
             return `alimenti in "${expMeal.name} / ${expCombo.label}": salvati ${actCount}, attesi ${expCount}`;
           }

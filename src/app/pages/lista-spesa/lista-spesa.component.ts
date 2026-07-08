@@ -39,21 +39,28 @@ export class ListaSpesaComponent implements OnInit {
   private buildItems(checked: Record<string, boolean>): void {
     const map = new Map<string, ShoppingItem>();
 
+    const addFood = (food: { name: string; qty: string } | null, plan: string, source: string) => {
+      if (!food || !food.name) return;
+      const key = food.name.trim().toLowerCase();
+      if (!map.has(key)) {
+        map.set(key, { key, name: food.name.trim(), qtys: [], sources: [], checked: !!checked[this.safeKey(key)] });
+      }
+      const entry = map.get(key)!;
+      if (food.qty && !entry.qtys.includes(food.qty)) entry.qtys.push(food.qty);
+      if (!entry.sources.includes(source)) entry.sources.push(source);
+    };
+
     for (const plan of this.dietData.diet) {
       for (const meal of plan.meals) {
         for (const combo of meal.combinations) {
-          for (const food of combo.items ?? []) {
-            if (!food.name) continue;
-            const key = food.name.trim().toLowerCase();
-            if (!map.has(key)) {
-              map.set(key, { key, name: food.name.trim(), qtys: [], sources: [], checked: !!checked[this.safeKey(key)] });
-            }
-            const entry = map.get(key)!;
-            if (food.qty && !entry.qtys.includes(food.qty)) entry.qtys.push(food.qty);
-            const source = `${plan.name} · ${meal.name}`;
-            if (!entry.sources.includes(source)) entry.sources.push(source);
-          }
+          const label = meal.combinations.length > 1 ? `${plan.name} · ${meal.name} (${combo.label})` : `${plan.name} · ${meal.name}`;
+          addFood(combo.carb, plan.name, label);
+          addFood(combo.protein, plan.name, label);
+          addFood(combo.fat, plan.name, label);
         }
+        (['carb', 'protein', 'fat'] as const).forEach(cat => {
+          meal.alternatives[cat].forEach(food => addFood(food, plan.name, `${plan.name} · ${meal.name} (alternativa)`));
+        });
       }
     }
 

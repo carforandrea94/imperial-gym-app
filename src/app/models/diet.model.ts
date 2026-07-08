@@ -15,19 +15,30 @@ export const FOOD_CATEGORY_LABELS: Record<FoodCategory, string> = {
 
 export const FOOD_CATEGORIES: FoodCategory[] = ['carb', 'protein', 'fat'];
 
-/** Una combinazione di carbo+proteine+grassi per un pasto (es. "Opzione 1", "Combo pollo e riso"). */
+/** Una combinazione (Base o alternativa): un solo alimento per macro. */
 export interface MealCombination {
   id: string;
   label: string;
-  items: FoodItem[];
+  carb: FoodItem | null;
+  protein: FoodItem | null;
+  fat: FoodItem | null;
+}
+
+/** Liste di alimenti sostitutivi per macro, valide per tutto il pasto (non legate a una combinazione). */
+export interface MacroAlternatives {
+  carb: FoodItem[];
+  protein: FoodItem[];
+  fat: FoodItem[];
 }
 
 /** Un pasto con nome libero (Colazione, Spuntino, ma anche "Pre-workout", ecc.).
- *  Ha sempre almeno una combinazione; se ce n'e' piu' di una vengono mostrate come tab. */
+ *  Ha sempre almeno una combinazione (Base); se ce n'e' piu' di una vengono
+ *  mostrate come tab. Le alternative per macro sono separate, sotto i tab. */
 export interface NamedMeal {
   id: string;
   name: string;
   combinations: MealCombination[];
+  alternatives: MacroAlternatives;
 }
 
 /** Un piano dieta con nome libero (es. "Giorno ON", "Giorno OFF", "Rifeed", "Vacanza"...). */
@@ -47,11 +58,15 @@ function newId(prefix: string): string {
 }
 
 export function newCombination(label: string): MealCombination {
-  return { id: newId('combo'), label, items: [] };
+  return { id: newId('combo'), label, carb: null, protein: null, fat: null };
+}
+
+function emptyAlternatives(): MacroAlternatives {
+  return { carb: [], protein: [], fat: [] };
 }
 
 export function newNamedMeal(name: string): NamedMeal {
-  return { id: newId('meal'), name, combinations: [newCombination('Base')] };
+  return { id: newId('meal'), name, combinations: [newCombination('Base')], alternatives: emptyAlternatives() };
 }
 
 export function defaultMeals(): NamedMeal[] {

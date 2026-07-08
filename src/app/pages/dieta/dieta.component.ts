@@ -29,8 +29,12 @@ export class DietaComponent implements OnInit {
   }
 
   private countItems(plan: DietPlan): number {
-    return plan.meals.reduce((acc, meal) =>
-      acc + meal.combinations.reduce((a, c) => a + (c.items?.length ?? 0), 0), 0);
+    return plan.meals.reduce((acc, meal) => {
+      const inCombos = meal.combinations.reduce((a, c) =>
+        a + (c.carb ? 1 : 0) + (c.protein ? 1 : 0) + (c.fat ? 1 : 0), 0);
+      const inAlt = (['carb', 'protein', 'fat'] as const).reduce((a, cat) => a + meal.alternatives[cat].length, 0);
+      return acc + inCombos + inAlt;
+    }, 0);
   }
 
   private buildCards(): void {

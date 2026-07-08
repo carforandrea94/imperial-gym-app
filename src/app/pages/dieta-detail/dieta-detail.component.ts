@@ -8,7 +8,6 @@ interface MealVM {
   meal: NamedMeal;
   open: boolean;
   selectedComboId: string;
-  altOpen: boolean[];
 }
 
 @Component({
@@ -39,19 +38,12 @@ export class DietaDetailComponent implements OnInit {
     this.meals = this.plan.meals.map(meal => ({
       meal,
       open: true,
-      selectedComboId: meal.combinations[0]?.id ?? '',
-      altOpen: []
+      selectedComboId: meal.combinations[0]?.id ?? ''
     }));
-    this.meals.forEach(vm => {
-      vm.altOpen = this.getItems(vm).map(() => true);
-    });
   }
 
   toggleMeal(vm: MealVM): void {
     vm.open = !vm.open;
-    if (vm.open) {
-      vm.altOpen = this.getItems(vm).map(() => true);
-    }
   }
 
   hasMultipleCombinations(vm: MealVM): boolean {
@@ -68,38 +60,43 @@ export class DietaDetailComponent implements OnInit {
 
   selectCombo(vm: MealVM, combo: MealCombination): void {
     vm.selectedComboId = combo.id;
-    vm.altOpen = this.getItems(vm).map(() => true);
   }
 
-  getItems(vm: MealVM): FoodItem[] {
-    return this.getActiveCombo(vm)?.items ?? [];
+  comboItem(vm: MealVM, cat: FoodCategory): FoodItem | null {
+    return this.getActiveCombo(vm)[cat];
   }
 
-  itemsByCategory(vm: MealVM, category: FoodCategory): FoodItem[] {
-    return this.getItems(vm).filter(i => (i.category ?? 'carb') === category);
+  // --- Alternative dell'alimento della combinazione (item.alt) ---
+  private itemAltOpen = new Set<string>();
+
+  isItemAltOpen(vm: MealVM, cat: FoodCategory): boolean {
+    return this.itemAltOpen.has(`${vm.meal.id}:${vm.selectedComboId}:${cat}`);
   }
 
-  firstItem(vm: MealVM, cat: FoodCategory): FoodItem | null {
-    return this.itemsByCategory(vm, cat)[0] ?? null;
-  }
-
-  restItems(vm: MealVM, cat: FoodCategory): FoodItem[] {
-    return this.itemsByCategory(vm, cat).slice(1);
-  }
-
-  private expandedCats = new Set<string>();
-
-  isCatExpanded(vm: MealVM, cat: FoodCategory): boolean {
-    return this.expandedCats.has(`${vm.meal.id}:${vm.selectedComboId}:${cat}`);
-  }
-
-  toggleCatExpanded(vm: MealVM, cat: FoodCategory): void {
+  toggleItemAlt(vm: MealVM, cat: FoodCategory): void {
     const key = `${vm.meal.id}:${vm.selectedComboId}:${cat}`;
-    if (this.expandedCats.has(key)) this.expandedCats.delete(key);
-    else this.expandedCats.add(key);
+    if (this.itemAltOpen.has(key)) this.itemAltOpen.delete(key);
+    else this.itemAltOpen.add(key);
   }
 
-  toggleAlt(vm: MealVM, idx: number): void {
-    vm.altOpen[idx] = !vm.altOpen[idx];
+  // --- Alternative per macro a livello di pasto (accordion separati sotto i tab) ---
+  hasAnyMacroAlternatives(vm: MealVM): boolean {
+    return this.foodCategories.some(cat => vm.meal.alternatives[cat].length > 0);
+  }
+
+  macroAlternatives(vm: MealVM, cat: FoodCategory): FoodItem[] {
+    return vm.meal.alternatives[cat];
+  }
+
+  private macroAltExpanded = new Set<string>();
+
+  isMacroAltExpanded(vm: MealVM, cat: FoodCategory): boolean {
+    return this.macroAltExpanded.has(`${vm.meal.id}:${cat}`);
+  }
+
+  toggleMacroAltExpanded(vm: MealVM, cat: FoodCategory): void {
+    const key = `${vm.meal.id}:${cat}`;
+    if (this.macroAltExpanded.has(key)) this.macroAltExpanded.delete(key);
+    else this.macroAltExpanded.add(key);
   }
 }

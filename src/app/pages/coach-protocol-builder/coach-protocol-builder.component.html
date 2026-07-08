@@ -228,28 +228,15 @@
 
         <div *ngIf="countMealItems(meal) === 0" class="meal-preview-empty">Nessun alimento ancora</div>
 
-        <div class="meal-preview-cat" *ngFor="let cat of categoriesWithItems(getActiveCombo(meal))">
-          <span class="meal-preview-catlabel">{{ foodCategoryLabels[cat] }}</span>
-          <div class="meal-preview-item">
-            <span class="fname">{{ firstItem(getActiveCombo(meal), cat)?.name }}</span>
-            <span class="fqty">{{ firstItem(getActiveCombo(meal), cat)?.qty }}</span>
+        <ng-container *ngFor="let cat of foodCategories">
+          <div class="meal-preview-cat" *ngIf="getActiveCombo(meal)[cat] as it">
+            <span class="meal-preview-catlabel">{{ foodCategoryLabels[cat] }}</span>
+            <div class="meal-preview-item">
+              <span class="fname">{{ it.name }}</span>
+              <span class="fqty">{{ it.qty }}</span>
+            </div>
           </div>
-
-          <ng-container *ngIf="restItems(getActiveCombo(meal), cat).length > 0">
-            <div class="altwrap-header" (click)="toggleCatExpanded(getActiveCombo(meal), cat, $event)">
-              <span>{{ isCatExpanded(getActiveCombo(meal), cat) ? 'Nascondi' : '+' + restItems(getActiveCombo(meal), cat).length + ' altri' }}</span>
-              <span class="chevron">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-              </span>
-            </div>
-            <div class="altlist" *ngIf="isCatExpanded(getActiveCombo(meal), cat)">
-              <div class="meal-preview-item" *ngFor="let it of restItems(getActiveCombo(meal), cat)">
-                <span class="fname">{{ it.name }}</span>
-                <span class="fqty">{{ it.qty }}</span>
-              </div>
-            </div>
-          </ng-container>
-        </div>
+        </ng-container>
       </div>
 
       <div class="savebar">
@@ -293,16 +280,51 @@
       <ng-container *ngFor="let cat of foodCategories">
         <p class="sectiontitle" style="margin-top:16px">{{ foodCategoryLabels[cat] }}</p>
         <div class="infocard">
-          <div class="builder-item" *ngFor="let item of itemsByCategory(getActiveCombo(em), cat)">
+          <div class="builder-item" *ngIf="getActiveCombo(em)[cat] as item; else noComboItem">
             <div class="measure-input-wrap">
               <input type="text" [(ngModel)]="item.name" placeholder="Alimento" />
             </div>
             <div class="measure-input-wrap builder-qty">
               <input type="text" [(ngModel)]="item.qty" placeholder="Quantita'" />
             </div>
-            <button class="delete-btn" (click)="removeItem(getActiveCombo(em), item)">✕</button>
+            <button class="delete-btn" (click)="clearComboItem(getActiveCombo(em), cat, $event)">✕</button>
           </div>
-          <button class="confirmbtn cancel" style="width:100%;margin-top:6px" (click)="addItem(getActiveCombo(em), cat)">+ Aggiungi {{ foodCategoryLabels[cat].toLowerCase() }}</button>
+          <ng-template #noComboItem>
+            <div class="builder-item">
+              <div class="measure-input-wrap">
+                <input type="text" [ngModel]="getComboItem(getActiveCombo(em), cat).name" (ngModelChange)="getComboItem(getActiveCombo(em), cat).name = $event" placeholder="Alimento" />
+              </div>
+              <div class="measure-input-wrap builder-qty">
+                <input type="text" [ngModel]="getComboItem(getActiveCombo(em), cat).qty" (ngModelChange)="getComboItem(getActiveCombo(em), cat).qty = $event" placeholder="Quantita'" />
+              </div>
+            </div>
+          </ng-template>
+        </div>
+      </ng-container>
+
+      <p class="sectiontitle" style="margin-top:24px">Alternative per macro</p>
+      <p class="bacheca-text" style="margin-bottom:12px">Alimenti sostitutivi validi per tutto il pasto, a prescindere dalla combinazione scelta.</p>
+
+      <ng-container *ngFor="let cat of foodCategories">
+        <div class="infocard" style="margin-bottom:10px">
+          <div class="altwrap-header" (click)="toggleAltExpanded(em, cat)" style="padding:0 0 8px">
+            <span>{{ foodCategoryLabels[cat] }} · {{ altItems(em, cat).length }} alternative</span>
+            <span class="chevron">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            </span>
+          </div>
+          <ng-container *ngIf="isAltExpanded(em, cat)">
+            <div class="builder-item" *ngFor="let item of altItems(em, cat)">
+              <div class="measure-input-wrap">
+                <input type="text" [(ngModel)]="item.name" placeholder="Alimento" />
+              </div>
+              <div class="measure-input-wrap builder-qty">
+                <input type="text" [(ngModel)]="item.qty" placeholder="Quantita'" />
+              </div>
+              <button class="delete-btn" (click)="removeAltItem(em, cat, item)">✕</button>
+            </div>
+            <button class="confirmbtn cancel" style="width:100%;margin-top:6px" (click)="addAltItem(em, cat)">+ Aggiungi alternativa</button>
+          </ng-container>
         </div>
       </ng-container>
 

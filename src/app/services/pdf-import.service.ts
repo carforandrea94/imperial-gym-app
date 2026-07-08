@@ -112,13 +112,20 @@ export class PdfImportService {
 
       const meal = plan.meals.find(m => m.name === currentMealName)!;
       const base = meal.combinations[0];
-      if (!base.items) base.items = [];
 
       const m = line.match(qtyRegex);
-      if (m) {
-        base.items.push({ name: m[1].trim(), qty: m[2].trim() });
-      } else if (line.length > 1 && line.length < 80) {
-        base.items.push({ name: line, qty: '' });
+      const food = m
+        ? { name: m[1].trim(), qty: m[2].trim() as string, category: 'carb' as const }
+        : (line.length > 1 && line.length < 80 ? { name: line, qty: '', category: 'carb' as const } : null);
+      if (!food) continue;
+
+      // Non potendo dedurre la macro dal solo testo, il primo alimento del pasto
+      // va nella combinazione base (categoria da rivedere nel builder), gli altri
+      // finiscono tra le alternative: il coach riorganizza tutto nel builder.
+      if (!base.carb) {
+        base.carb = food;
+      } else {
+        meal.alternatives.carb.push(food);
       }
     }
 

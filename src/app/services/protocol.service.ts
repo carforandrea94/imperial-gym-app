@@ -20,15 +20,58 @@ const LEGACY_MEAL_LABELS: Record<string, string> = {
   colazione: 'Colazione', spuntino: 'Spuntino', pranzo: 'Pranzo', merenda: 'Merenda', cena: 'Cena'
 };
 
+function emptyAlternatives() {
+  return { carb: [] as any[], protein: [] as any[], fat: [] as any[] };
+}
+
+/** Distribuisce una lista piatta di alimenti (formato pre-macro) tra carb/protein/fat in base al campo category. */
+function splitByCategory(items: any[]): { carb: any[]; protein: any[]; fat: any[] } {
+  const out = emptyAlternatives();
+  for (const it of items) {
+    const cat = (it.category ?? 'carb') as 'carb' | 'protein' | 'fat';
+    (out[cat] ?? out.carb).push(it);
+  }
+  return out;
+}
+
 function normalizeMeal(meal: any): any {
-  if (Array.isArray(meal.combinations)) return meal;
-  console.warn(`Pasto "${meal.name}" in formato legacy (senza combinations[]), normalizzato.`);
-  const baseItems: any[] = meal.items ?? [];
-  const combinations = [{ id: meal.id ?? 'base', label: 'Base', items: baseItems }];
-  (meal.variants ?? []).forEach((v: any, i: number) => {
-    combinations.push({ id: `legacy_${i}`, label: v.label ?? `Opzione ${i + 2}`, items: v.items ?? [] });
-  });
-  return { id: meal.id, name: meal.name, combinations };
+  const alternatives = meal.alternatives && !Array.isArray(meal.alternatives)
+    ? { carb: meal.alternatives.carb ?? [], protein: meal.alternatives.protein ?? [], fat: meal.alternatives.fat ?? [] }
+    : emptyAlternatives();
+
+  // Combinazioni gia' nel formato attuale (1 alimento per macro)
+  const alreadyCurrent = Array.isArray(meal.combinations) &&
+    meal.combinations.every((c: any) => !Array.isArray(c.items));
+  if (alreadyCurrent) {
+    return { id: meal.id, name: meal.name, combinations: meal.combinations, alternatives };
+  }
+
+  console.warn(`Pasto "${meal.name}" in formato legacy, normalizzato al nuovo modello (1 alimento per macro + alternative).`);
+
+  // Raccoglie tutti gli alimenti "piatti" che il vecchio formato aveva, da qualunque punto provengano
+  let flatItems: any[] = [];
+  if (Array.isArray(meal.combinations)) {
+    meal.combinations.forEach((c: any) => { flatItems.push(...(c.items ?? [])); });
+  } else {
+    flatItems.push(...(meal.items ?? []));
+    (meal.variants ?? []).forEach((v: any) => flatItems.push(...(v.items ?? [])));
+  }
+
+  const byCat = splitByCategory(flatItems);
+  const base = {
+    id: meal.id ?? 'base',
+    label: 'Base',
+    carb: byCat.carb[0] ?? null,
+    protein: byCat.protein[0] ?? null,
+    fat: byCat.fat[0] ?? null
+  };
+  const mergedAlt = {
+    carb: [...alternatives.carb, ...byCat.carb.slice(1)],
+    protein: [...alternatives.protein, ...byCat.protein.slice(1)],
+    fat: [...alternatives.fat, ...byCat.fat.slice(1)]
+  };
+
+  return { id: meal.id, name: meal.name, combinations: [base], alternatives: mergedAlt };
 }
 
 /**
