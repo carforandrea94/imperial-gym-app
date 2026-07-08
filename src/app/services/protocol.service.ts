@@ -13,6 +13,7 @@ import {
 import { FirebaseService } from '../core/services/firebase.service';
 import { Protocol, emptyProtocol } from '../models/protocol.model';
 import { ZoneFixService } from '../core/utils/zone.util';
+import { sanitizeForFirestore } from '../core/utils/sanitize.util';
 
 const LEGACY_MEAL_KEYS = ['colazione', 'spuntino', 'pranzo', 'merenda', 'cena'];
 const LEGACY_MEAL_LABELS: Record<string, string> = {
@@ -102,7 +103,8 @@ export class ProtocolService {
   }
 
   update(clientId: string, id: string, patch: Partial<Protocol>): Promise<void> {
-    return this.zoneFix.run(updateDoc(doc(this.col(clientId), id), { ...patch, updatedAt: new Date().toISOString() } as any));
+    const clean = sanitizeForFirestore({ ...patch, updatedAt: new Date().toISOString() });
+    return this.zoneFix.run(updateDoc(doc(this.col(clientId), id), clean as any));
   }
 
   delete(clientId: string, id: string): Promise<void> {

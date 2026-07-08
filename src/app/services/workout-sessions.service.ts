@@ -13,6 +13,7 @@ import { FirebaseService } from '../core/services/firebase.service';
 import { AuthService } from '../core/services/auth.service';
 import { WorkoutSession } from '../models/workout.model';
 import { ZoneFixService } from '../core/utils/zone.util';
+import { sanitizeForFirestore } from '../core/utils/sanitize.util';
 
 /**
  * Storico allenamenti (users/{uid}/sessions/{id}), id = `${dayId}_${isoDate}`
@@ -36,7 +37,7 @@ export class WorkoutSessionsService {
     return this.zoneFix.run((async () => {
       try {
         const id = this.sessionId(session.dayId, session.date);
-        await setDoc(doc(this.col(), id), session);
+        await setDoc(doc(this.col(), id), sanitizeForFirestore(session));
         return true;
       } catch {
         return false;

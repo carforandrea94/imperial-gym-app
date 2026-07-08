@@ -3,6 +3,7 @@ import { doc, getDoc, setDoc, updateDoc, deleteField } from 'firebase/firestore'
 import { FirebaseService } from '../core/services/firebase.service';
 import { AuthService } from '../core/services/auth.service';
 import { ZoneFixService } from '../core/utils/zone.util';
+import { sanitizeForFirestore } from '../core/utils/sanitize.util';
 
 export interface WorkoutDraftRow {
   reps: string;
@@ -56,18 +57,20 @@ export class AppStateService {
   }
 
   patch(partial: Partial<AppState>): Promise<void> {
+    const clean = sanitizeForFirestore(partial);
     return this.zoneFix.run((async () => {
       await this.ensureDoc();
-      await updateDoc(this.ref(), partial as any);
-      this.cache = { ...(this.cache ?? emptyState()), ...partial };
+      await updateDoc(this.ref(), clean as any);
+      this.cache = { ...(this.cache ?? emptyState()), ...clean };
     })());
   }
 
   /** Aggiorna un campo annidato tramite dot-notation (es. 'workoutDrafts.day0'). */
   patchField(path: string, value: unknown): Promise<void> {
+    const cleanValue = sanitizeForFirestore(value);
     return this.zoneFix.run((async () => {
       await this.ensureDoc();
-      await updateDoc(this.ref(), { [path]: value } as any);
+      await updateDoc(this.ref(), { [path]: cleanValue } as any);
       this.invalidateCache();
     })());
   }

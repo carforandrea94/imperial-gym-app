@@ -306,12 +306,24 @@ export class CoachProtocolBuilderComponent implements OnInit {
     this.saving = true;
     this.saveMsg = '';
     try {
-      await this.protocolSvc.update(this.clientId, this.protocolId, {
+      const toSave = {
         name: this.protocol.name,
         workout: this.protocol.workout,
         diet: this.protocol.diet,
         infoNote: this.protocol.infoNote
-      });
+      };
+      await this.protocolSvc.update(this.clientId, this.protocolId, toSave);
+
+      // Verifica reale: rileggo da Firestore e confronto i conteggi strutturali
+      // con quello che intendevo salvare, invece di fidarmi solo dell'assenza di errori.
+      const reread = await this.protocolSvc.get(this.clientId, this.protocolId);
+      const mismatch = this.findMismatch(toSave, reread);
+      if (mismatch) {
+        this.saveMsg = `Attenzione: il salvataggio sembra incompleto (${mismatch}). Riprova prima di attivare.`;
+        this.saving = false;
+        return;
+      }
+
       if (activateAfter) {
         await this.protocolSvc.activate(this.clientId, this.protocolId);
       }
@@ -322,5 +334,50 @@ export class CoachProtocolBuilderComponent implements OnInit {
     } finally {
       this.saving = false;
     }
+  }
+
+  /** Confronta i conteggi strutturali tra quello che dovevo salvare e quello che e' stato letto da Firestore. */
+  private findMismatch(expected: { workout: Protocol['workout']; diet: Protocol['diet'] }, actual: Protocol | null): string | null {
+    if (!actual) return 'protocollo non trovato dopo il salvataggio';
+
+    if (actual.workout.days.length !== expected.workout.days.length) {
+      return `giorni salvati: ${actual.workout.days.length}, attesi: ${expected.workout.days.length}`;
+    }
+    for (let i = 0; i < expected.workout.days.length; i++) {
+      const exp = expected.workout.days[i].ex.length;
+      const act = actual.workout.days[i]?.ex.length ?? 0;
+      if (exp !== act) {
+        return `esercizi nel giorno "${expected.workout.days[i].label}": salvati ${act}, attesi ${exp}`;
+      }
+    }
+
+    if (actual.diet.length !== expected.diet.length) {
+      return `piani dieta salvati: ${actual.diet.length}, attesi: ${expected.diet.length}`;
+    }
+    for (let i = 0; i < expected.diet.length; i++) {
+      const expPlan = expected.diet[i];
+      const actPlan = actual.diet[i];
+      if (!actPlan || actPlan.meals.length !== expPlan.meals.length) {
+        return `pasti nel piano "${expPlan.name}": salvati ${actPlan?.meals.length ?? 0}, attesi ${expPlan.meals.length}`;
+      }
+      for (let j = 0; j < expPlan.meals.length; j++) {
+        const expMeal = expPlan.meals[j];
+        const actMeal = actPlan.meals[j];
+        if (!actMeal || actMeal.combinations.length !== expMeal.combinations.length) {
+          return `combinazioni nel pasto "${expMeal.name}": salvate ${actMeal?.combinations.length ?? 0}, attese ${expMeal.combinations.length}`;
+        }
+        for (let k = 0; k < expMeal.combinations.length; k++) {
+          const expCombo = expMeal.combinations[k];
+          const actCombo = actMeal.combinations[k];
+          const expCount = expCombo.items?.length ?? 0;
+          const actCount = actCombo?.items?.length ?? 0;
+          if (expCount !== actCount) {
+            return `alimenti in "${expMeal.name} / ${expCombo.label}": salvati ${actCount}, attesi ${expCount}`;
+          }
+        }
+      }
+    }
+
+    return null;
   }
 }
