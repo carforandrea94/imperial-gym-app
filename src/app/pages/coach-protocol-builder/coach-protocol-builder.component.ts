@@ -274,8 +274,13 @@ export class CoachProtocolBuilderComponent implements OnInit {
   }
 
   // --- Alternative per macro (a livello di pasto, non di combinazione) ---
+  // Un solo accordion "Alternative" per pasto, con i 3 macro raggruppati dentro.
 
   expandedAlt = new Set<string>();
+
+  totalAlternatives(meal: NamedMeal): number {
+    return this.foodCategories.reduce((acc, cat) => acc + meal.alternatives[cat].length, 0);
+  }
 
   altItems(meal: NamedMeal, cat: FoodCategory): FoodItem[] {
     return meal.alternatives[cat];
@@ -291,14 +296,14 @@ export class CoachProtocolBuilderComponent implements OnInit {
     if (idx >= 0) arr.splice(idx, 1);
   }
 
-  isAltExpanded(meal: NamedMeal, cat: FoodCategory): boolean {
-    return this.expandedAlt.has(`${meal.id}:${cat}`);
+  isAltExpanded(meal: NamedMeal): boolean {
+    return this.expandedAlt.has(meal.id);
   }
 
-  toggleAltExpanded(meal: NamedMeal, cat: FoodCategory): void {
-    const key = `${meal.id}:${cat}`;
-    if (this.expandedAlt.has(key)) this.expandedAlt.delete(key);
-    else this.expandedAlt.add(key);
+  toggleAltExpanded(meal: NamedMeal, event?: Event): void {
+    event?.stopPropagation();
+    if (this.expandedAlt.has(meal.id)) this.expandedAlt.delete(meal.id);
+    else this.expandedAlt.add(meal.id);
     this.cdr.detectChanges();
   }
 

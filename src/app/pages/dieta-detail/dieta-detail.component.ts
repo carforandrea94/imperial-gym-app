@@ -79,9 +79,9 @@ export class DietaDetailComponent implements OnInit {
     else this.itemAltOpen.add(key);
   }
 
-  // --- Alternative per macro a livello di pasto (accordion separati sotto i tab) ---
-  hasAnyMacroAlternatives(vm: MealVM): boolean {
-    return this.foodCategories.some(cat => vm.meal.alternatives[cat].length > 0);
+  // --- Alternative per macro a livello di pasto (un unico accordion 'Alternative') ---
+  totalAlternatives(vm: MealVM): number {
+    return this.foodCategories.reduce((acc, cat) => acc + vm.meal.alternatives[cat].length, 0);
   }
 
   macroAlternatives(vm: MealVM, cat: FoodCategory): FoodItem[] {
@@ -90,13 +90,12 @@ export class DietaDetailComponent implements OnInit {
 
   private macroAltExpanded = new Set<string>();
 
-  isMacroAltExpanded(vm: MealVM, cat: FoodCategory): boolean {
-    return this.macroAltExpanded.has(`${vm.meal.id}:${cat}`);
+  isMacroAltExpanded(vm: MealVM): boolean {
+    return this.macroAltExpanded.has(vm.meal.id);
   }
 
-  toggleMacroAltExpanded(vm: MealVM, cat: FoodCategory): void {
-    const key = `${vm.meal.id}:${cat}`;
-    if (this.macroAltExpanded.has(key)) this.macroAltExpanded.delete(key);
-    else this.macroAltExpanded.add(key);
+  toggleMacroAltExpanded(vm: MealVM): void {
+    if (this.macroAltExpanded.has(vm.meal.id)) this.macroAltExpanded.delete(vm.meal.id);
+    else this.macroAltExpanded.add(vm.meal.id);
   }
 }

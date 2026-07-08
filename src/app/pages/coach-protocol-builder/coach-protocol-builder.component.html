@@ -218,6 +218,7 @@
           </button>
         </div>
 
+        <span class="meal-preview-catlabel" *ngIf="meal.combinations.length > 1" style="display:block;margin-bottom:6px">Combinazioni</span>
         <div class="variant-tabs" *ngIf="meal.combinations.length > 1" (click)="$event.stopPropagation()">
           <button *ngFor="let combo of meal.combinations"
             [class.active]="getActiveCombo(meal).id === combo.id"
@@ -235,6 +236,26 @@
               <span class="fname">{{ it.name }}</span>
               <span class="fqty">{{ it.qty }}</span>
             </div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="totalAlternatives(meal) > 0">
+          <div class="altwrap-header" (click)="toggleAltExpanded(meal, $event)">
+            <span>Alternative ({{ totalAlternatives(meal) }})</span>
+            <span class="chevron">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            </span>
+          </div>
+          <div class="altlist" *ngIf="isAltExpanded(meal)" (click)="$event.stopPropagation()">
+            <ng-container *ngFor="let cat of foodCategories">
+              <ng-container *ngIf="altItems(meal, cat).length > 0">
+                <span class="meal-preview-catlabel" style="display:block;margin:6px 0 2px">{{ foodCategoryLabels[cat] }}</span>
+                <div class="row" *ngFor="let it of altItems(meal, cat)">
+                  <span>{{ it.name }}</span>
+                  <span>{{ it.qty }}</span>
+                </div>
+              </ng-container>
+            </ng-container>
           </div>
         </ng-container>
       </div>
@@ -302,18 +323,19 @@
         </div>
       </ng-container>
 
-      <p class="sectiontitle" style="margin-top:24px">Alternative per macro</p>
+      <p class="sectiontitle" style="margin-top:24px">Alternative</p>
       <p class="bacheca-text" style="margin-bottom:12px">Alimenti sostitutivi validi per tutto il pasto, a prescindere dalla combinazione scelta.</p>
 
-      <ng-container *ngFor="let cat of foodCategories">
-        <div class="infocard" style="margin-bottom:10px">
-          <div class="altwrap-header" (click)="toggleAltExpanded(em, cat)" style="padding:0 0 8px">
-            <span>{{ foodCategoryLabels[cat] }} · {{ altItems(em, cat).length }} alternative</span>
-            <span class="chevron">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-            </span>
-          </div>
-          <ng-container *ngIf="isAltExpanded(em, cat)">
+      <div class="infocard" style="margin-bottom:10px">
+        <div class="altwrap-header" (click)="toggleAltExpanded(em)" style="padding:0 0 8px">
+          <span>Alternative ({{ totalAlternatives(em) }})</span>
+          <span class="chevron">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+          </span>
+        </div>
+        <ng-container *ngIf="isAltExpanded(em)">
+          <ng-container *ngFor="let cat of foodCategories">
+            <p class="meal-preview-catlabel" style="margin:14px 0 6px">{{ foodCategoryLabels[cat] }}</p>
             <div class="builder-item" *ngFor="let item of altItems(em, cat)">
               <div class="measure-input-wrap">
                 <input type="text" [(ngModel)]="item.name" placeholder="Alimento" />
@@ -323,10 +345,10 @@
               </div>
               <button class="delete-btn" (click)="removeAltItem(em, cat, item)">✕</button>
             </div>
-            <button class="confirmbtn cancel" style="width:100%;margin-top:6px" (click)="addAltItem(em, cat)">+ Aggiungi alternativa</button>
+            <button class="confirmbtn cancel" style="width:100%;margin-top:6px" (click)="addAltItem(em, cat)">+ Aggiungi {{ foodCategoryLabels[cat].toLowerCase() }}</button>
           </ng-container>
-        </div>
-      </ng-container>
+        </ng-container>
+      </div>
 
       <div class="savebar builder-savebar">
         <button class="confirmbtn cancel" style="flex:1" (click)="removeMealFromEditor()">Rimuovi pasto</button>
