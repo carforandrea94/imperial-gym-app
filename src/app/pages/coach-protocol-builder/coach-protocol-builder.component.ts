@@ -27,6 +27,7 @@ export class CoachProtocolBuilderComponent implements OnInit {
 
   tab: Tab = 'scheda';
   editingPlan: DietPlan | null = null;
+  editingMeal: NamedMeal | null = null;
   editingExercise: { day: Day; ex: Exercise; isNew: boolean } | null = null;
 
   readonly muscles = ['Petto', 'Spalle', 'Tricipiti', 'Dorso', 'Bicipiti', 'Gambe', 'Core'];
@@ -164,11 +165,13 @@ export class CoachProtocolBuilderComponent implements OnInit {
 
   openPlan(plan: DietPlan): void {
     this.editingPlan = plan;
+    this.editingMeal = null;
     this.cdr.detectChanges();
   }
 
   closePlan(): void {
     this.editingPlan = null;
+    this.editingMeal = null;
     this.cdr.detectChanges();
   }
 
@@ -189,7 +192,19 @@ export class CoachProtocolBuilderComponent implements OnInit {
 
   addMeal(): void {
     if (!this.editingPlan) return;
-    this.editingPlan.meals.push(newNamedMeal('Nuovo pasto'));
+    const meal = newNamedMeal('Nuovo pasto');
+    this.editingPlan.meals.push(meal);
+    this.editingMeal = meal;
+    this.cdr.detectChanges();
+  }
+
+  openMeal(meal: NamedMeal): void {
+    this.editingMeal = meal;
+    this.cdr.detectChanges();
+  }
+
+  closeMeal(): void {
+    this.editingMeal = null;
     this.cdr.detectChanges();
   }
 
@@ -197,7 +212,21 @@ export class CoachProtocolBuilderComponent implements OnInit {
     event.stopPropagation();
     if (!this.editingPlan) return;
     this.editingPlan.meals = this.editingPlan.meals.filter(m => m.id !== meal.id);
+    if (this.editingMeal?.id === meal.id) this.editingMeal = null;
     this.cdr.detectChanges();
+  }
+
+  removeMealFromEditor(): void {
+    if (!this.editingPlan || !this.editingMeal) return;
+    this.editingPlan.meals = this.editingPlan.meals.filter(m => m.id !== this.editingMeal!.id);
+    this.editingMeal = null;
+    this.cdr.detectChanges();
+  }
+
+  countMealItems(meal: NamedMeal): number {
+    const fromItems = meal.items?.length ?? 0;
+    const fromVariants = meal.variants?.reduce((a, v) => a + (v.items?.length ?? 0), 0) ?? 0;
+    return fromItems + fromVariants;
   }
 
   addItem(meal: NamedMeal): void {

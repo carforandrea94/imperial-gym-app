@@ -2,7 +2,7 @@
 
 <ng-container *ngIf="!loading && protocol">
 
-  <ng-container *ngIf="!editingExercise">
+  <ng-container *ngIf="!editingExercise && !editingMeal">
     <div class="authfield" style="margin-bottom:14px">
       <label>Nome protocollo</label>
       <div class="measure-input-wrap">
@@ -192,7 +192,7 @@
     </ng-container>
 
     <!-- Editor del piano selezionato -->
-    <ng-container *ngIf="editingPlan">
+    <ng-container *ngIf="editingPlan && !editingMeal">
       <button class="confirmbtn cancel" style="margin-bottom:14px" (click)="closePlan()">← Torna ai piani</button>
 
       <div class="authfield" style="margin-bottom:16px">
@@ -202,31 +202,62 @@
         </div>
       </div>
 
-      <div class="infocard builder-meal" *ngFor="let meal of editingPlan.meals">
-        <div class="builder-meal-header">
-          <div class="measure-input-wrap builder-meal-name">
-            <input type="text" [(ngModel)]="meal.name" placeholder="Nome pasto" />
+      <p class="sectiontitle" style="margin-top:0">Pasti</p>
+
+      <div *ngIf="editingPlan.meals.length === 0" class="history-empty">
+        Nessun pasto ancora.
+      </div>
+
+      <div class="grouplist" *ngIf="editingPlan.meals.length > 0">
+        <div class="daycard press-fx protocol-row" *ngFor="let meal of editingPlan.meals" (click)="openMeal(meal)">
+          <div class="info">
+            <div class="lbl">{{ meal.name || 'Pasto senza nome' }}</div>
+            <div class="meta">{{ countMealItems(meal) }} alimenti</div>
           </div>
           <button class="delete-btn" (click)="removeMeal(meal, $event)" title="Elimina pasto">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
             </svg>
           </button>
+          <span class="chev">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+          </span>
         </div>
-        <div class="builder-item" *ngFor="let item of meal.items; let ii = index">
+      </div>
+
+      <div class="savebar">
+        <button class="savebtn" (click)="addMeal()">+ Aggiungi pasto</button>
+      </div>
+    </ng-container>
+
+    <!-- Editor del pasto selezionato -->
+    <ng-container *ngIf="editingPlan && editingMeal as em">
+      <button class="confirmbtn cancel" style="margin-bottom:14px" (click)="closeMeal()">← Torna ai pasti</button>
+
+      <div class="authfield" style="margin-bottom:16px">
+        <label>Nome pasto</label>
+        <div class="measure-input-wrap">
+          <input type="text" [(ngModel)]="em.name" placeholder="Es. Colazione" />
+        </div>
+      </div>
+
+      <p class="sectiontitle" style="margin-top:0">Alimenti</p>
+      <div class="infocard">
+        <div class="builder-item" *ngFor="let item of em.items; let ii = index">
           <div class="measure-input-wrap">
             <input type="text" [(ngModel)]="item.name" placeholder="Alimento" />
           </div>
           <div class="measure-input-wrap builder-qty">
             <input type="text" [(ngModel)]="item.qty" placeholder="Quantita'" />
           </div>
-          <button class="delete-btn" (click)="removeItem(meal, ii)">✕</button>
+          <button class="delete-btn" (click)="removeItem(em, ii)">✕</button>
         </div>
-        <button class="confirmbtn cancel" style="width:100%;margin-top:6px" (click)="addItem(meal)">+ Aggiungi alimento</button>
+        <button class="confirmbtn cancel" style="width:100%;margin-top:6px" (click)="addItem(em)">+ Aggiungi alimento</button>
       </div>
 
-      <div class="savebar">
-        <button class="savebtn" (click)="addMeal()">+ Aggiungi pasto</button>
+      <div class="savebar builder-savebar">
+        <button class="confirmbtn cancel" style="flex:1" (click)="removeMealFromEditor()">Rimuovi pasto</button>
+        <button class="savebtn" style="flex:1.4" (click)="closeMeal()">Fatto</button>
       </div>
     </ng-container>
 
@@ -241,9 +272,9 @@
     </div>
   </ng-container>
 
-  <p class="autherror" *ngIf="saveMsg && !editingExercise">{{ saveMsg }}</p>
+  <p class="autherror" *ngIf="saveMsg && !editingExercise && !editingMeal">{{ saveMsg }}</p>
 
-  <div class="savebar builder-savebar" *ngIf="!editingExercise">
+  <div class="savebar builder-savebar" *ngIf="!editingExercise && !editingMeal">
     <button class="confirmbtn cancel" style="flex:1" [disabled]="saving" (click)="save(false)">
       {{ saving ? '…' : 'Salva bozza' }}
     </button>
