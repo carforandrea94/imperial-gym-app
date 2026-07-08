@@ -107,17 +107,27 @@ export class CoachProtocolBuilderComponent implements OnInit {
 
   addDietPlan(): void {
     if (!this.protocol) return;
-    const plan = newDietPlan('Nuova dieta');
-    this.protocol.diet.push(plan);
-    this.editingPlan = plan;
+    try {
+      if (!Array.isArray(this.protocol.diet)) this.protocol.diet = [];
+      const plan = newDietPlan('Nuova dieta');
+      this.protocol.diet.push(plan);
+      this.editingPlan = plan;
+    } catch (e: any) {
+      console.error('Errore aggiunta piano dieta:', e);
+      this.saveMsg = 'Errore nell\'aggiungere il piano. Riprova.';
+    } finally {
+      this.cdr.detectChanges();
+    }
   }
 
   openPlan(plan: DietPlan): void {
     this.editingPlan = plan;
+    this.cdr.detectChanges();
   }
 
   closePlan(): void {
     this.editingPlan = null;
+    this.cdr.detectChanges();
   }
 
   removePlan(plan: DietPlan, event: Event): void {

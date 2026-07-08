@@ -14,6 +14,20 @@ import { FirebaseService } from '../core/services/firebase.service';
 import { Protocol, emptyProtocol } from '../models/protocol.model';
 import { ZoneFixService } from '../core/utils/zone.util';
 
+/**
+ * Protocolli creati prima della migrazione dieta ON/OFF -> lista libera di
+ * piani hanno ancora diet: {on:{...}, off:{...}} invece di un array.
+ * Li normalizziamo in lettura, cosi' il resto del codice puo' sempre
+ * assumere che protocol.diet sia un array.
+ */
+function normalizeProtocol(p: Protocol): Protocol {
+  if (!Array.isArray(p.diet)) {
+    console.warn(`Protocollo ${p.id}: campo diet in formato legacy, normalizzato ad array vuoto.`);
+    p.diet = [];
+  }
+  return p;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ProtocolService {
   constructor(private fb: FirebaseService, private zoneFix: ZoneFixService) {}
@@ -26,7 +40,7 @@ export class ProtocolService {
     return this.zoneFix.run((async () => {
       const snap = await getDocs(this.col(clientId));
       return snap.docs
-        .map(d => ({ id: d.id, ...d.data() } as Protocol))
+        .map(d => normalizeProtocol({ id: d.id, ...d.data() } as Protocol))
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     })());
   }
@@ -34,7 +48,7 @@ export class ProtocolService {
   get(clientId: string, id: string): Promise<Protocol | null> {
     return this.zoneFix.run((async () => {
       const snap = await getDoc(doc(this.col(clientId), id));
-      return snap.exists() ? ({ id: snap.id, ...snap.data() } as Protocol) : null;
+      return snap.exists() ? normalizeProtocol({ id: snap.id, ...snap.data() } as Protocol) : null;
     })());
   }
 
@@ -44,7 +58,7 @@ export class ProtocolService {
       const snap = await getDocs(q);
       if (snap.empty) return null;
       const d = snap.docs[0];
-      return { id: d.id, ...d.data() } as Protocol;
+      return normalizeProtocol({ id: d.id, ...d.data() } as Protocol);
     })());
   }
 
