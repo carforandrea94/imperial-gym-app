@@ -1,8 +1,19 @@
+export type FoodCategory = 'carb' | 'protein' | 'fat';
+
 export interface FoodItem {
   name: string;
   qty: string;
+  category?: FoodCategory;
   alt?: { name: string; qty: string }[];
 }
+
+export const FOOD_CATEGORY_LABELS: Record<FoodCategory, string> = {
+  carb: 'Carboidrati',
+  protein: 'Proteine',
+  fat: 'Grassi'
+};
+
+export const FOOD_CATEGORIES: FoodCategory[] = ['carb', 'protein', 'fat'];
 
 export interface MealVariant {
   label: string;

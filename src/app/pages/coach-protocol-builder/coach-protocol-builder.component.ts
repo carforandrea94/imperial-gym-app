@@ -6,7 +6,7 @@ import { ProtocolService } from '../../services/protocol.service';
 import { WorkoutDataService } from '../../services/workout-data.service';
 import { Protocol } from '../../models/protocol.model';
 import { Day, Exercise } from '../../models/workout.model';
-import { FoodItem, DietPlan, NamedMeal, newDietPlan, newNamedMeal } from '../../models/diet.model';
+import { FoodItem, DietPlan, NamedMeal, newDietPlan, newNamedMeal, FoodCategory, FOOD_CATEGORIES, FOOD_CATEGORY_LABELS } from '../../models/diet.model';
 
 type Tab = 'scheda' | 'dieta' | 'info';
 
@@ -31,6 +31,8 @@ export class CoachProtocolBuilderComponent implements OnInit {
   editingExercise: { day: Day; ex: Exercise; isNew: boolean } | null = null;
 
   readonly muscles = ['Petto', 'Spalle', 'Tricipiti', 'Dorso', 'Bicipiti', 'Gambe', 'Core'];
+  readonly foodCategories = FOOD_CATEGORIES;
+  readonly foodCategoryLabels = FOOD_CATEGORY_LABELS;
 
   constructor(
     private route: ActivatedRoute,
@@ -229,13 +231,20 @@ export class CoachProtocolBuilderComponent implements OnInit {
     return fromItems + fromVariants;
   }
 
-  addItem(meal: NamedMeal): void {
+  itemsByCategory(meal: NamedMeal, category: FoodCategory): FoodItem[] {
     if (!meal.items) meal.items = [];
-    meal.items.push({ name: '', qty: '' });
+    return meal.items.filter(i => (i.category ?? 'carb') === category);
   }
 
-  removeItem(meal: NamedMeal, i: number): void {
-    meal.items?.splice(i, 1);
+  addItem(meal: NamedMeal, category: FoodCategory): void {
+    if (!meal.items) meal.items = [];
+    meal.items.push({ name: '', qty: '', category });
+  }
+
+  removeItem(meal: NamedMeal, item: FoodItem): void {
+    if (!meal.items) return;
+    const idx = meal.items.indexOf(item);
+    if (idx >= 0) meal.items.splice(idx, 1);
   }
 
   // ===== Salvataggio =====

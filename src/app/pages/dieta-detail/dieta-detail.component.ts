@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DietDataService } from '../../services/diet-data.service';
-import { DietPlan, NamedMeal, FoodItem } from '../../models/diet.model';
+import { DietPlan, NamedMeal, FoodItem, FoodCategory, FOOD_CATEGORIES, FOOD_CATEGORY_LABELS } from '../../models/diet.model';
 
 interface MealVM {
   meal: NamedMeal;
@@ -21,6 +21,9 @@ interface MealVM {
 export class DietaDetailComponent implements OnInit {
   plan: DietPlan | null = null;
   meals: MealVM[] = [];
+
+  readonly foodCategories = FOOD_CATEGORIES;
+  readonly foodCategoryLabels = FOOD_CATEGORY_LABELS;
 
   constructor(
     private route: ActivatedRoute,
@@ -61,6 +64,10 @@ export class DietaDetailComponent implements OnInit {
       return vm.meal.variants[vm.selectedVariant]?.items ?? [];
     }
     return vm.meal.items ?? [];
+  }
+
+  itemsByCategory(vm: MealVM, category: FoodCategory): FoodItem[] {
+    return this.getItems(vm).filter(i => (i.category ?? 'carb') === category);
   }
 
   getVariants(vm: MealVM) {

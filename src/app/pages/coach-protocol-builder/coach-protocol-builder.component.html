@@ -241,19 +241,21 @@
         </div>
       </div>
 
-      <p class="sectiontitle" style="margin-top:0">Alimenti</p>
-      <div class="infocard">
-        <div class="builder-item" *ngFor="let item of em.items; let ii = index">
-          <div class="measure-input-wrap">
-            <input type="text" [(ngModel)]="item.name" placeholder="Alimento" />
+      <ng-container *ngFor="let cat of foodCategories">
+        <p class="sectiontitle" style="margin-top:16px">{{ foodCategoryLabels[cat] }}</p>
+        <div class="infocard">
+          <div class="builder-item" *ngFor="let item of itemsByCategory(em, cat)">
+            <div class="measure-input-wrap">
+              <input type="text" [(ngModel)]="item.name" placeholder="Alimento" />
+            </div>
+            <div class="measure-input-wrap builder-qty">
+              <input type="text" [(ngModel)]="item.qty" placeholder="Quantita'" />
+            </div>
+            <button class="delete-btn" (click)="removeItem(em, item)">✕</button>
           </div>
-          <div class="measure-input-wrap builder-qty">
-            <input type="text" [(ngModel)]="item.qty" placeholder="Quantita'" />
-          </div>
-          <button class="delete-btn" (click)="removeItem(em, ii)">✕</button>
+          <button class="confirmbtn cancel" style="width:100%;margin-top:6px" (click)="addItem(em, cat)">+ Aggiungi {{ foodCategoryLabels[cat].toLowerCase() }}</button>
         </div>
-        <button class="confirmbtn cancel" style="width:100%;margin-top:6px" (click)="addItem(em)">+ Aggiungi alimento</button>
-      </div>
+      </ng-container>
 
       <div class="savebar builder-savebar">
         <button class="confirmbtn cancel" style="flex:1" (click)="removeMealFromEditor()">Rimuovi pasto</button>
