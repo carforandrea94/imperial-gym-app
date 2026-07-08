@@ -225,10 +225,36 @@ export class CoachProtocolBuilderComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+  expandedMealCats = new Set<string>();
+
   countMealItems(meal: NamedMeal): number {
     const fromItems = meal.items?.length ?? 0;
     const fromVariants = meal.variants?.reduce((a, v) => a + (v.items?.length ?? 0), 0) ?? 0;
     return fromItems + fromVariants;
+  }
+
+  categoriesWithItems(meal: NamedMeal): FoodCategory[] {
+    return this.foodCategories.filter(cat => this.itemsByCategory(meal, cat).length > 0);
+  }
+
+  firstItem(meal: NamedMeal, cat: FoodCategory): FoodItem | null {
+    return this.itemsByCategory(meal, cat)[0] ?? null;
+  }
+
+  restItems(meal: NamedMeal, cat: FoodCategory): FoodItem[] {
+    return this.itemsByCategory(meal, cat).slice(1);
+  }
+
+  isCatExpanded(meal: NamedMeal, cat: FoodCategory): boolean {
+    return this.expandedMealCats.has(`${meal.id}:${cat}`);
+  }
+
+  toggleCatExpanded(meal: NamedMeal, cat: FoodCategory, event: Event): void {
+    event.stopPropagation();
+    const key = `${meal.id}:${cat}`;
+    if (this.expandedMealCats.has(key)) this.expandedMealCats.delete(key);
+    else this.expandedMealCats.add(key);
+    this.cdr.detectChanges();
   }
 
   itemsByCategory(meal: NamedMeal, category: FoodCategory): FoodItem[] {

@@ -70,6 +70,26 @@ export class DietaDetailComponent implements OnInit {
     return this.getItems(vm).filter(i => (i.category ?? 'carb') === category);
   }
 
+  firstItem(vm: MealVM, cat: FoodCategory): FoodItem | null {
+    return this.itemsByCategory(vm, cat)[0] ?? null;
+  }
+
+  restItems(vm: MealVM, cat: FoodCategory): FoodItem[] {
+    return this.itemsByCategory(vm, cat).slice(1);
+  }
+
+  private expandedCats = new Set<string>();
+
+  isCatExpanded(vm: MealVM, cat: FoodCategory): boolean {
+    return this.expandedCats.has(`${vm.meal.id}:${cat}`);
+  }
+
+  toggleCatExpanded(vm: MealVM, cat: FoodCategory): void {
+    const key = `${vm.meal.id}:${cat}`;
+    if (this.expandedCats.has(key)) this.expandedCats.delete(key);
+    else this.expandedCats.add(key);
+  }
+
   getVariants(vm: MealVM) {
     return vm.meal.variants ?? [];
   }

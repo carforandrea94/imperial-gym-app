@@ -208,20 +208,39 @@
         Nessun pasto ancora.
       </div>
 
-      <div class="grouplist" *ngIf="editingPlan.meals.length > 0">
-        <div class="daycard press-fx protocol-row" *ngFor="let meal of editingPlan.meals" (click)="openMeal(meal)">
-          <div class="info">
-            <div class="lbl">{{ meal.name || 'Pasto senza nome' }}</div>
-            <div class="meta">{{ countMealItems(meal) }} alimenti</div>
-          </div>
+      <div class="infocard meal-preview-card" *ngFor="let meal of editingPlan.meals" (click)="openMeal(meal)">
+        <div class="meal-preview-header">
+          <div class="lbl">{{ meal.name || 'Pasto senza nome' }}</div>
           <button class="delete-btn" (click)="removeMeal(meal, $event)" title="Elimina pasto">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
             </svg>
           </button>
-          <span class="chev">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
-          </span>
+        </div>
+
+        <div *ngIf="countMealItems(meal) === 0" class="meal-preview-empty">Nessun alimento ancora</div>
+
+        <div class="meal-preview-cat" *ngFor="let cat of categoriesWithItems(meal)">
+          <span class="meal-preview-catlabel">{{ foodCategoryLabels[cat] }}</span>
+          <div class="meal-preview-item">
+            <span class="fname">{{ firstItem(meal, cat)?.name }}</span>
+            <span class="fqty">{{ firstItem(meal, cat)?.qty }}</span>
+          </div>
+
+          <ng-container *ngIf="restItems(meal, cat).length > 0">
+            <div class="altwrap-header" (click)="toggleCatExpanded(meal, cat, $event)">
+              <span>{{ isCatExpanded(meal, cat) ? 'Nascondi' : '+' + restItems(meal, cat).length + ' altri' }}</span>
+              <span class="chevron">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+              </span>
+            </div>
+            <div class="altlist" *ngIf="isCatExpanded(meal, cat)">
+              <div class="meal-preview-item" *ngFor="let it of restItems(meal, cat)">
+                <span class="fname">{{ it.name }}</span>
+                <span class="fqty">{{ it.qty }}</span>
+              </div>
+            </div>
+          </ng-container>
         </div>
       </div>
 
