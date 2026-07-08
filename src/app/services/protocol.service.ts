@@ -14,17 +14,35 @@ import { FirebaseService } from '../core/services/firebase.service';
 import { Protocol, emptyProtocol } from '../models/protocol.model';
 import { ZoneFixService } from '../core/utils/zone.util';
 
+const LEGACY_MEAL_KEYS = ['colazione', 'spuntino', 'pranzo', 'merenda', 'cena'];
+const LEGACY_MEAL_LABELS: Record<string, string> = {
+  colazione: 'Colazione', spuntino: 'Spuntino', pranzo: 'Pranzo', merenda: 'Merenda', cena: 'Cena'
+};
+
 /**
  * Protocolli creati prima della migrazione dieta ON/OFF -> lista libera di
  * piani hanno ancora diet: {on:{...}, off:{...}} invece di un array.
- * Li normalizziamo in lettura, cosi' il resto del codice puo' sempre
- * assumere che protocol.diet sia un array.
+ * Piani creati nella finestra intermedia (lista di piani, ma pasti ancora
+ * a chiavi fisse colazione/spuntino/...) non hanno il campo meals[].
+ * Normalizziamo entrambi i casi in lettura, cosi' il resto del codice puo'
+ * sempre assumere che protocol.diet sia un array di piani con meals[].
  */
 function normalizeProtocol(p: Protocol): Protocol {
   if (!Array.isArray(p.diet)) {
-    console.warn(`Protocollo ${p.id}: campo diet in formato legacy, normalizzato ad array vuoto.`);
+    console.warn(`Protocollo ${p.id}: campo diet in formato legacy (non array), normalizzato ad array vuoto.`);
     p.diet = [];
+    return p;
   }
+  p.diet = p.diet.map((plan: any) => {
+    if (!Array.isArray(plan.meals)) {
+      console.warn(`Protocollo ${p.id}: piano "${plan.name}" in formato legacy (senza meals[]), normalizzato.`);
+      const meals = LEGACY_MEAL_KEYS
+        .filter(key => plan[key])
+        .map(key => ({ id: key, name: LEGACY_MEAL_LABELS[key], ...plan[key] }));
+      return { id: plan.id, name: plan.name, meals };
+    }
+    return plan;
+  });
   return p;
 }
 

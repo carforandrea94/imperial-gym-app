@@ -1,20 +1,20 @@
 import { Injectable } from '@angular/core';
 import * as pdfjsLib from 'pdfjs-dist';
 import { Day, Exercise } from '../models/workout.model';
-import { Diet, DietMeals, MEAL_LABELS, newDietPlan } from '../models/diet.model';
+import { Diet, DEFAULT_MEAL_NAMES, newDietPlan, newNamedMeal } from '../models/diet.model';
 
 // Worker servito da CDN (evita di dover gestire il bundling del worker separatamente)
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${(pdfjsLib as any).version}/pdf.worker.min.mjs`;
 
-const MEAL_KEYWORDS: Record<string, keyof DietMeals> = {
-  'colazione': 'colazione',
-  'spuntino': 'spuntino',
-  'spuntino mattutino': 'spuntino',
-  'pranzo': 'pranzo',
-  'merenda': 'merenda',
-  'spuntino pomeridiano': 'merenda',
-  'cena': 'cena'
+const MEAL_KEYWORDS: Record<string, string> = {
+  'colazione': 'Colazione',
+  'spuntino': 'Spuntino',
+  'spuntino mattutino': 'Spuntino',
+  'pranzo': 'Pranzo',
+  'merenda': 'Merenda',
+  'spuntino pomeridiano': 'Merenda',
+  'cena': 'Cena'
 };
 
 @Injectable({ providedIn: 'root' })
@@ -92,22 +92,26 @@ export class PdfImportService {
    */
   parseDietText(text: string): Diet {
     const plan = newDietPlan('Dieta (da PDF)');
+    plan.meals = []; // ripartiamo da zero, aggiungiamo solo i pasti che troviamo davvero nel testo
 
     const rawLines = text.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
     const qtyRegex = /^(.+?)\s+([\d.,]+\s?(?:g|kg|ml|l|cucchiai|cucchiaino|fette|pz|uova)\.?)$/i;
 
-    let currentMealKey: keyof DietMeals | null = null;
+    let currentMealName: string | null = null;
 
     for (const line of rawLines) {
       const lower = line.toLowerCase().replace(/[:：]/g, '').trim();
       const mealMatch = Object.keys(MEAL_KEYWORDS).find(k => lower === k || lower.startsWith(k + ' '));
       if (mealMatch) {
-        currentMealKey = MEAL_KEYWORDS[mealMatch];
+        currentMealName = MEAL_KEYWORDS[mealMatch];
+        if (!plan.meals.some(m => m.name === currentMealName)) {
+          plan.meals.push(newNamedMeal(currentMealName));
+        }
         continue;
       }
-      if (!currentMealKey) continue;
+      if (!currentMealName) continue;
 
-      const meal = plan[currentMealKey];
+      const meal = plan.meals.find(m => m.name === currentMealName)!;
       if (!meal.items) meal.items = [];
 
       const m = line.match(qtyRegex);
@@ -116,6 +120,11 @@ export class PdfImportService {
       } else if (line.length > 1 && line.length < 80) {
         meal.items.push({ name: line, qty: '' });
       }
+    }
+
+    // Se non e' stato riconosciuto nessun pasto, torna comunque i 5 standard vuoti
+    if (plan.meals.length === 0) {
+      plan.meals = DEFAULT_MEAL_NAMES.map(name => newNamedMeal(name));
     }
 
     return [plan];

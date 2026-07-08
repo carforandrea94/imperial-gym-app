@@ -6,7 +6,7 @@ import { ProtocolService } from '../../services/protocol.service';
 import { WorkoutDataService } from '../../services/workout-data.service';
 import { Protocol } from '../../models/protocol.model';
 import { Day, Exercise } from '../../models/workout.model';
-import { Meal, FoodItem, MEAL_LABELS, DietPlan, newDietPlan } from '../../models/diet.model';
+import { FoodItem, DietPlan, NamedMeal, newDietPlan, newNamedMeal } from '../../models/diet.model';
 
 type Tab = 'scheda' | 'dieta' | 'info';
 
@@ -29,8 +29,6 @@ export class CoachProtocolBuilderComponent implements OnInit {
   editingPlan: DietPlan | null = null;
   editingExercise: { day: Day; ex: Exercise; isNew: boolean } | null = null;
 
-  readonly mealOrder = ['colazione', 'spuntino', 'pranzo', 'merenda', 'cena'] as const;
-  readonly mealLabels = MEAL_LABELS;
   readonly muscles = ['Petto', 'Spalle', 'Tricipiti', 'Dorso', 'Bicipiti', 'Gambe', 'Core'];
 
   constructor(
@@ -182,26 +180,33 @@ export class CoachProtocolBuilderComponent implements OnInit {
   }
 
   countPlanItems(plan: DietPlan): number {
-    return (Object.keys(MEAL_LABELS) as (keyof typeof MEAL_LABELS)[]).reduce((acc, key) => {
-      const meal = (plan as any)[key] as Meal;
+    return plan.meals.reduce((acc, meal) => {
       const fromItems = meal.items?.length ?? 0;
       const fromVariants = meal.variants?.reduce((a, v) => a + (v.items?.length ?? 0), 0) ?? 0;
       return acc + fromItems + fromVariants;
     }, 0);
   }
 
-  getMeal(key: string): Meal {
-    return (this.editingPlan as any)[key] as Meal;
+  addMeal(): void {
+    if (!this.editingPlan) return;
+    this.editingPlan.meals.push(newNamedMeal('Nuovo pasto'));
+    this.cdr.detectChanges();
   }
 
-  addItem(key: string): void {
-    const meal = this.getMeal(key);
+  removeMeal(meal: NamedMeal, event: Event): void {
+    event.stopPropagation();
+    if (!this.editingPlan) return;
+    this.editingPlan.meals = this.editingPlan.meals.filter(m => m.id !== meal.id);
+    this.cdr.detectChanges();
+  }
+
+  addItem(meal: NamedMeal): void {
     if (!meal.items) meal.items = [];
     meal.items.push({ name: '', qty: '' });
   }
 
-  removeItem(key: string, i: number): void {
-    this.getMeal(key).items?.splice(i, 1);
+  removeItem(meal: NamedMeal, i: number): void {
+    meal.items?.splice(i, 1);
   }
 
   // ===== Salvataggio =====

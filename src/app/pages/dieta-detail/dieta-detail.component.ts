@@ -2,11 +2,10 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DietDataService } from '../../services/diet-data.service';
-import { DietPlan, Meal, FoodItem, MEAL_LABELS } from '../../models/diet.model';
+import { DietPlan, NamedMeal, FoodItem } from '../../models/diet.model';
 
 interface MealVM {
-  key: string;
-  label: string;
+  meal: NamedMeal;
   open: boolean;
   selectedVariant: number;
   altOpen: boolean[];
@@ -20,9 +19,6 @@ interface MealVM {
   styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
 })
 export class DietaDetailComponent implements OnInit {
-  readonly mealOrder = ['colazione', 'spuntino', 'pranzo', 'merenda', 'cena'];
-  readonly mealLabels = MEAL_LABELS;
-
   plan: DietPlan | null = null;
   meals: MealVM[] = [];
 
@@ -37,9 +33,8 @@ export class DietaDetailComponent implements OnInit {
     this.plan = this.dietData.getPlan(id);
     if (!this.plan) { this.router.navigate(['/dieta']); return; }
 
-    this.meals = this.mealOrder.map(key => ({
-      key,
-      label: MEAL_LABELS[key],
+    this.meals = this.plan.meals.map(meal => ({
+      meal,
       open: true,
       selectedVariant: 0,
       altOpen: []
@@ -47,10 +42,6 @@ export class DietaDetailComponent implements OnInit {
     this.meals.forEach(vm => {
       vm.altOpen = this.getItems(vm).map(() => true);
     });
-  }
-
-  getMeal(key: string): Meal {
-    return (this.plan as any)[key] as Meal;
   }
 
   toggleMeal(vm: MealVM): void {
@@ -62,19 +53,18 @@ export class DietaDetailComponent implements OnInit {
   }
 
   hasVariants(vm: MealVM): boolean {
-    return !!(this.getMeal(vm.key)?.variants?.length);
+    return !!(vm.meal.variants?.length);
   }
 
   getItems(vm: MealVM): FoodItem[] {
-    const meal = this.getMeal(vm.key);
-    if (meal.variants?.length) {
-      return meal.variants[vm.selectedVariant]?.items ?? [];
+    if (vm.meal.variants?.length) {
+      return vm.meal.variants[vm.selectedVariant]?.items ?? [];
     }
-    return meal.items ?? [];
+    return vm.meal.items ?? [];
   }
 
   getVariants(vm: MealVM) {
-    return this.getMeal(vm.key)?.variants ?? [];
+    return vm.meal.variants ?? [];
   }
 
   selectVariant(vm: MealVM, idx: number): void {

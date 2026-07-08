@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { DietDataService } from '../../services/diet-data.service';
-import { DietPlan, MEAL_LABELS, DietMeals } from '../../models/diet.model';
+import { DietPlan } from '../../models/diet.model';
 
 interface DietPlanCard {
   plan: DietPlan;
@@ -28,9 +28,8 @@ export class DietaComponent implements OnInit {
     this.buildCards();
   }
 
-  private countItems(plan: DietMeals): number {
-    return (Object.keys(MEAL_LABELS) as (keyof DietMeals)[]).reduce((acc, key) => {
-      const meal = plan[key];
+  private countItems(plan: DietPlan): number {
+    return plan.meals.reduce((acc, meal) => {
       const fromItems = meal.items?.length ?? 0;
       const fromVariants = meal.variants?.reduce((a, v) => a + (v.items?.length ?? 0), 0) ?? 0;
       return acc + fromItems + fromVariants;

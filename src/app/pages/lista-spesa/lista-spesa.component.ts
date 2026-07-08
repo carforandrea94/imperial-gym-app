@@ -2,7 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DietDataService } from '../../services/diet-data.service';
 import { AppStateService } from '../../services/app-state.service';
-import { MEAL_LABELS, DietMeals } from '../../models/diet.model';
 
 interface ShoppingItem {
   key: string;
@@ -41,8 +40,7 @@ export class ListaSpesaComponent implements OnInit {
     const map = new Map<string, ShoppingItem>();
 
     for (const plan of this.dietData.diet) {
-      (Object.keys(MEAL_LABELS) as (keyof DietMeals)[]).forEach(mealKey => {
-        const meal = plan[mealKey];
+      for (const meal of plan.meals) {
         const allFoods = [
           ...(meal.items ?? []),
           ...(meal.variants ?? []).flatMap(v => v.items)
@@ -55,10 +53,10 @@ export class ListaSpesaComponent implements OnInit {
           }
           const entry = map.get(key)!;
           if (food.qty && !entry.qtys.includes(food.qty)) entry.qtys.push(food.qty);
-          const source = `${plan.name} · ${MEAL_LABELS[mealKey]}`;
+          const source = `${plan.name} · ${meal.name}`;
           if (!entry.sources.includes(source)) entry.sources.push(source);
         }
-      });
+      }
     }
 
     this.items = Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));

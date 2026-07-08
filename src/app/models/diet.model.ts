@@ -9,46 +9,38 @@ export interface MealVariant {
   items: FoodItem[];
 }
 
-export interface Meal {
+/** Un pasto con nome libero (Colazione, Spuntino, ma anche "Pre-workout", ecc.). */
+export interface NamedMeal {
+  id: string;
+  name: string;
   items?: FoodItem[];
   variants?: MealVariant[];
 }
 
-export interface DietMeals {
-  colazione: Meal;
-  spuntino: Meal;
-  pranzo: Meal;
-  merenda: Meal;
-  cena: Meal;
-}
-
 /** Un piano dieta con nome libero (es. "Giorno ON", "Giorno OFF", "Rifeed", "Vacanza"...). */
-export interface DietPlan extends DietMeals {
+export interface DietPlan {
   id: string;
   name: string;
+  meals: NamedMeal[];
 }
 
 /** Il protocollo puo' contenere piu' diete, non piu' fisse a due (ON/OFF). */
 export type Diet = DietPlan[];
 
-export const MEAL_LABELS: Record<string, string> = {
-  colazione: 'Colazione',
-  spuntino: 'Spuntino',
-  pranzo: 'Pranzo',
-  merenda: 'Merenda',
-  cena: 'Cena'
-};
+export const DEFAULT_MEAL_NAMES = ['Colazione', 'Spuntino', 'Pranzo', 'Merenda', 'Cena'];
 
-export function emptyMeals(): DietMeals {
-  return {
-    colazione: { items: [] },
-    spuntino: { items: [] },
-    pranzo: { items: [] },
-    merenda: { items: [] },
-    cena: { items: [] }
-  };
+function newMealId(): string {
+  return `meal_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+}
+
+export function newNamedMeal(name: string): NamedMeal {
+  return { id: newMealId(), name, items: [] };
+}
+
+export function defaultMeals(): NamedMeal[] {
+  return DEFAULT_MEAL_NAMES.map(name => newNamedMeal(name));
 }
 
 export function newDietPlan(name: string): DietPlan {
-  return { id: `diet_${Date.now()}_${Math.floor(Math.random() * 1000)}`, name, ...emptyMeals() };
+  return { id: `diet_${Date.now()}_${Math.floor(Math.random() * 1000)}`, name, meals: defaultMeals() };
 }
