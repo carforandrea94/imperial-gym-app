@@ -1,5 +1,10 @@
 <div *ngIf="loading" class="history-empty">Caricamento…</div>
 
+<div *ngIf="!loading && errorMsg" class="history-empty">
+  {{ errorMsg }}<br>
+  <button class="savebtn" style="margin-top:12px" (click)="loadAll()">Riprova</button>
+</div>
+
 <ng-template #exDetail let-vm="vm">
   <p class="note" *ngIf="vm.ex.note">{{ vm.ex.note }}</p>
 
@@ -53,7 +58,7 @@
 </ng-template>
 
 <!-- Vista elenco (accordion) -->
-<div class="exlist" *ngIf="day && !loading && state.viewMode() === 'list'">
+<div class="exlist" *ngIf="day && !loading && !errorMsg && state.viewMode() === 'list'">
   <div class="ex" *ngFor="let vm of exercises; let i = index" [class.open]="vm.open">
 
     <div class="ex-summary" (click)="toggleEx(vm)">
@@ -86,7 +91,7 @@
 </div>
 
 <!-- Vista slider (card scorrevoli, una per volta) -->
-<div class="exslider-wrap" *ngIf="day && !loading && state.viewMode() === 'slider'">
+<div class="exslider-wrap" *ngIf="day && !loading && !errorMsg && state.viewMode() === 'slider'">
   <div class="exslider-counter">Esercizio {{ sliderIndex + 1 }} di {{ exercises.length }}</div>
 
   <div class="exslider" #sliderEl (scroll)="onSliderScroll()">

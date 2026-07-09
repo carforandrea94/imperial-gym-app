@@ -39,6 +39,7 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
   dayIndex = 0;
   exercises: ExerciseVM[] = [];
   loading = true;
+  errorMsg = '';
   private draftTimer: ReturnType<typeof setTimeout> | null = null;
 
   restModalOpen = false;
@@ -77,25 +78,38 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
     this.day = this.workoutData.days[n];
     if (!this.day) { this.router.navigate(['/scheda']); return; }
 
-    // La lista esercizi e' dato statico locale: si mostra subito, senza
-    // aspettare Firestore. Bozze/override/insight arrivano dopo e
-    // aggiornano la vista gia' visibile.
-    this.buildExercises({});
-    this.loading = false;
-
     this.state.registerSaveHandler(() => this.saveWorkout());
-    this.loadRemoteData();
+    this.loadAll();
   }
 
-  private async loadRemoteData(): Promise<void> {
-    const [appState, daySessions] = await Promise.all([
-      this.appState.load(),
-      this.sessions.listForDay(this.day.id)
-    ]);
+  // Aspetta bozze/override/insight da Firestore prima di mostrare le card,
+  // cosi' non compaiono prima con dati incompleti (peso pre-compilato,
+  // "Ultimo", suggerimento di progressione) e poi si aggiornano di scatto.
+  async loadAll(): Promise<void> {
+    this.loading = true;
+    this.errorMsg = '';
 
-    this.applyRestOverrides(appState.restOverrides);
-    this.loadDraft(appState.workoutDrafts[this.day.id]);
-    this.loadInsights(daySessions);
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('TIMEOUT')), 12000)
+    );
+
+    try {
+      const [appState, daySessions] = await Promise.race([
+        Promise.all([this.appState.load(), this.sessions.listForDay(this.day.id)]),
+        timeout
+      ]);
+      this.buildExercises(appState.restOverrides);
+      this.loadDraft(appState.workoutDrafts[this.day.id]);
+      this.loadInsights(daySessions);
+    } catch (e: any) {
+      console.error('Errore caricamento scheda:', e);
+      this.errorMsg = e?.message === 'TIMEOUT'
+        ? 'La connessione sta impiegando troppo tempo. Controlla la rete e riprova.'
+        : 'Errore nel caricamento della scheda. Riprova.';
+    } finally {
+      this.loading = false;
+      this.cdr.detectChanges();
+    }
   }
 
   ngOnDestroy(): void {
@@ -118,14 +132,6 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
       const override = restOverrides[this.restKey(ex.name)];
       const restSeconds = override && override > 0 ? override : protocolDefault;
       return { ex, rows, open: true, insightVisible: false, insight: null, restSeconds };
-    });
-  }
-
-  /** Applica gli override del tempo di recupero una volta arrivati da Firestore. */
-  private applyRestOverrides(restOverrides: Record<string, number>): void {
-    this.exercises.forEach(vm => {
-      const override = restOverrides[this.restKey(vm.ex.name)];
-      if (override && override > 0) vm.restSeconds = override;
     });
   }
 
