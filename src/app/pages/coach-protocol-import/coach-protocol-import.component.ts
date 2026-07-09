@@ -17,12 +17,41 @@ const STEP_TIMEOUT_MS = 25000;
   templateUrl: './coach-protocol-import.component.html',
   styles: [`
     :host { display: block; animation: fade .4s var(--spring-soft); }
-    .pdf-spinner {
-      width: 16px; height: 16px; border-radius: 50%;
-      border: 2px solid rgba(255,255,255,.35); border-top-color: #fff;
-      animation: pdf-spin .8s linear infinite; flex-shrink: 0;
+
+    .pdf-overlay {
+      position: fixed; inset: 0; z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(4, 10, 8, 0.72);
+      backdrop-filter: blur(6px) saturate(120%);
+      -webkit-backdrop-filter: blur(6px) saturate(120%);
+      animation: fade .25s var(--spring-soft);
     }
-    @keyframes pdf-spin { to { transform: rotate(360deg); } }
+    .pdf-overlay-card {
+      width: min(340px, 86vw);
+      padding: 28px 24px;
+      border-radius: 24px;
+      background: var(--content-glass-bg, rgba(20,26,24,0.9));
+      border: 1px solid var(--content-glass-border, rgba(255,255,255,.12));
+      box-shadow: 0 20px 50px rgba(0,0,0,.45);
+      text-align: center;
+    }
+    .pdf-overlay-stage {
+      font-family: 'Inter', sans-serif; font-weight: 600; font-size: 15px;
+      color: #fff; margin-bottom: 18px;
+    }
+    .pdf-progress-track {
+      width: 100%; height: 8px; border-radius: 999px;
+      background: rgba(255,255,255,.12); overflow: hidden;
+    }
+    .pdf-progress-fill {
+      height: 100%; border-radius: 999px;
+      background: linear-gradient(90deg, #0F7A57, var(--imp-red));
+      transition: width .35s var(--spring-soft, ease);
+    }
+    .pdf-progress-pct {
+      margin-top: 10px; font-family: 'IBM Plex Mono', monospace;
+      font-size: 12.5px; color: var(--label-2, rgba(255,255,255,.6));
+    }
   `]
 })
 export class CoachProtocolImportComponent {
@@ -36,6 +65,8 @@ export class CoachProtocolImportComponent {
   errorMsg = '';
   /** Fase corrente mostrata all'utente durante l'elaborazione (vedi template). */
   stage = '';
+  /** Avanzamento indicativo per fase (0-100), mostrato nella progress bar dell'overlay. */
+  progressPercent = 0;
 
   constructor(
     private route: ActivatedRoute,
@@ -74,35 +105,40 @@ export class CoachProtocolImportComponent {
     }
   }
 
+  private setStage(stage: string, percent: number): void {
+    this.stage = stage;
+    this.progressPercent = percent;
+  }
+
   async process(): Promise<void> {
     if (!this.canProcess) return;
     this.processing = true;
     this.errorMsg = '';
 
     try {
-      this.stage = 'Creazione bozza protocollo…';
+      this.setStage('Creazione bozza protocollo…', 5);
       const coach = this.auth.currentUser()!;
       const id = await this.protocolSvc.create(this.clientId, coach.uid);
 
-      this.stage = 'Lettura scheda allenamento…';
+      this.setStage('Lettura scheda allenamento…', 20);
       const schedaText = await this.withTimeout(this.pdfSvc.extractText(this.schedaFile!), 'Lettura scheda');
 
-      this.stage = 'Lettura dieta…';
+      this.setStage('Lettura dieta…', 40);
       const dietaText = await this.withTimeout(this.pdfSvc.extractText(this.dietaFile!), 'Lettura dieta');
 
-      this.stage = 'Analisi esercizi e alimenti…';
+      this.setStage('Analisi esercizi e alimenti…', 65);
       const days = this.pdfSvc.parseWorkoutText(schedaText);
       const diet = this.pdfSvc.parseDietText(dietaText);
       const durationWeeks = this.pdfSvc.detectProgramDurationWeeks(schedaText);
 
       let infoNote = this.pdfSvc.extractDietNotes(dietaText);
       if (this.integrazioneFile) {
-        this.stage = 'Lettura integrazione…';
+        this.setStage('Lettura integrazione…', 75);
         const integrazioneText = await this.withTimeout(this.pdfSvc.extractText(this.integrazioneFile), 'Lettura integrazione');
         infoNote = [infoNote, integrazioneText.trim()].filter(Boolean).join('\n\n');
       }
 
-      this.stage = 'Salvataggio protocollo…';
+      this.setStage('Salvataggio protocollo…', 90);
       await this.protocolSvc.update(this.clientId, id, {
         name: 'Protocollo da PDF',
         source: 'pdf',
@@ -111,13 +147,15 @@ export class CoachProtocolImportComponent {
         infoNote
       });
 
-      this.router.navigate(['/coach/clienti', this.clientId, 'builder', id]);
+      this.setStage('Completato', 100);
+      this.router.navigate(['/coach/clienti', this.clientId]);
     } catch (e: any) {
       console.error('Errore importazione PDF:', e);
       this.errorMsg = e?.message || 'Errore durante la lettura dei PDF. Riprova o crea il protocollo manualmente.';
     } finally {
       this.processing = false;
       this.stage = '';
+      this.progressPercent = 0;
     }
   }
 }

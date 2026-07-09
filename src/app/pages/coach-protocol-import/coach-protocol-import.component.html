@@ -27,7 +27,16 @@
 
 <div class="savebar">
   <button class="savebtn" [disabled]="!canProcess" (click)="process()">
-    <span class="pdf-spinner" *ngIf="processing"></span>
-    {{ processing ? (stage || 'Elaborazione…') : 'Elabora e crea bozza' }}
+    {{ processing ? 'Elaborazione in corso…' : 'Elabora e crea bozza' }}
   </button>
+</div>
+
+<div class="pdf-overlay" *ngIf="processing">
+  <div class="pdf-overlay-card">
+    <p class="pdf-overlay-stage">{{ stage || 'Elaborazione…' }}</p>
+    <div class="pdf-progress-track">
+      <div class="pdf-progress-fill" [style.width.%]="progressPercent"></div>
+    </div>
+    <p class="pdf-progress-pct">{{ progressPercent }}%</p>
+  </div>
 </div>
