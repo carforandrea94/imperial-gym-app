@@ -307,6 +307,45 @@ export class CoachProtocolBuilderComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+  // --- Alternative del singolo alimento (item.alt), es. "Petto di pollo" -> Tacchino, Merluzzo...
+  // Distinte da quelle a livello di pasto sopra: qui l'alternativa si applica solo a
+  // quello specifico alimento della combinazione, non a tutto il pasto.
+
+  private expandedItemAlt = new Set<string>();
+
+  private itemAltKey(combo: MealCombination, cat: FoodCategory): string {
+    return `${combo.id}:${cat}`;
+  }
+
+  itemAlt(item: FoodItem): { name: string; qty: string }[] {
+    return item.alt ?? [];
+  }
+
+  isItemAltExpanded(combo: MealCombination, cat: FoodCategory): boolean {
+    return this.expandedItemAlt.has(this.itemAltKey(combo, cat));
+  }
+
+  toggleItemAltExpanded(combo: MealCombination, cat: FoodCategory, event?: Event): void {
+    event?.stopPropagation();
+    const key = this.itemAltKey(combo, cat);
+    if (this.expandedItemAlt.has(key)) this.expandedItemAlt.delete(key);
+    else this.expandedItemAlt.add(key);
+    this.cdr.detectChanges();
+  }
+
+  addItemAltEntry(item: FoodItem): void {
+    if (!item.alt) item.alt = [];
+    item.alt.push({ name: '', qty: '' });
+    this.cdr.detectChanges();
+  }
+
+  removeItemAltEntry(item: FoodItem, alt: { name: string; qty: string }): void {
+    if (!item.alt) return;
+    const idx = item.alt.indexOf(alt);
+    if (idx >= 0) item.alt.splice(idx, 1);
+    this.cdr.detectChanges();
+  }
+
   // ===== Salvataggio =====
 
   async save(activateAfter: boolean): Promise<void> {
