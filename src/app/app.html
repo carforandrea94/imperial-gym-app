@@ -8,12 +8,14 @@
   [showAnalytics]="showAnalytics"
   [showLogout]="true"
   [showShoppingList]="showShoppingList"
+  [showAccount]="true"
   (backClick)="onBack()"
   (historyClick)="onHistory()"
   (infoClick)="onInfo()"
   (analyticsClick)="onAnalytics()"
   (logoutClick)="onLogout()"
-  (shoppingListClick)="onShoppingList()">
+  (shoppingListClick)="onShoppingList()"
+  (accountClick)="onAccount()">
 </app-navbar>
 
 <div class="content" [class.no-chrome]="!showChrome">

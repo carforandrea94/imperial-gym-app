@@ -1,0 +1,39 @@
+<p class="sectiontitle" style="margin-top:0">Il tuo profilo</p>
+
+<div class="infocard account-header">
+  <div class="badge account-avatar">{{ initial }}</div>
+  <div class="info">
+    <div class="lbl">{{ auth.currentUser()?.displayName }}</div>
+    <div class="meta">{{ roleLabel }}</div>
+  </div>
+</div>
+
+<div class="infocard">
+  <div class="account-row">
+    <span class="account-row-label">Email</span>
+    <span class="account-row-value">{{ auth.currentUser()?.email }}</span>
+  </div>
+  <div class="account-row" *ngIf="memberSince">
+    <span class="account-row-label">Membro dal</span>
+    <span class="account-row-value">{{ memberSince }}</span>
+  </div>
+</div>
+
+<ng-container *ngIf="auth.isCoach">
+  <p class="sectiontitle">Il tuo codice</p>
+  <div class="infocard mycode-card">
+    <p class="bacheca-text" style="margin-bottom:12px">
+      Comunica questo codice ai tuoi clienti: lo useranno in fase di registrazione per accoppiarsi a te.
+    </p>
+    <div class="mycode-row">
+      <span class="mycode-value">{{ auth.currentUser()?.pairingCode }}</span>
+      <button class="confirmbtn cancel mycode-copybtn" (click)="copyCode()">
+        {{ copied ? 'Copiato ✓' : 'Copia' }}
+      </button>
+    </div>
+  </div>
+</ng-container>
+
+<div class="savebar">
+  <button class="confirmbtn danger" style="width:100%" (click)="logout()">Esci</button>
+</div>
