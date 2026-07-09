@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
@@ -39,7 +39,7 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
   dayIndex = 0;
   exercises: ExerciseVM[] = [];
   loading = true;
-  saveStatus: 'idle' | 'saved' | 'err' = 'idle';
+  saveStatus: 'idle' | 'saving' | 'saved' | 'err' = 'idle';
   private draftTimer: ReturnType<typeof setTimeout> | null = null;
 
   restModalOpen = false;
@@ -54,7 +54,8 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
     private appState: AppStateService,
     private sessions: WorkoutSessionsService,
     private confirm: ConfirmDialogService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -299,6 +300,10 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
   }
 
   async saveWorkout(): Promise<void> {
+    if (this.saveStatus === 'saving') return; // evita doppio invio mentre e' gia' in corso
+    this.saveStatus = 'saving';
+    this.cdr.detectChanges();
+
     const isoDate = new Date().toISOString().split('T')[0];
     const session: WorkoutSession = {
       dayId: this.day.id,
@@ -309,14 +314,25 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
         sets: vm.rows.map(r => ({ load: r.load || null, reps: r.reps || null, done: r.done }))
       }))
     };
-    const ok = await this.sessions.save(session);
-    if (ok) {
-      await this.appState.deleteFieldPath(`workoutDrafts.${this.day.id}`);
-      this.saveStatus = 'saved';
-      setTimeout(() => { this.saveStatus = 'idle'; }, 2000);
-    } else {
+
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('TIMEOUT')), 12000)
+    );
+
+    try {
+      const ok = await Promise.race([this.sessions.save(session), timeout]);
+      if (ok) {
+        await this.appState.deleteFieldPath(`workoutDrafts.${this.day.id}`);
+        this.saveStatus = 'saved';
+      } else {
+        this.saveStatus = 'err';
+      }
+    } catch (e: any) {
+      console.error('Errore salvataggio allenamento:', e);
       this.saveStatus = 'err';
-      setTimeout(() => { this.saveStatus = 'idle'; }, 2000);
+    } finally {
+      this.cdr.detectChanges();
+      setTimeout(() => { this.saveStatus = 'idle'; this.cdr.detectChanges(); }, 2000);
     }
   }
 
@@ -327,8 +343,9 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
   }
 
   getSaveBtnText(): string {
+    if (this.saveStatus === 'saving') return 'Salvataggio…';
     if (this.saveStatus === 'saved') return '✓ Allenamento salvato!';
-    if (this.saveStatus === 'err') return '✕ Errore salvataggio';
+    if (this.saveStatus === 'err') return '✕ Errore salvataggio, riprova';
     return 'Completa allenamento';
   }
 }
