@@ -5,9 +5,13 @@ import {
   Diet, DietPlan, NamedMeal, MealCombination, FoodItem, FoodCategory,
   DEFAULT_MEAL_NAMES, newDietPlan, newNamedMeal, newCombination
 } from '../models/diet.model';
-// Worker servito da CDN (evita di dover gestire il bundling del worker separatamente)
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${(pdfjsLib as any).version}/pdf.worker.min.mjs`;
+// Worker servito dallo stesso dominio dell'app (file in public/, copiato in root
+// dal build - vedi angular.json "assets"). Un worker caricato da un CDN esterno e'
+// cross-origin e su Safari/iOS spesso fallisce in silenzio (nessun errore, nessuna
+// risposta), lasciando l'estrazione bloccata a tempo indeterminato senza alcun feedback.
+// NB: il file public/pdf.worker.min.mjs va tenuto allineato alla versione di pdfjs-dist
+// installata (copiato da node_modules/pdfjs-dist/build/pdf.worker.min.mjs).
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
 const MEAL_KEYWORDS: Record<string, string> = {
   'colazione': 'Colazione',
