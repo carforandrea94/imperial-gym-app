@@ -1,6 +1,11 @@
 <div *ngIf="loading" class="history-empty">Caricamento…</div>
 
-<ng-container *ngIf="!loading">
+<div *ngIf="!loading && errorMsg" class="history-empty">
+  {{ errorMsg }}<br>
+  <button class="savebtn" style="margin-top:12px" (click)="load()">Riprova</button>
+</div>
+
+<ng-container *ngIf="!loading && !errorMsg">
   <div class="shop-summary">
     <span>{{ checkedCount }} / {{ items.length }} presi</span>
     <button class="confirmbtn cancel shop-resetbtn" (click)="resetAll()" *ngIf="checkedCount > 0">Svuota spuntati</button>
