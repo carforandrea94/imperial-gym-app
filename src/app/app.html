@@ -9,12 +9,15 @@
   [showShoppingList]="showShoppingList"
   [showViewToggle]="showViewToggle"
   [viewMode]="workoutState.viewMode()"
+  [showSaveWorkout]="showSaveWorkout"
+  [saveStatus]="workoutState.saveStatus()"
   (backClick)="onBack()"
   (historyClick)="onHistory()"
   (infoClick)="onInfo()"
   (analyticsClick)="onAnalytics()"
   (shoppingListClick)="onShoppingList()"
-  (viewModeChange)="onViewModeChange($event)">
+  (viewModeChange)="onViewModeChange($event)"
+  (saveWorkoutClick)="onSaveWorkoutClick()">
 </app-navbar>
 
 <div class="content" [class.no-chrome]="!showChrome">

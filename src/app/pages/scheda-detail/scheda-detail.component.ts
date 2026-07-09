@@ -39,7 +39,6 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
   dayIndex = 0;
   exercises: ExerciseVM[] = [];
   loading = true;
-  saveStatus: 'idle' | 'saving' | 'saved' | 'err' = 'idle';
   private draftTimer: ReturnType<typeof setTimeout> | null = null;
 
   restModalOpen = false;
@@ -84,6 +83,7 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
     this.buildExercises({});
     this.loading = false;
 
+    this.state.registerSaveHandler(() => this.saveWorkout());
     this.loadRemoteData();
   }
 
@@ -100,6 +100,7 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.draftTimer) clearTimeout(this.draftTimer);
+    this.state.registerSaveHandler(null);
   }
 
   private buildExercises(restOverrides: Record<string, number>): void {
@@ -341,9 +342,8 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
   }
 
   async saveWorkout(): Promise<void> {
-    if (this.saveStatus === 'saving') return; // evita doppio invio mentre e' gia' in corso
-    this.saveStatus = 'saving';
-    this.cdr.detectChanges();
+    if (this.state.saveStatus() === 'saving') return; // evita doppio invio mentre e' gia' in corso
+    this.state.saveStatus.set('saving');
 
     const isoDate = new Date().toISOString().split('T')[0];
     const session: WorkoutSession = {
@@ -364,29 +364,15 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
       const ok = await Promise.race([this.sessions.save(session), timeout]);
       if (ok) {
         await this.appState.deleteFieldPath(`workoutDrafts.${this.day.id}`);
-        this.saveStatus = 'saved';
+        this.state.saveStatus.set('saved');
       } else {
-        this.saveStatus = 'err';
+        this.state.saveStatus.set('err');
       }
     } catch (e: any) {
       console.error('Errore salvataggio allenamento:', e);
-      this.saveStatus = 'err';
+      this.state.saveStatus.set('err');
     } finally {
-      this.cdr.detectChanges();
-      setTimeout(() => { this.saveStatus = 'idle'; this.cdr.detectChanges(); }, 2000);
+      setTimeout(() => this.state.saveStatus.set('idle'), 2000);
     }
-  }
-
-  getSaveBtnClass(): string {
-    if (this.saveStatus === 'saved') return 'savebtn saved';
-    if (this.saveStatus === 'err') return 'savebtn err';
-    return 'savebtn';
-  }
-
-  getSaveBtnText(): string {
-    if (this.saveStatus === 'saving') return 'Salvataggio…';
-    if (this.saveStatus === 'saved') return '✓ Allenamento salvato!';
-    if (this.saveStatus === 'err') return '✕ Errore salvataggio, riprova';
-    return 'Completa allenamento';
   }
 }

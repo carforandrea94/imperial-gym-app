@@ -124,12 +124,6 @@
   </div>
 </div>
 
-<div class="savebar" *ngIf="day && !loading">
-  <button [class]="getSaveBtnClass()" [disabled]="saveStatus === 'saving'" (click)="saveWorkout()">
-    {{ getSaveBtnText() }}
-  </button>
-</div>
-
 <div class="confirmoverlay" [class.show]="restModalOpen" (click)="onRestOverlayClick($event)">
   <div class="confirmbox restbox" *ngIf="restModalVm">
     <p class="confirmtext restmodal-title">

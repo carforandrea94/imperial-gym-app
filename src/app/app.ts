@@ -28,6 +28,7 @@ export class App implements OnInit, OnDestroy {
   showAnalytics = false;
   showShoppingList = false;
   showViewToggle = false;
+  showSaveWorkout = false;
   showChrome = false;
 
   private routeSub: Subscription | null = null;
@@ -95,6 +96,7 @@ export class App implements OnInit, OnDestroy {
     this.showChrome = true;
     this.showShoppingList = false;
     this.showViewToggle = false;
+    this.showSaveWorkout = false;
 
     if (u === '/account') {
       this.navTitle = 'Account';
@@ -258,6 +260,7 @@ export class App implements OnInit, OnDestroy {
       this.showInfo = false;
       this.showAnalytics = false;
       this.showViewToggle = true;
+      this.showSaveWorkout = true;
       return;
     }
 
@@ -341,5 +344,9 @@ export class App implements OnInit, OnDestroy {
 
   onViewModeChange(mode: 'list' | 'slider'): void {
     this.workoutState.setViewMode(mode);
+  }
+
+  onSaveWorkoutClick(): void {
+    this.workoutState.requestSave();
   }
 }

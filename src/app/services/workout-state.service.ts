@@ -10,6 +10,7 @@ export interface RestTimerState {
 }
 
 export type WorkoutViewMode = 'list' | 'slider';
+export type SaveWorkoutStatus = 'idle' | 'saving' | 'saved' | 'err';
 
 const REST_DURATION = 90;
 const VIEW_MODE_CACHE_KEY = 'schedaViewMode';
@@ -32,6 +33,22 @@ export class WorkoutStateService {
   viewMode = signal<WorkoutViewMode>(
     localStorage.getItem(VIEW_MODE_CACHE_KEY) === 'slider' ? 'slider' : 'list'
   );
+
+  /**
+   * Stato del salvataggio allenamento, mostrato dall'icona di conferma
+   * nell'header. Il bottone vive nella navbar (fuori dalla pagina scheda),
+   * quindi il click viene inoltrato alla pagina tramite registerSaveHandler.
+   */
+  saveStatus = signal<SaveWorkoutStatus>('idle');
+  private saveHandler: (() => void) | null = null;
+
+  registerSaveHandler(handler: (() => void) | null): void {
+    this.saveHandler = handler;
+  }
+
+  requestSave(): void {
+    this.saveHandler?.();
+  }
 
   private ticker: ReturnType<typeof setInterval> | null = null;
   private closeTimeout: ReturnType<typeof setTimeout> | null = null;
