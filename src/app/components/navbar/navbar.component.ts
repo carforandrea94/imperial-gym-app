@@ -16,6 +16,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   @Input() showAnalytics = false;
   @Input() showLogout = false;
   @Input() showShoppingList = false;
+  @Input() showAccount = false;
 
   @Output() backClick = new EventEmitter<void>();
   @Output() historyClick = new EventEmitter<void>();
@@ -23,6 +24,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   @Output() analyticsClick = new EventEmitter<void>();
   @Output() logoutClick = new EventEmitter<void>();
   @Output() shoppingListClick = new EventEmitter<void>();
+  @Output() accountClick = new EventEmitter<void>();
 
   ngOnInit(): void {
     window.addEventListener('scroll', this.onScroll, { passive: true });

@@ -92,6 +92,16 @@ export class App implements OnInit, OnDestroy {
     this.showChrome = true;
     this.showShoppingList = false;
 
+    if (u === '/account') {
+      this.navTitle = 'Account';
+      this.navSubtitle = '';
+      this.showBack = true;
+      this.showHistory = false;
+      this.showInfo = false;
+      this.showAnalytics = false;
+      return;
+    }
+
     if (u === '/coach/bacheca') {
       this.navTitle = 'Bacheca';
       this.navSubtitle = this.auth.currentUser()?.displayName ?? '';
@@ -279,7 +289,9 @@ export class App implements OnInit, OnDestroy {
 
   onBack(): void {
     const u = this.router.url.split('?')[0];
-    if (u.match(/^\/scheda\/storico\/.+$/)) {
+    if (u === '/account') {
+      this.router.navigate([this.auth.isCoach ? '/coach/bacheca' : '/scheda']);
+    } else if (u.match(/^\/scheda\/storico\/.+$/)) {
       this.router.navigate(['/scheda/storico']);
     } else if (u.match(/^\/misure\/storico\/.+$/)) {
       this.router.navigate(['/misure/storico']);
@@ -318,6 +330,10 @@ export class App implements OnInit, OnDestroy {
 
   onAnalytics(): void {
     this.router.navigate(['/misure/analytics']);
+  }
+
+  onAccount(): void {
+    this.router.navigate(['/account']);
   }
 
   onShoppingList(): void {

@@ -24,6 +24,12 @@ export const routes: Routes = [
   },
 
   {
+    path: 'account',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/account/account.component').then(m => m.AccountComponent)
+  },
+
+  {
     path: 'coach/bacheca',
     canActivate: [authGuard, coachGuard],
     loadComponent: () => import('./pages/coach-bacheca/coach-bacheca.component').then(m => m.CoachBachecaComponent)
