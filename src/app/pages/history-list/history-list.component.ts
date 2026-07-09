@@ -22,6 +22,7 @@ interface SessionEntry {
 export class HistoryListComponent implements OnInit {
   sessions: SessionEntry[] = [];
   loading = true;
+  errorMsg = '';
 
   constructor(
     private sessionsSvc: WorkoutSessionsService,
@@ -33,17 +34,24 @@ export class HistoryListComponent implements OnInit {
     this.loadSessions();
   }
 
-  private async loadSessions(): Promise<void> {
+  async loadSessions(): Promise<void> {
     this.loading = true;
-    const all = await this.sessionsSvc.listAll();
-    this.sessions = all.map(({ id, session }) => {
-      const date = new Date(session.date);
-      const displayDate = date.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-      const completedSets = session.exercises.reduce((acc, ex) =>
-        acc + ex.sets.filter(s => s.done).length, 0);
-      return { key: id, session, displayDate, completedSets };
-    });
-    this.loading = false;
+    this.errorMsg = '';
+    try {
+      const all = await this.sessionsSvc.listAll();
+      this.sessions = all.map(({ id, session }) => {
+        const date = new Date(session.date);
+        const displayDate = date.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        const completedSets = session.exercises.reduce((acc, ex) =>
+          acc + ex.sets.filter(s => s.done).length, 0);
+        return { key: id, session, displayDate, completedSets };
+      });
+    } catch (e: any) {
+      console.error('Errore caricamento storico allenamenti:', e);
+      this.errorMsg = 'Errore nel caricamento dello storico. Riprova.';
+    } finally {
+      this.loading = false;
+    }
   }
 
   goToDetail(key: string): void {

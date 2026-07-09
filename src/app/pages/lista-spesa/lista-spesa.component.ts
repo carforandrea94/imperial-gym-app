@@ -21,6 +21,7 @@ interface ShoppingItem {
 export class ListaSpesaComponent implements OnInit {
   items: ShoppingItem[] = [];
   loading = true;
+  errorMsg = '';
 
   get checkedCount() { return this.items.filter(i => i.checked).length; }
 
@@ -30,10 +31,21 @@ export class ListaSpesaComponent implements OnInit {
   ) {}
 
   async ngOnInit(): Promise<void> {
+    await this.load();
+  }
+
+  async load(): Promise<void> {
     this.loading = true;
-    const appState = await this.appState.load();
-    this.buildItems(appState.shoppingChecked ?? {});
-    this.loading = false;
+    this.errorMsg = '';
+    try {
+      const appState = await this.appState.load();
+      this.buildItems(appState.shoppingChecked ?? {});
+    } catch (e: any) {
+      console.error('Errore caricamento lista della spesa:', e);
+      this.errorMsg = 'Errore nel caricamento della lista. Riprova.';
+    } finally {
+      this.loading = false;
+    }
   }
 
   private buildItems(checked: Record<string, boolean>): void {
