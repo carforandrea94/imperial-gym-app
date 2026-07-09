@@ -27,6 +27,7 @@
 
 <div class="savebar">
   <button class="savebtn" [disabled]="!canProcess" (click)="process()">
-    {{ processing ? 'Lettura in corso…' : 'Elabora e crea bozza' }}
+    <span class="pdf-spinner" *ngIf="processing"></span>
+    {{ processing ? (stage || 'Elaborazione…') : 'Elabora e crea bozza' }}
   </button>
 </div>
