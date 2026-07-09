@@ -9,6 +9,7 @@ import { TabbarComponent } from './components/tabbar/tabbar.component';
 import { RestTimerComponent } from './components/rest-timer/rest-timer.component';
 import { ConfirmDialogComponent } from './components/confirm-dialog/confirm-dialog.component';
 import { WorkoutDataService } from './services/workout-data.service';
+import { WorkoutStateService } from './services/workout-state.service';
 import { AuthService } from './core/services/auth.service';
 
 @Component({
@@ -26,6 +27,7 @@ export class App implements OnInit, OnDestroy {
   showInfo = false;
   showAnalytics = false;
   showShoppingList = false;
+  showViewToggle = false;
   showChrome = false;
 
   private routeSub: Subscription | null = null;
@@ -33,6 +35,7 @@ export class App implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     private workoutData: WorkoutDataService,
+    public workoutState: WorkoutStateService,
     public auth: AuthService,
     private swUpdate: SwUpdate
   ) {}
@@ -91,6 +94,7 @@ export class App implements OnInit, OnDestroy {
     }
     this.showChrome = true;
     this.showShoppingList = false;
+    this.showViewToggle = false;
 
     if (u === '/account') {
       this.navTitle = 'Account';
@@ -248,11 +252,12 @@ export class App implements OnInit, OnDestroy {
       const idx = parseInt(dayMatch[1], 10);
       const day = this.workoutData.days[idx];
       this.navTitle = day ? `Giorno ${idx + 1}` : 'Allenamento';
-      this.navSubtitle = day?.label ?? '';
+      this.navSubtitle = day ? `${day.label} · rec ${day.rec}` : '';
       this.showBack = true;
       this.showHistory = false;
       this.showInfo = false;
       this.showAnalytics = false;
+      this.showViewToggle = true;
       return;
     }
 
@@ -332,5 +337,9 @@ export class App implements OnInit, OnDestroy {
 
   onShoppingList(): void {
     this.router.navigate(['/dieta/lista-spesa']);
+  }
+
+  onViewModeChange(mode: 'list' | 'slider'): void {
+    this.workoutState.setViewMode(mode);
   }
 }

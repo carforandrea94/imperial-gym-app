@@ -1,31 +1,5 @@
 <div *ngIf="loading" class="history-empty">Caricamento…</div>
 
-<div class="daymeta" *ngIf="day && !loading">
-  <div class="daymeta-info">
-    <span>{{ day.label }}</span>
-    <span class="rec">rec {{ day.rec }}</span>
-  </div>
-  <div class="viewtoggle">
-    <button class="viewtogglebtn" [class.active]="viewMode === 'list'" (click)="setViewMode('list')" aria-label="Vista elenco" title="Elenco">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="8" y1="6" x2="21" y2="6"/>
-        <line x1="8" y1="12" x2="21" y2="12"/>
-        <line x1="8" y1="18" x2="21" y2="18"/>
-        <line x1="3" y1="6" x2="3.01" y2="6"/>
-        <line x1="3" y1="12" x2="3.01" y2="12"/>
-        <line x1="3" y1="18" x2="3.01" y2="18"/>
-      </svg>
-    </button>
-    <button class="viewtogglebtn" [class.active]="viewMode === 'slider'" (click)="setViewMode('slider')" aria-label="Vista slider" title="Slider">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="2" y="4" width="14" height="16" rx="2"/>
-        <path d="M19 8v8"/>
-        <path d="M22 9v6"/>
-      </svg>
-    </button>
-  </div>
-</div>
-
 <ng-template #exDetail let-vm="vm">
   <p class="note" *ngIf="vm.ex.note">{{ vm.ex.note }}</p>
 
@@ -79,7 +53,7 @@
 </ng-template>
 
 <!-- Vista elenco (accordion) -->
-<div class="exlist" *ngIf="day && !loading && viewMode === 'list'">
+<div class="exlist" *ngIf="day && !loading && state.viewMode() === 'list'">
   <div class="ex" *ngFor="let vm of exercises; let i = index" [class.open]="vm.open">
 
     <div class="ex-summary" (click)="toggleEx(vm)">
@@ -112,7 +86,7 @@
 </div>
 
 <!-- Vista slider (card scorrevoli, una per volta) -->
-<div class="exslider-wrap" *ngIf="day && !loading && viewMode === 'slider'">
+<div class="exslider-wrap" *ngIf="day && !loading && state.viewMode() === 'slider'">
   <div class="exslider-counter">Esercizio {{ sliderIndex + 1 }} di {{ exercises.length }}</div>
 
   <div class="exslider" #sliderEl (scroll)="onSliderScroll()">

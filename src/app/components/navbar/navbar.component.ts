@@ -15,12 +15,15 @@ export class NavbarComponent implements OnInit, OnDestroy {
   @Input() showInfo = false;
   @Input() showAnalytics = false;
   @Input() showShoppingList = false;
+  @Input() showViewToggle = false;
+  @Input() viewMode: 'list' | 'slider' = 'list';
 
   @Output() backClick = new EventEmitter<void>();
   @Output() historyClick = new EventEmitter<void>();
   @Output() infoClick = new EventEmitter<void>();
   @Output() analyticsClick = new EventEmitter<void>();
   @Output() shoppingListClick = new EventEmitter<void>();
+  @Output() viewModeChange = new EventEmitter<'list' | 'slider'>();
 
   ngOnInit(): void {
     window.addEventListener('scroll', this.onScroll, { passive: true });

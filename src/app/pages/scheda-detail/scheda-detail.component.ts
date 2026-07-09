@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ElementRef, ViewChild, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
@@ -27,9 +27,6 @@ interface ExerciseVM {
   restSeconds: number;
 }
 
-type ViewMode = 'list' | 'slider';
-const VIEW_MODE_KEY = 'schedaViewMode';
-
 @Component({
   selector: 'app-scheda-detail',
   standalone: true,
@@ -49,7 +46,6 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
   restModalVm: ExerciseVM | null = null;
   restModalValue = 90;
 
-  viewMode: ViewMode = 'list';
   sliderIndex = 0;
   private scrollTicking = false;
 
@@ -65,12 +61,18 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
     private confirm: ConfirmDialogService,
     private sanitizer: DomSanitizer,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) {
+    // Il toggle vive nella navbar (fuori da questa pagina): quando si passa
+    // a "slider" da un'altra vista/pagina, riparte sempre dalla prima card.
+    effect(() => {
+      if (this.state.viewMode() === 'slider') {
+        this.sliderIndex = 0;
+        setTimeout(() => this.scrollToIndex(0), 0);
+      }
+    });
+  }
 
   ngOnInit(): void {
-    const savedMode = localStorage.getItem(VIEW_MODE_KEY);
-    if (savedMode === 'list' || savedMode === 'slider') this.viewMode = savedMode;
-
     const n = parseInt(this.route.snapshot.paramMap.get('n') ?? '0', 10);
     this.dayIndex = n;
     this.day = this.workoutData.days[n];
@@ -223,16 +225,6 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
 
   toggleEx(vm: ExerciseVM): void {
     vm.open = !vm.open;
-  }
-
-  setViewMode(mode: ViewMode): void {
-    if (this.viewMode === mode) return;
-    this.viewMode = mode;
-    localStorage.setItem(VIEW_MODE_KEY, mode);
-    if (mode === 'slider') {
-      this.sliderIndex = 0;
-      setTimeout(() => this.scrollToIndex(0), 0);
-    }
   }
 
   onSliderScroll(): void {

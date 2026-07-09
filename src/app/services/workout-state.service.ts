@@ -1,5 +1,6 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, effect } from '@angular/core';
 import { AppStateService } from './app-state.service';
+import { AuthService } from '../core/services/auth.service';
 
 export interface RestTimerState {
   show: boolean;
@@ -8,7 +9,10 @@ export interface RestTimerState {
   fillPct: number;
 }
 
+export type WorkoutViewMode = 'list' | 'slider';
+
 const REST_DURATION = 90;
+const VIEW_MODE_CACHE_KEY = 'schedaViewMode';
 
 @Injectable({ providedIn: 'root' })
 export class WorkoutStateService {
@@ -20,11 +24,39 @@ export class WorkoutStateService {
     show: false, remaining: REST_DURATION, finished: false, fillPct: 100
   });
 
+  /**
+   * Vista lista/slider della scheda giornaliera: inizializzata dalla cache
+   * locale per evitare un flash alla vista di default prima che l'account
+   * (Firestore) risponda, poi allineata al valore salvato sull'account.
+   */
+  viewMode = signal<WorkoutViewMode>(
+    localStorage.getItem(VIEW_MODE_CACHE_KEY) === 'slider' ? 'slider' : 'list'
+  );
+
   private ticker: ReturnType<typeof setInterval> | null = null;
   private closeTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(private appState: AppStateService) {
+  constructor(private appState: AppStateService, private auth: AuthService) {
     this.currentWeek = this.computeAutoWeek(this.DEFAULT_PROGRAM_START);
+
+    // Aspetta che l'autenticazione sia risolta prima di leggere l'account:
+    // altrimenti currentUser() e' ancora null (crash) all'avvio dell'app.
+    effect(() => {
+      if (!this.auth.authReady() || !this.auth.currentUser()) return;
+      this.appState.load().then(state => {
+        if (state.workoutViewMode && state.workoutViewMode !== this.viewMode()) {
+          this.viewMode.set(state.workoutViewMode);
+          localStorage.setItem(VIEW_MODE_CACHE_KEY, state.workoutViewMode);
+        }
+      });
+    });
+  }
+
+  setViewMode(mode: WorkoutViewMode): void {
+    if (this.viewMode() === mode) return;
+    this.viewMode.set(mode);
+    localStorage.setItem(VIEW_MODE_CACHE_KEY, mode);
+    this.appState.patchField('workoutViewMode', mode);
   }
 
   /** Ricalcola la settimana corrente in base a un nuovo inizio programma (dal protocollo attivo). */

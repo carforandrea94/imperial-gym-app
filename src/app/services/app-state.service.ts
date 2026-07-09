@@ -16,10 +16,11 @@ export interface AppState {
   restOverrides: Record<string, number>;
   measureDraft: Record<string, string | null> | null;
   shoppingChecked: Record<string, boolean>;
+  workoutViewMode: 'list' | 'slider';
 }
 
 function emptyState(): AppState {
-  return { workoutDrafts: {}, restOverrides: {}, measureDraft: null, shoppingChecked: {} };
+  return { workoutDrafts: {}, restOverrides: {}, measureDraft: null, shoppingChecked: {}, workoutViewMode: 'list' };
 }
 
 /**
