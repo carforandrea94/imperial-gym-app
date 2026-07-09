@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { WorkoutSessionsService } from '../../services/workout-sessions.service';
@@ -27,7 +27,8 @@ export class HistoryListComponent implements OnInit {
   constructor(
     private sessionsSvc: WorkoutSessionsService,
     private confirm: ConfirmDialogService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -37,8 +38,13 @@ export class HistoryListComponent implements OnInit {
   async loadSessions(): Promise<void> {
     this.loading = true;
     this.errorMsg = '';
+
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('TIMEOUT')), 12000)
+    );
+
     try {
-      const all = await this.sessionsSvc.listAll();
+      const all = await Promise.race([this.sessionsSvc.listAll(), timeout]);
       this.sessions = all.map(({ id, session }) => {
         const date = new Date(session.date);
         const displayDate = date.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -48,9 +54,12 @@ export class HistoryListComponent implements OnInit {
       });
     } catch (e: any) {
       console.error('Errore caricamento storico allenamenti:', e);
-      this.errorMsg = 'Errore nel caricamento dello storico. Riprova.';
+      this.errorMsg = e?.message === 'TIMEOUT'
+        ? 'La connessione sta impiegando troppo tempo. Controlla la rete e riprova.'
+        : 'Errore nel caricamento dello storico. Riprova.';
     } finally {
       this.loading = false;
+      this.cdr.detectChanges();
     }
   }
 

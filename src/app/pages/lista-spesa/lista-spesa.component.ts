@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DietDataService } from '../../services/diet-data.service';
 import { AppStateService } from '../../services/app-state.service';
@@ -27,7 +27,8 @@ export class ListaSpesaComponent implements OnInit {
 
   constructor(
     private dietData: DietDataService,
-    private appState: AppStateService
+    private appState: AppStateService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -37,14 +38,22 @@ export class ListaSpesaComponent implements OnInit {
   async load(): Promise<void> {
     this.loading = true;
     this.errorMsg = '';
+
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('TIMEOUT')), 12000)
+    );
+
     try {
-      const appState = await this.appState.load();
+      const appState = await Promise.race([this.appState.load(), timeout]);
       this.buildItems(appState.shoppingChecked ?? {});
     } catch (e: any) {
       console.error('Errore caricamento lista della spesa:', e);
-      this.errorMsg = 'Errore nel caricamento della lista. Riprova.';
+      this.errorMsg = e?.message === 'TIMEOUT'
+        ? 'La connessione sta impiegando troppo tempo. Controlla la rete e riprova.'
+        : 'Errore nel caricamento della lista. Riprova.';
     } finally {
       this.loading = false;
+      this.cdr.detectChanges();
     }
   }
 
