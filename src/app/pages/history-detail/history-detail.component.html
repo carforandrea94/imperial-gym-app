@@ -1,6 +1,13 @@
-<div *ngIf="!session" class="history-empty">Seduta non trovata.</div>
+<div *ngIf="loading" class="history-empty">Caricamento…</div>
 
-<ng-container *ngIf="session">
+<div *ngIf="!loading && errorMsg" class="history-empty">
+  {{ errorMsg }}<br>
+  <button class="savebtn" style="margin-top:12px" (click)="ngOnInit()">Riprova</button>
+</div>
+
+<div *ngIf="!loading && !errorMsg && !session" class="history-empty">Seduta non trovata.</div>
+
+<ng-container *ngIf="!loading && session">
   <div class="daymeta">
     <span>{{ session.dayLabel }}</span>
     <span class="rec">{{ displayDate }}</span>

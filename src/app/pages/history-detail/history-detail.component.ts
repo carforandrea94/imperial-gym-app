@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -19,6 +19,8 @@ export class HistoryDetailComponent implements OnInit {
   displayDate = '';
   key = '';
   openExercises: boolean[] = [];
+  loading = true;
+  errorMsg = '';
 
   constructor(
     private route: ActivatedRoute,
@@ -26,7 +28,8 @@ export class HistoryDetailComponent implements OnInit {
     private sessionsSvc: WorkoutSessionsService,
     private confirm: ConfirmDialogService,
     public workoutData: WorkoutDataService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private cdr: ChangeDetectorRef
   ) {}
 
   getMuscleIcon(name: string): SafeHtml {
@@ -39,13 +42,30 @@ export class HistoryDetailComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     const rawKey = this.route.snapshot.paramMap.get('key') ?? '';
     this.key = decodeURIComponent(rawKey);
-    this.session = await this.sessionsSvc.get(this.key);
-    if (this.session) {
-      const date = new Date(this.session.date);
-      this.displayDate = date.toLocaleDateString('it-IT', {
-        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-      });
-      this.openExercises = this.session.exercises.map(() => true);
+    this.loading = true;
+    this.errorMsg = '';
+
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('TIMEOUT')), 12000)
+    );
+
+    try {
+      this.session = await Promise.race([this.sessionsSvc.get(this.key), timeout]);
+      if (this.session) {
+        const date = new Date(this.session.date);
+        this.displayDate = date.toLocaleDateString('it-IT', {
+          weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+        });
+        this.openExercises = this.session.exercises.map(() => true);
+      }
+    } catch (e: any) {
+      console.error('Errore caricamento seduta:', e);
+      this.errorMsg = e?.message === 'TIMEOUT'
+        ? 'La connessione sta impiegando troppo tempo. Controlla la rete e riprova.'
+        : 'Errore nel caricamento della seduta. Riprova.';
+    } finally {
+      this.loading = false;
+      this.cdr.detectChanges();
     }
   }
 
