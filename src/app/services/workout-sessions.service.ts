@@ -39,7 +39,8 @@ export class WorkoutSessionsService {
         const id = this.sessionId(session.dayId, session.date);
         await setDoc(doc(this.col(), id), sanitizeForFirestore(session));
         return true;
-      } catch {
+      } catch (e) {
+        console.error('Errore salvataggio sessione allenamento:', e);
         return false;
       }
     })());
