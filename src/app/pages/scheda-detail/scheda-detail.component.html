@@ -1,11 +1,85 @@
 <div *ngIf="loading" class="history-empty">Caricamento…</div>
 
 <div class="daymeta" *ngIf="day && !loading">
-  <span>{{ day.label }}</span>
-  <span class="rec">rec {{ day.rec }}</span>
+  <div class="daymeta-info">
+    <span>{{ day.label }}</span>
+    <span class="rec">rec {{ day.rec }}</span>
+  </div>
+  <div class="viewtoggle">
+    <button class="viewtogglebtn" [class.active]="viewMode === 'list'" (click)="setViewMode('list')" aria-label="Vista elenco" title="Elenco">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="8" y1="6" x2="21" y2="6"/>
+        <line x1="8" y1="12" x2="21" y2="12"/>
+        <line x1="8" y1="18" x2="21" y2="18"/>
+        <line x1="3" y1="6" x2="3.01" y2="6"/>
+        <line x1="3" y1="12" x2="3.01" y2="12"/>
+        <line x1="3" y1="18" x2="3.01" y2="18"/>
+      </svg>
+    </button>
+    <button class="viewtogglebtn" [class.active]="viewMode === 'slider'" (click)="setViewMode('slider')" aria-label="Vista slider" title="Slider">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="4" width="14" height="16" rx="2"/>
+        <path d="M19 8v8"/>
+        <path d="M22 9v6"/>
+      </svg>
+    </button>
+  </div>
 </div>
 
-<div class="exlist" *ngIf="day && !loading">
+<ng-template #exDetail let-vm="vm">
+  <p class="note" *ngIf="vm.ex.note">{{ vm.ex.note }}</p>
+
+  <div class="settable-head">
+    <span>Serie</span>
+    <span>Rip.</span>
+    <span>Carico (kg)</span>
+    <span>✓</span>
+  </div>
+
+  <div class="settable-row" *ngFor="let row of vm.rows; let j = index">
+    <div class="serie-badge">{{ j + 1 }}</div>
+    <input class="rip-input" type="text" inputmode="decimal"
+      [(ngModel)]="row.reps"
+      [placeholder]="row.ripPlaceholder"
+      (input)="onInput()" />
+    <input class="load-input" type="text" inputmode="decimal"
+      [(ngModel)]="row.load"
+      [placeholder]="row.loadPlaceholder || '0'"
+      (input)="onInput()" />
+    <div class="set-check" [class.done]="row.done" (click)="onSetCheck(vm, j)">✓</div>
+  </div>
+
+  <!-- Insights -->
+  <div class="ex-insights" [class.show]="vm.insightVisible && vm.insight">
+    <ng-container *ngIf="vm.insight">
+      <div *ngIf="vm.insight.lastText" class="lastsession">{{ vm.insight.lastText }}</div>
+      <div class="spark-row" *ngIf="vm.insight.sparkSvg">
+        <span class="spark-label">Progressione</span>
+        <span [innerHTML]="vm.insight.sparkSvg"></span>
+        <span class="spark-delta" *ngIf="vm.insight.delta" [class]="'spark-delta ' + vm.insight.deltaClass">
+          {{ vm.insight.delta }}
+        </span>
+      </div>
+      <div class="suggestion-chip" *ngIf="vm.insight.suggestion" [innerHTML]="vm.insight.suggestion"></div>
+    </ng-container>
+  </div>
+</ng-template>
+
+<ng-template #exMeta let-vm="vm">
+  <button class="ex-restbtn" (click)="openRestModal(vm, $event)" aria-label="Imposta tempo di recupero">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+  </button>
+  <span class="ex-schemebadge">{{ vm.ex.scheme === 'wave' ? 'WAVE' : 'FISSO' }}</span>
+  <span class="ex-counter" [class.complete]="isComplete(vm)">
+    {{ getDoneCount(vm) }}/{{ vm.rows.length }}
+  </span>
+</ng-template>
+
+<!-- Vista elenco (accordion) -->
+<div class="exlist" *ngIf="day && !loading && viewMode === 'list'">
   <div class="ex" *ngFor="let vm of exercises; let i = index" [class.open]="vm.open">
 
     <div class="ex-summary" (click)="toggleEx(vm)">
@@ -24,16 +98,7 @@
         <span class="ex-chip rest">⏱ {{ formatRest(vm.restSeconds) }}</span>
       </div>
       <div class="ex-meta">
-        <button class="ex-restbtn" (click)="openRestModal(vm, $event)" aria-label="Imposta tempo di recupero">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-          </svg>
-        </button>
-        <span class="ex-schemebadge">{{ vm.ex.scheme === 'wave' ? 'WAVE' : 'FISSO' }}</span>
-        <span class="ex-counter" [class.complete]="isComplete(vm)">
-          {{ getDoneCount(vm) }}/{{ vm.rows.length }}
-        </span>
+        <ng-container *ngTemplateOutlet="exMeta; context: { vm: vm }"></ng-container>
         <span class="ex-chevron">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
         </span>
@@ -41,43 +106,47 @@
     </div>
 
     <div class="content-inner" *ngIf="vm.open">
-      <p class="note" *ngIf="vm.ex.note">{{ vm.ex.note }}</p>
+      <ng-container *ngTemplateOutlet="exDetail; context: { vm: vm }"></ng-container>
+    </div>
+  </div>
+</div>
 
-      <div class="settable-head">
-        <span>Serie</span>
-        <span>Rip.</span>
-        <span>Carico (kg)</span>
-        <span>✓</span>
+<!-- Vista slider (card scorrevoli, una per volta) -->
+<div class="exslider-wrap" *ngIf="day && !loading && viewMode === 'slider'">
+  <div class="exslider-counter">Esercizio {{ sliderIndex + 1 }} di {{ exercises.length }}</div>
+
+  <div class="exslider" #sliderEl (scroll)="onSliderScroll()">
+    <div class="ex exslide" *ngFor="let vm of exercises; let i = index">
+      <div class="ex-summary noclick">
+        <div class="ex-icon ex-num"
+          [style.background]="getMuscleInfo(vm.ex.muscle).dim"
+          [style.color]="getMuscleInfo(vm.ex.muscle).color"
+          [style.border-color]="getMuscleInfo(vm.ex.muscle).color + '44'">
+          {{ i + 1 }}
+        </div>
+        <div class="ex-info">
+          <div class="ex-name">{{ vm.ex.name }}</div>
+          <span class="ex-muscle" [style.background]="getMuscleInfo(vm.ex.muscle).color">
+            {{ vm.ex.muscle }}
+          </span>
+          <span class="ex-chip" *ngIf="vm.ex.text">{{ vm.ex.text }}</span>
+          <span class="ex-chip rest">⏱ {{ formatRest(vm.restSeconds) }}</span>
+        </div>
+        <div class="ex-meta">
+          <ng-container *ngTemplateOutlet="exMeta; context: { vm: vm }"></ng-container>
+        </div>
       </div>
 
-      <div class="settable-row" *ngFor="let row of vm.rows; let j = index">
-        <div class="serie-badge">{{ j + 1 }}</div>
-        <input class="rip-input" type="text" inputmode="decimal"
-          [(ngModel)]="row.reps"
-          [placeholder]="row.ripPlaceholder"
-          (input)="onInput()" />
-        <input class="load-input" type="text" inputmode="decimal"
-          [(ngModel)]="row.load"
-          [placeholder]="row.loadPlaceholder || '0'"
-          (input)="onInput()" />
-        <div class="set-check" [class.done]="row.done" (click)="onSetCheck(vm, j)">✓</div>
-      </div>
-
-      <!-- Insights -->
-      <div class="ex-insights" [class.show]="vm.insightVisible && vm.insight">
-        <ng-container *ngIf="vm.insight">
-          <div *ngIf="vm.insight.lastText" class="lastsession">{{ vm.insight.lastText }}</div>
-          <div class="spark-row" *ngIf="vm.insight.sparkSvg">
-            <span class="spark-label">Progressione</span>
-            <span [innerHTML]="vm.insight.sparkSvg"></span>
-            <span class="spark-delta" *ngIf="vm.insight.delta" [class]="'spark-delta ' + vm.insight.deltaClass">
-              {{ vm.insight.delta }}
-            </span>
-          </div>
-          <div class="suggestion-chip" *ngIf="vm.insight.suggestion" [innerHTML]="vm.insight.suggestion"></div>
-        </ng-container>
+      <div class="content-inner">
+        <ng-container *ngTemplateOutlet="exDetail; context: { vm: vm }"></ng-container>
       </div>
     </div>
+  </div>
+
+  <div class="exslider-dots" *ngIf="exercises.length > 1">
+    <span *ngFor="let vm of exercises; let i = index"
+      class="exslider-dot" [class.active]="i === sliderIndex"
+      (click)="scrollToIndex(i)"></span>
   </div>
 </div>
 

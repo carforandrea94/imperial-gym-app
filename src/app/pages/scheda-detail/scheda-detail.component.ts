@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
@@ -27,6 +27,9 @@ interface ExerciseVM {
   restSeconds: number;
 }
 
+type ViewMode = 'list' | 'slider';
+const VIEW_MODE_KEY = 'schedaViewMode';
+
 @Component({
   selector: 'app-scheda-detail',
   standalone: true,
@@ -46,6 +49,12 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
   restModalVm: ExerciseVM | null = null;
   restModalValue = 90;
 
+  viewMode: ViewMode = 'list';
+  sliderIndex = 0;
+  private scrollTicking = false;
+
+  @ViewChild('sliderEl') sliderEl?: ElementRef<HTMLDivElement>;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -59,6 +68,9 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    const savedMode = localStorage.getItem(VIEW_MODE_KEY);
+    if (savedMode === 'list' || savedMode === 'slider') this.viewMode = savedMode;
+
     const n = parseInt(this.route.snapshot.paramMap.get('n') ?? '0', 10);
     this.dayIndex = n;
     this.day = this.workoutData.days[n];
@@ -211,6 +223,43 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
 
   toggleEx(vm: ExerciseVM): void {
     vm.open = !vm.open;
+  }
+
+  setViewMode(mode: ViewMode): void {
+    if (this.viewMode === mode) return;
+    this.viewMode = mode;
+    localStorage.setItem(VIEW_MODE_KEY, mode);
+    if (mode === 'slider') {
+      this.sliderIndex = 0;
+      setTimeout(() => this.scrollToIndex(0), 0);
+    }
+  }
+
+  onSliderScroll(): void {
+    if (this.scrollTicking) return;
+    this.scrollTicking = true;
+    requestAnimationFrame(() => {
+      this.scrollTicking = false;
+      const el = this.sliderEl?.nativeElement;
+      if (!el) return;
+      const children = Array.from(el.children) as HTMLElement[];
+      let closest = 0;
+      let minDist = Infinity;
+      children.forEach((child, idx) => {
+        const dist = Math.abs(child.offsetLeft - el.scrollLeft);
+        if (dist < minDist) { minDist = dist; closest = idx; }
+      });
+      if (closest !== this.sliderIndex) {
+        this.sliderIndex = closest;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  scrollToIndex(idx: number): void {
+    const el = this.sliderEl?.nativeElement;
+    const child = el?.children[idx] as HTMLElement | undefined;
+    child?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
   }
 
   onSetCheck(vm: ExerciseVM, rowIdx: number): void {
