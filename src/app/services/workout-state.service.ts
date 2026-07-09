@@ -53,6 +53,9 @@ export class WorkoutStateService {
 
   private ticker: ReturnType<typeof setInterval> | null = null;
   private closeTimeout: ReturnType<typeof setTimeout> | null = null;
+  private restEndAt = 0;
+  private restDuration = REST_DURATION;
+  private restFinishedHandled = false;
 
   constructor(private appState: AppStateService, private auth: AuthService) {
     this.currentWeek = this.computeAutoWeek(this.DEFAULT_PROGRAM_START);
@@ -67,6 +70,16 @@ export class WorkoutStateService {
           localStorage.setItem(VIEW_MODE_CACHE_KEY, state.workoutViewMode);
         }
       });
+    });
+
+    // iOS sospende l'esecuzione JS quando l'app va in background: il
+    // setInterval del timer di recupero puo' restare fermo per minuti. Il
+    // conto alla rovescia e' calcolato da un timestamp reale (non da tick
+    // contati), cosi' al rientro in app lo stato e' subito corretto; questo
+    // listener forza il ricalcolo immediato invece di aspettare il prossimo
+    // tick, cosi' vibrazione/banner scattano appena riapri l'app.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && this.ticker) this.restTick();
     });
   }
 
@@ -95,23 +108,26 @@ export class WorkoutStateService {
   startRestTimer(durationSeconds?: number): void {
     this.stopRestTimer();
     this.requestNotificationPermission();
-    const duration = durationSeconds && durationSeconds > 0 ? durationSeconds : REST_DURATION;
-    let remaining = duration;
+    this.restDuration = durationSeconds && durationSeconds > 0 ? durationSeconds : REST_DURATION;
+    this.restEndAt = Date.now() + this.restDuration * 1000;
+    this.restFinishedHandled = false;
 
-    this.restTimer.set({ show: true, remaining, finished: false, fillPct: 100 });
+    this.restTick();
+    this.ticker = setInterval(() => this.restTick(), 1000);
+  }
 
-    this.ticker = setInterval(() => {
-      remaining--;
-      const fillPct = (remaining / duration) * 100;
-      this.restTimer.set({ show: true, remaining, finished: remaining <= 0, fillPct: Math.max(fillPct, 0) });
+  private restTick(): void {
+    const remaining = Math.max(0, Math.ceil((this.restEndAt - Date.now()) / 1000));
+    const fillPct = Math.max((remaining / this.restDuration) * 100, 0);
+    this.restTimer.set({ show: true, remaining, finished: remaining <= 0, fillPct });
 
-      if (remaining <= 0) {
-        if (this.ticker) { clearInterval(this.ticker); this.ticker = null; }
-        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-        this.notifyRestFinished();
-        this.closeTimeout = setTimeout(() => this.stopRestTimer(), 4000);
-      }
-    }, 1000);
+    if (remaining <= 0 && !this.restFinishedHandled) {
+      this.restFinishedHandled = true;
+      if (this.ticker) { clearInterval(this.ticker); this.ticker = null; }
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+      this.notifyRestFinished();
+      this.closeTimeout = setTimeout(() => this.stopRestTimer(), 4000);
+    }
   }
 
   /** Richiede il permesso di notifica alla prima partenza del timer di recupero; e' un no-op se gia' concesso/negato. */
@@ -135,7 +151,7 @@ export class WorkoutStateService {
     const title = 'Recupero finito!';
     const options: NotificationOptions = {
       body: 'Torna al tuo allenamento 💪',
-      icon: 'icons/icon-192x192.png',
+      icon: '/icons/icon-192x192.png',
       tag: 'rest-timer'
     };
 
@@ -154,6 +170,7 @@ export class WorkoutStateService {
       clearTimeout(this.closeTimeout);
       this.closeTimeout = null;
     }
+    this.restFinishedHandled = false;
     this.restTimer.set({ show: false, remaining: REST_DURATION, finished: false, fillPct: 100 });
   }
 
