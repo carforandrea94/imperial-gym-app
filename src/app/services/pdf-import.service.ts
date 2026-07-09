@@ -394,16 +394,23 @@ export class PdfImportService {
       const giornoMatch = line.match(GIORNO_HEADER_RE);
       if (giornoMatch) {
         const planName = `Giorno ${giornoMatch[1].trim()}`;
-        currentPlan = plans.find(p => p.name === planName) ?? null;
-        if (!currentPlan) {
-          currentPlan = newDietPlan(planName);
-          currentPlan.meals = [];
-          plans.push(currentPlan);
+        const existingPlan = plans.find(p => p.name === planName);
+        // "Giorno ON/OFF" e' anche l'intestazione ripetuta su ogni pagina del PDF, non solo
+        // l'inizio della sezione: se e' lo stesso piano gia' in corso, e' un semplice
+        // ri-attraversamento (come "...Continua X") e NON deve azzerare pasto/combinazione/
+        // alternative correnti, altrimenti si perde tutto cio' che segue un'interruzione di
+        // pagina a meta' di un pasto (es. alternative o alimenti dopo "...Continua Cena").
+        if (existingPlan !== currentPlan) {
+          currentPlan = existingPlan ?? newDietPlan(planName);
+          if (!existingPlan) {
+            currentPlan.meals = [];
+            plans.push(currentPlan);
+          }
+          currentMeal = null;
+          currentCombo = null;
+          lastItem = null;
+          collectingAlt = false;
         }
-        currentMeal = null;
-        currentCombo = null;
-        lastItem = null;
-        collectingAlt = false;
         continue;
       }
 

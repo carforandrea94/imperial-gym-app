@@ -18,6 +18,10 @@ import { PdfImportService } from './pdf-import.service';
 // - "Alternative:" ripetuto dopo un'interruzione di pagina ("...Continua Cena")
 // - il glitch di estrazione "Olio di oli 10 g va (media)" al posto di "Olio di oliva (media) 10 g"
 // - "Verdure fresche" che non ha uno slot dedicato nel modello a 3 macro
+// - "Giorno ON"/"Giorno OFF" ripetuto come intestazione di OGNI pagina (non solo a inizio
+//   sezione): riapparire a meta' pasto, subito prima di "...Continua X", non deve azzerare
+//   pasto/combinazione/alternative correnti (bug reale: causava la perdita di alimenti interi
+//   e alternative dopo un'interruzione di pagina)
 const SAMPLE_TEXT = `
 Dott. Luigi Iannotta
 Giorno ON
@@ -47,6 +51,7 @@ Uova di gallina - albume 200 g
 Pane di segale 2 Fette 60 g Alternative:
 Gallette di riso 4 Fette 40 g
 Pane azzimo 1 Panino 40 g
+Giorno ON
 ...Continua Spuntino Mattina
 Frutta fresca (media) 200 g
 Farina d'avena 4 Cucchiai 40 g
@@ -64,6 +69,7 @@ CENA
 Riso 1 Piatto e 1/4 100 g Alternative:
 Pasta di semola integrale 1 Piatto e 1/4 100 g
 Patate (media) 300 g
+Giorno ON
 ...Continua Cena
 Alternative:
 Gnocchi 200 g
@@ -149,6 +155,17 @@ describe('PdfImportService', () => {
     expect(base.carb?.alt?.map(a => a.name)).toEqual([
       'Pasta di semola integrale', 'Patate (media)', 'Gnocchi', 'Cous Cous'
     ]);
+    // Bug reale: "Giorno ON" si ripete come intestazione di pagina subito prima di
+    // "...Continua Cena" e azzerava combinazione/alimento corrente, perdendo
+    // interi alimenti (non solo alternative) dopo l'interruzione di pagina.
+    expect(base.protein?.name).toBe('Petto di pollo');
+    expect(base.protein?.alt?.map(a => a.name)).toEqual(['Tacchino petto']);
+    expect(base.fat?.name).toBe('Olio di oliva (media)');
+  });
+
+  it('non crea un piano duplicato quando "Giorno X" si ripete come intestazione di pagina', () => {
+    const diet = service.parseDietText(SAMPLE_TEXT);
+    expect(diet.filter(p => p.name === 'Giorno ON').length).toBe(1);
   });
 
   it('corregge il glitch di estrazione "Olio di oli ... va (media)" e lo assegna ai grassi', () => {
