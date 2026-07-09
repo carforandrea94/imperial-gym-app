@@ -57,6 +57,7 @@ export class CoachProtocolImportComponent {
       const dietaText = await this.pdfSvc.extractText(this.dietaFile!);
       const days = this.pdfSvc.parseWorkoutText(schedaText);
       const diet = this.pdfSvc.parseDietText(dietaText);
+      const durationWeeks = this.pdfSvc.detectProgramDurationWeeks(schedaText);
 
       let infoNote = this.pdfSvc.extractDietNotes(dietaText);
       if (this.integrazioneFile) {
@@ -67,7 +68,7 @@ export class CoachProtocolImportComponent {
       await this.protocolSvc.update(this.clientId, id, {
         name: 'Protocollo da PDF',
         source: 'pdf',
-        workout: { weekPlan: Array.from({ length: 8 }, () => ({ sets: 4, reps: 10 })), days, programStart: new Date().toISOString().split('T')[0] },
+        workout: { weekPlan: Array.from({ length: durationWeeks }, () => ({ sets: 4, reps: 10 })), days, programStart: new Date().toISOString().split('T')[0] },
         diet,
         infoNote
       });

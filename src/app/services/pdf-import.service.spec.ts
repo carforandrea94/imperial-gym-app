@@ -182,3 +182,168 @@ describe('PdfImportService', () => {
     expect(diet[0].meals.map(m => m.name)).toEqual(['Colazione', 'Pranzo']);
   });
 });
+
+// Testo ricostruito riga per riga come lo produrrebbe extractText() a partire dal PDF
+// "ANDREA_CARFORA_SCHEDA" (template "DURATA N SETTIMANE" / "DAY N: Gruppo REC TRA X-Y" /
+// "EX.N/Nome" + riga schema). Include i casi limite osservati nel PDF reale: progressione
+// wave su 8 settimane, schemi a range ("10/12"), sequenze per-set ("12-10-8"), bodyweight
+// ("MAX"), isometria ("2'"), drop-set con nota libera, schema a piu' segmenti ("2x8 1x20")
+// e reps bilaterali ("12+12").
+const SCHEDA_TEXT = `
+DURATA 8 SETTIMANE
+DAY 1 : PETTO-SPALLE-TRICIPITI REC TRA 60-90”
+EX.1/SPINTE MANUBRI PANCA PIANA
+4X10 4X10 4X8 4X8 5X6 5X6… E RIPRENDI DA 4X10 AUMENTANDO IL CARICO RISPETTO ALL SETT.1 SCORSA
+EX.2/DIPS MACHINE/PARALLELE
+4X10 4X10 4X8 4X8 5X6 5X6… E RIPRENDI DA 4X10 AUMENTANDO IL CARICO RISPETTO ALL SETT.1 SCORSA
+EX.3/CHEST PRESS
+3X12-10-8
+EX.4/ALZATE LATERALI MANUBRI IN PIEDI
+4X10 4X10 4X8 4X8 5X6 5X6… E RIPRENDI DA 4X10 AUMENTANDO IL CARICO RISPETTO ALL SETT.1 SCORSA
+EX.5/ALZATE MANUBRI CON PETTO SU PANCA A 45
+3X10/12
+EX.6/FRENCH PRESS MANUBRI SDRAITO
+4X10 4X10 4X8 4X8 5X6 5X6… E RIPRENDI DA 4X10 AUMENTANDO IL CARICO RISPETTO ALL SETT.1 SCORSA
+EX.7/PUSH DOWN GIRATO DI SCHIENA AL PACCO PESI
+3X8/12
+EX.8/FLESSIONI DEL BUSTO AL CAVO OPPURE ALLA LAT MACHINE
+4X12/15
+EX.9/INVERSI SU PANCA
+3XMAX
+DAY 2: DORSO-DELT.POST-BICIPITI REC TRA 60-90”
+EX.1/LAT MACHINE AVANTI
+5X8
+EX.2/T BAR
+4X10 4X10 4X8 4X8 5X6 5X6… E RIPRENDI DA 4X10 AUMENTANDO IL CARICO RISPETTO ALL SETT.1 SCORSA
+EX.3/REMATORE MANUBRIO
+4X10 4X10 4X8 4X8 5X6 5X6… E RIPRENDI DA 4X10 AUMENTANDO IL CARICO RISPETTO ALL SETT.1 SCORSA
+EX.4/LAT INVERSA
+4X10/12
+EX.5/CROCI AI CAVI INCROCIATI
+3X12/15
+EX.5/CURL BILANCIERE
+4X10 4X10 4X8 4X8 5X6 5X6… E RIPRENDI DA 4X10 AUMENTANDO IL CARICO RISPETTO ALL SETT.1 SCORSA
+EX.6/CURL MANUBRI A MARTELLO
+4X10+ ULTIMA IN STRIP MENO DEL 30%
+EX.7/CRUNCH SU FITBALL
+3X2’
+EX.8/GINOCCHIA AL PETTO DA SEDUTO
+3XMAX
+DAY 3: GAMBE REC TRA 60-90”
+EX.1/SQUAT AL M.POWER
+4X10 4X10 4X8 4X8 5X6 5X6… E RIPRENDI DA 4X10 AUMENTANDO IL CARICO RISPETTO ALL SETT.1 SCORSA
+EX.2/LEG PRESS 45°
+4X8/12
+EX.3/SPLIT SQUAT AL M.POWER
+3X12/15 con fermo in basso di 2”
+EX.4/LEG EXTENSION UNILATERALE
+2x8 1x20
+EX.5/LEG CURL IN PIEDI
+4x8/12
+EX.6/HIP THRUST CON BILANCIERE+AFFONDI CAMMINANDO
+3X12+12
+`;
+
+describe('PdfImportService - scheda allenamento', () => {
+  let service: PdfImportService;
+
+  beforeEach(() => {
+    service = new PdfImportService();
+  });
+
+  it('rileva la durata del programma dichiarata nel PDF', () => {
+    expect(service.detectProgramDurationWeeks(SCHEDA_TEXT)).toBe(8);
+    expect(service.detectProgramDurationWeeks('nessuna durata qui')).toBe(8); // default
+  });
+
+  it('riconosce i 3 giorni con label e recupero', () => {
+    const days = service.parseWorkoutText(SCHEDA_TEXT);
+    expect(days.length).toBe(3);
+    expect(days.map(d => d.label)).toEqual(['Petto-Spalle-Tricipiti', 'Dorso-Delt.post-Bicipiti', 'Gambe']);
+    expect(days.every(d => d.rec === '60-90"')).toBe(true);
+  });
+
+  it('costruisce una progressione wave su 8 settimane che ricomincia dal ciclo iniziale', () => {
+    const days = service.parseWorkoutText(SCHEDA_TEXT);
+    const ex1 = days[0].ex[0];
+    expect(ex1.name).toBe('SPINTE MANUBRI PANCA PIANA');
+    expect(ex1.scheme).toBe('wave');
+    expect(ex1.weekPlan?.length).toBe(8);
+    expect(ex1.weekPlan).toEqual([
+      { sets: 4, reps: 10 }, { sets: 4, reps: 10 },
+      { sets: 4, reps: 8 }, { sets: 4, reps: 8 },
+      { sets: 5, reps: 6 }, { sets: 5, reps: 6 },
+      { sets: 4, reps: 10 }, { sets: 4, reps: 10 } // settimane 7-8: "riprendi da 4x10"
+    ]);
+    expect(ex1.muscle).toBe('Petto');
+  });
+
+  it('interpreta gli schemi semplici (sequenza per-set, range, bodyweight, isometria)', () => {
+    const days = service.parseWorkoutText(SCHEDA_TEXT);
+    const day1ByName = (n: string) => days[0].ex.find(e => e.name === n)!;
+
+    const chestPress = day1ByName('CHEST PRESS');
+    expect(chestPress.scheme).toBe('plain');
+    expect(chestPress.sets).toBe(3);
+    expect(chestPress.reps).toEqual(['12', '10', '8']); // sequenza per-set
+
+    const alzate45 = day1ByName('ALZATE MANUBRI CON PETTO SU PANCA A 45');
+    expect(alzate45.sets).toBe(3);
+    expect(alzate45.reps).toEqual(['10/12', '10/12', '10/12']); // range uniforme
+
+    const inversi = day1ByName('INVERSI SU PANCA');
+    expect(inversi.reps).toEqual(['MAX', 'MAX', 'MAX']);
+
+    const day2ByName = (n: string) => days[1].ex.find(e => e.name === n)!;
+    const crunch = day2ByName('CRUNCH SU FITBALL');
+    expect(crunch.sets).toBe(3);
+    expect(crunch.reps).toEqual(['2’', '2’', '2’']); // isometria
+  });
+
+  it('separa la nota libera (drop-set, tempo di recupero) dallo schema serie/ripetizioni', () => {
+    const days = service.parseWorkoutText(SCHEDA_TEXT);
+    const curlMartello = days[1].ex.find(e => e.name === 'CURL MANUBRI A MARTELLO')!;
+    expect(curlMartello.sets).toBe(4);
+    expect(curlMartello.reps).toEqual(['10', '10', '10', '10']);
+    expect(curlMartello.note).toContain('ULTIMA IN STRIP MENO DEL 30%');
+
+    const splitSquat = days[2].ex.find(e => e.name === 'SPLIT SQUAT AL M.POWER')!;
+    expect(splitSquat.reps).toEqual(['12/15', '12/15', '12/15']);
+    expect(splitSquat.note).toContain('fermo in basso di 2');
+  });
+
+  it('somma gli schemi a piu\' segmenti sulla stessa riga ("2x8 1x20")', () => {
+    const days = service.parseWorkoutText(SCHEDA_TEXT);
+    const legExt = days[2].ex.find(e => e.name === 'LEG EXTENSION UNILATERALE')!;
+    expect(legExt.scheme).toBe('plain');
+    expect(legExt.sets).toBe(3);
+    expect(legExt.reps).toEqual(['8', '8', '20']);
+  });
+
+  it('mantiene le reps bilaterali ("12+12") come descrittore unico per set', () => {
+    const days = service.parseWorkoutText(SCHEDA_TEXT);
+    const hipThrust = days[2].ex.find(e => e.name.startsWith('HIP THRUST'))!;
+    expect(hipThrust.sets).toBe(3);
+    expect(hipThrust.reps).toEqual(['12+12', '12+12', '12+12']);
+  });
+
+  it('categorizza il gruppo muscolare dal nome esercizio, con fallback al giorno', () => {
+    const days = service.parseWorkoutText(SCHEDA_TEXT);
+    const byName = (dayIdx: number, n: string) => days[dayIdx].ex.find(e => e.name === n)!;
+
+    expect(byName(0, 'DIPS MACHINE/PARALLELE').muscle).toBe('Tricipiti');
+    expect(byName(0, 'ALZATE LATERALI MANUBRI IN PIEDI').muscle).toBe('Spalle');
+    expect(byName(0, 'FLESSIONI DEL BUSTO AL CAVO OPPURE ALLA LAT MACHINE').muscle).toBe('Core'); // non Dorso, nonostante "LAT MACHINE"
+    expect(byName(0, 'INVERSI SU PANCA').muscle).toBe('Core'); // non Petto, nonostante "PANCA"
+    expect(byName(1, 'GINOCCHIA AL PETTO DA SEDUTO').muscle).toBe('Core'); // non Petto
+    expect(byName(1, 'CROCI AI CAVI INCROCIATI').muscle).toBe('Petto');
+    expect(byName(2, 'LEG CURL IN PIEDI').muscle).toBe('Gambe'); // non Bicipiti, nonostante "CURL"
+  });
+
+  it('ripiega sul parser generico per un testo che non segue il template "DAY N / EX.N"', () => {
+    const genericText = `Giorno 1\nPanca piana 4x10\nSquat 3x8`;
+    const days = service.parseWorkoutText(genericText);
+    expect(days.length).toBe(1);
+    expect(days[0].ex.map(e => e.name)).toEqual(['Panca piana', 'Squat']);
+  });
+});

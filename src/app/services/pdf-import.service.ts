@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import * as pdfjsLib from 'pdfjs-dist';
-import { Day, Exercise } from '../models/workout.model';
+import { Day, Exercise, WeekPlan } from '../models/workout.model';
 import {
   Diet, DietPlan, NamedMeal, MealCombination, FoodItem, FoodCategory,
   DEFAULT_MEAL_NAMES, newDietPlan, newNamedMeal, newCombination
@@ -71,6 +71,63 @@ function categorizeFood(name: string): FoodCategory | 'skip' {
   return 'carb'; // fallback: da rivedere nel builder
 }
 
+const DURATA_RE = /DURATA\s+(\d+)\s+SETTIMANE/i;
+/** "DAY 1 : PETTO-SPALLE-TRICIPITI REC TRA 60-90”" (spaziatura/virgolette variabili prima dei due punti). */
+const DAY_HEADER_RE = /^DAY\s*(\d+)\s*:\s*(.+?)\s+REC\s+TRA\s+([\d\-]+)[”"″'’]*\s*$/i;
+/** "EX.1/SPINTE MANUBRI PANCA PIANA": il nome puo' contenere altre "/" (es. "DIPS MACHINE/PARALLELE"). */
+const EX_HEADER_RE = /^EX\.?\s*(\d+)\s*\/\s*(.+)$/i;
+/** Coppie "SxR" isolate su una riga schema, es. "4X10 4X10 4X8 ... 5X6" o "2x8 1x20". */
+const PAIR_RE = /(\d+)\s*[xX×]\s*(\d+)/g;
+const WAVE_MARKER_RE = /riprendi|aumentando/i;
+/** "4X10+ ULTIMA IN STRIP..." / "3X12/15 con fermo in basso di 2”": sets + descrittore reps + nota libera. */
+const SINGLE_SCHEME_RE = /^(\d+)\s*[xX×]\s*(\S+)(?:\s+(.*))?$/;
+
+/** Ordine di priorita' per assegnare il gruppo muscolare da nome esercizio: le parole chiave
+ *  piu' specifiche (Core, Gambe, Bicipiti) vanno prima di quelle che si sovrappongono a nomi
+ *  di macchinari/esercizi di altri gruppi (es. "LAT MACHINE" usata anche per esercizi di core). */
+const MUSCLE_KEYWORDS: { muscle: string; keywords: string[] }[] = [
+  { muscle: 'Core', keywords: ['CRUNCH', 'GINOCCHIA', 'FLESSIONI', 'BUSTO', 'ADDOMINALI', 'PLANK', 'FITBALL', 'INVERSI', 'CORE'] },
+  { muscle: 'Gambe', keywords: ['SQUAT', 'LEG', 'AFFONDI', 'HIP THRUST', 'STACCO', 'CALF', 'GAMBE'] },
+  { muscle: 'Bicipiti', keywords: ['CURL', 'BICIP'] },
+  { muscle: 'Dorso', keywords: ['LAT MACHINE', 'LAT INVERSA', 'REMATORE', 'T BAR', 'PULLEY', 'PULLOVER', 'DORSO'] },
+  { muscle: 'Spalle', keywords: ['ALZATE', 'SPALLE', 'DELT', 'MILITARY'] },
+  { muscle: 'Tricipiti', keywords: ['FRENCH PRESS', 'PUSH DOWN', 'PUSHDOWN', 'TRICIP', 'DIPS', 'PARALLELE'] },
+  { muscle: 'Petto', keywords: ['PANCA', 'SPINTE', 'CHEST', 'PETTO', 'PECTORAL', 'CROCI'] }
+];
+
+/** Categorizza l'esercizio per gruppo muscolare dal nome; se non trova nulla, prova con i
+ *  gruppi muscolari del giorno (dal titolo "DAY N: Petto-Spalle-Tricipiti"). Best-effort:
+ *  il coach corregge nel builder se necessario. */
+function categorizeExerciseMuscle(name: string, dayMuscles: string[]): string {
+  const n = name.toUpperCase();
+  for (const { muscle, keywords } of MUSCLE_KEYWORDS) {
+    if (keywords.some(k => n.includes(k))) return muscle;
+  }
+  for (const raw of dayMuscles) {
+    const u = raw.toUpperCase();
+    for (const { muscle, keywords } of MUSCLE_KEYWORDS) {
+      if (u.includes(muscle.toUpperCase()) || keywords.some(k => u.includes(k))) return muscle;
+    }
+  }
+  return 'Core';
+}
+
+/** "PETTO-SPALLE-TRICIPITI" -> "Petto-Spalle-Tricipiti": solo per una resa piu' leggibile,
+ *  il testo originale (tutto maiuscolo) resta comunque nel PDF sorgente. */
+function toTitleCase(label: string): string {
+  return label.split('-').map(part => part.trim()).filter(Boolean)
+    .map(part => part.charAt(0) + part.slice(1).toLowerCase())
+    .join('-');
+}
+
+/** "12-10-8" con 3 set -> un valore diverso per set; altrimenti (range "10/12", bilaterale
+ *  "12+12", isometria "2’", "MAX", ripetizione fissa "8"...) lo stesso descrittore per ogni set. */
+function buildReps(sets: number, repsRaw: string): string[] {
+  const parts = repsRaw.split('-').map(s => s.trim()).filter(Boolean);
+  if (parts.length === sets) return parts;
+  return Array.from({ length: sets }, () => repsRaw);
+}
+
 @Injectable({ providedIn: 'root' })
 export class PdfImportService {
 
@@ -95,13 +152,124 @@ export class PdfImportService {
   }
 
   /**
-   * Parsing euristico best-effort di un testo di scheda allenamento.
-   * Riconosce righe tipo "Nome esercizio 4x10" o "Nome esercizio 3x12-10-8".
-   * Le righe che sembrano titoli (poche parole, senza numeri) diventano
-   * l'inizio di un nuovo giorno. Tutto il resto va in "Giorno 1" di default.
-   * E' un aiuto per non partire da zero, va sempre rivisto nel builder.
+   * Prova prima il parsing "a template" (schede con intestazioni "DAY N: Gruppo Muscolare
+   * REC TRA X-Y", esercizi "EX.N/Nome" e schema serie/ripetizioni sulla riga seguente, anche
+   * in progressione "wave" su piu' settimane). Se il testo non contiene nessuna intestazione
+   * "DAY N", ripiega sul parsing generico (nome+schema sulla stessa riga).
    */
   parseWorkoutText(text: string): Day[] {
+    const templateDays = this.parseWorkoutTemplate(text);
+    if (templateDays && templateDays.length > 0) return templateDays;
+    return this.parseWorkoutTextGeneric(text);
+  }
+
+  /** Numero di settimane del programma dichiarato nel PDF ("DURATA 8 SETTIMANE"); 8 di default. */
+  detectProgramDurationWeeks(text: string): number {
+    const m = text.match(DURATA_RE);
+    return m ? parseInt(m[1], 10) : 8;
+  }
+
+  /** Parsing a template: "DAY N: Gruppo REC TRA X-Y", poi per ogni "EX.N/Nome" la riga
+   *  successiva con lo schema serie/ripetizioni (semplice, a piu' segmenti o "wave"). */
+  private parseWorkoutTemplate(text: string): Day[] | null {
+    const totalWeeks = this.detectProgramDurationWeeks(text);
+    const rawLines = text.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
+
+    const days: Day[] = [];
+    let currentDay: Day | null = null;
+    let currentDayMuscles: string[] = [];
+    let pendingExercise: string | null = null;
+
+    const finalizePending = () => {
+      if (pendingExercise && currentDay) {
+        currentDay.ex.push({
+          name: pendingExercise,
+          scheme: 'plain',
+          sets: 3,
+          muscle: categorizeExerciseMuscle(pendingExercise, currentDayMuscles),
+          reps: ['12', '12', '12'],
+          note: 'Schema serie/ripetizioni non trovato nel PDF: da completare nel builder.'
+        });
+      }
+      pendingExercise = null;
+    };
+
+    for (const line of rawLines) {
+      if (DURATA_RE.test(line)) continue;
+
+      const dayMatch = line.match(DAY_HEADER_RE);
+      if (dayMatch) {
+        finalizePending();
+        const label = dayMatch[2].trim();
+        currentDayMuscles = label.split(/[-,/]/).map(s => s.trim()).filter(Boolean);
+        currentDay = { id: `day${days.length + 1}`, label: toTitleCase(label), rec: `${dayMatch[3].trim()}"`, ex: [] };
+        days.push(currentDay);
+        continue;
+      }
+
+      if (!currentDay) continue; // testo prima del primo "DAY": es. "DURATA 8 SETTIMANE"
+
+      const exMatch = line.match(EX_HEADER_RE);
+      if (exMatch) {
+        finalizePending();
+        pendingExercise = exMatch[2].trim();
+        continue;
+      }
+
+      if (pendingExercise) {
+        currentDay.ex.push(this.parseSchemeLine(line, pendingExercise, currentDayMuscles, totalWeeks));
+        pendingExercise = null;
+      }
+      // altre righe fuori contesto (raro in questo formato) vengono ignorate
+    }
+    finalizePending();
+
+    return days.length > 0 ? days : null;
+  }
+
+  /** Interpreta la riga di schema subito sotto "EX.N/Nome": puo' essere una progressione
+   *  "wave" su piu' settimane, uno schema a piu' segmenti (es. "2x8 1x20"), o uno schema
+   *  semplice "SxR" con eventuale nota libera finale (es. drop-set, tempo di recupero). */
+  private parseSchemeLine(line: string, name: string, dayMuscles: string[], totalWeeks: number): Exercise {
+    const muscle = categorizeExerciseMuscle(name, dayMuscles);
+    const pairs = Array.from(line.matchAll(PAIR_RE)).map(m => ({ sets: parseInt(m[1], 10), reps: parseInt(m[2], 10) }));
+
+    if (pairs.length >= 2 && WAVE_MARKER_RE.test(line)) {
+      const weekPlan: WeekPlan[] = Array.from({ length: totalWeeks }, (_, i) => pairs[i % pairs.length]);
+      return {
+        name, scheme: 'wave', sets: weekPlan[0].sets, muscle,
+        reps: [String(weekPlan[0].reps)], weekPlan, text: line
+      };
+    }
+
+    if (pairs.length >= 2) {
+      const sets = pairs.reduce((acc, p) => acc + p.sets, 0);
+      const reps = pairs.flatMap(p => Array.from({ length: p.sets }, () => String(p.reps)));
+      return { name, scheme: 'plain', sets, muscle, reps, text: line };
+    }
+
+    const single = line.match(SINGLE_SCHEME_RE);
+    if (single) {
+      const sets = parseInt(single[1], 10) || 1;
+      let repsRaw = single[2];
+      const note = single[3]?.trim() || undefined;
+      if (repsRaw.endsWith('+')) repsRaw = repsRaw.slice(0, -1); // "10+" = nota a seguire, non bilaterale ("12+12")
+      return { name, scheme: 'plain', sets, muscle, reps: buildReps(sets, repsRaw), note, text: line };
+    }
+
+    return {
+      name, scheme: 'plain', sets: 3, muscle, reps: ['12', '12', '12'],
+      note: `Schema non riconosciuto nel PDF ("${line}"): da rivedere nel builder.`, text: line
+    };
+  }
+
+  /**
+   * Parsing euristico generico (fallback): riconosce righe tipo "Nome esercizio 4x10" o
+   * "Nome esercizio 3x12-10-8" (nome e schema sulla stessa riga). Le righe che sembrano
+   * titoli (poche parole, senza numeri) diventano l'inizio di un nuovo giorno. Usato quando
+   * il testo non corrisponde al template "DAY N / EX.N".
+   */
+  private parseWorkoutTextGeneric(text: string): Day[] {
     const rawLines = text.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
     const exRegex = /^(.{2,60}?)\s+(\d+)\s*[x×]\s*([\d\-\/,\s]+)$/i;
     const dayHeaderRegex = /^(giorno|day)\s*\d*[:\-]?\s*(.*)$/i;
