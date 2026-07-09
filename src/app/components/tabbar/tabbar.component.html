@@ -1,6 +1,6 @@
-<!-- Tabbar CLIENT: Scheda / Dieta / Misure -->
-<nav class="tabbar tabbar-3" *ngIf="!isCoach && auth.authReady()">
-  <div class="pill" [class.p1]="activeTab === 'dieta'" [class.p2]="activeTab === 'misure'"></div>
+<!-- Tabbar CLIENT: Scheda / Dieta / Misure / Account -->
+<nav class="tabbar tabbar-4" *ngIf="!isCoach && auth.authReady()">
+  <div class="pill" [class.p1]="activeTab === 'dieta'" [class.p2]="activeTab === 'misure'" [class.p3]="activeTab === 'account'"></div>
 
   <button class="tabbtn" [class.active]="activeTab === 'scheda'" (click)="navigate('scheda')">
     <span class="ic">
@@ -33,11 +33,21 @@
     </span>
     <span class="tl">Misure</span>
   </button>
+
+  <button class="tabbtn" [class.active]="activeTab === 'account'" (click)="navigate('account')">
+    <span class="ic">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="8" r="4"/>
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+      </svg>
+    </span>
+    <span class="tl">Account</span>
+  </button>
 </nav>
 
-<!-- Tabbar COACH: Bacheca / Clienti -->
-<nav class="tabbar" *ngIf="isCoach && auth.authReady()">
-  <div class="pill" [class.p1]="activeCoachTab === 'clienti'"></div>
+<!-- Tabbar COACH: Bacheca / Clienti / Account -->
+<nav class="tabbar tabbar-3" *ngIf="isCoach && auth.authReady()">
+  <div class="pill" [class.p1]="activeCoachTab === 'clienti'" [class.p2]="activeCoachTab === 'account'"></div>
 
   <button class="tabbtn" [class.active]="activeCoachTab === 'bacheca'" (click)="navigateCoach('bacheca')">
     <span class="ic">
@@ -59,5 +69,15 @@
       </svg>
     </span>
     <span class="tl">Clienti</span>
+  </button>
+
+  <button class="tabbtn" [class.active]="activeCoachTab === 'account'" (click)="navigateCoach('account')">
+    <span class="ic">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="8" r="4"/>
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+      </svg>
+    </span>
+    <span class="tl">Account</span>
   </button>
 </nav>

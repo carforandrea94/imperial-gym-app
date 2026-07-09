@@ -119,6 +119,10 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .tabbar-3 .pill{width:calc(33.333% - 3.33px);}
 .tabbar-3 .pill.p1{transform:translateX(100%);}
 .tabbar-3 .pill.p2{transform:translateX(200%);}
+.tabbar-4 .pill{width:calc(25% - 3.75px);}
+.tabbar-4 .pill.p1{transform:translateX(100%);}
+.tabbar-4 .pill.p2{transform:translateX(200%);}
+.tabbar-4 .pill.p3{transform:translateX(300%);}
 .tabbar .tabbtn span{position:relative;z-index:1;}
 
 /* ===== SCHEDA ===== */

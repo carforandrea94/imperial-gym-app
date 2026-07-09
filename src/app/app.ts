@@ -95,7 +95,7 @@ export class App implements OnInit, OnDestroy {
     if (u === '/account') {
       this.navTitle = 'Account';
       this.navSubtitle = '';
-      this.showBack = true;
+      this.showBack = false;
       this.showHistory = false;
       this.showInfo = false;
       this.showAnalytics = false;
@@ -289,9 +289,7 @@ export class App implements OnInit, OnDestroy {
 
   onBack(): void {
     const u = this.router.url.split('?')[0];
-    if (u === '/account') {
-      this.router.navigate([this.auth.isCoach ? '/coach/bacheca' : '/scheda']);
-    } else if (u.match(/^\/scheda\/storico\/.+$/)) {
+    if (u.match(/^\/scheda\/storico\/.+$/)) {
       this.router.navigate(['/scheda/storico']);
     } else if (u.match(/^\/misure\/storico\/.+$/)) {
       this.router.navigate(['/misure/storico']);
@@ -332,16 +330,7 @@ export class App implements OnInit, OnDestroy {
     this.router.navigate(['/misure/analytics']);
   }
 
-  onAccount(): void {
-    this.router.navigate(['/account']);
-  }
-
   onShoppingList(): void {
     this.router.navigate(['/dieta/lista-spesa']);
-  }
-
-  async onLogout(): Promise<void> {
-    await this.auth.logout();
-    this.router.navigate(['/login']);
   }
 }
