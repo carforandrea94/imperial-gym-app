@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -42,10 +42,16 @@ import { AuthService } from '../../core/services/auth.service';
     }
   `]
 })
-export class AccountComponent {
+export class AccountComponent implements OnInit {
   copied = false;
 
   constructor(public auth: AuthService, private router: Router) {}
+
+  ngOnInit(): void {
+    if (this.auth.isCoach) {
+      this.auth.ensureCoachCode().catch(e => console.error('Errore ensureCoachCode:', e));
+    }
+  }
 
   get initial(): string {
     return (this.auth.currentUser()?.displayName ?? '?').charAt(0).toUpperCase();

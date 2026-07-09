@@ -15,7 +15,6 @@ export class CoachClientiComponent implements OnInit {
   clients: UserProfile[] = [];
   loading = true;
   errorMsg = '';
-  copied = false;
 
   constructor(
     public auth: AuthService,
@@ -24,7 +23,6 @@ export class CoachClientiComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.auth.ensureCoachCode().catch(e => console.error('Errore ensureCoachCode:', e));
     this.load();
   }
 
@@ -51,19 +49,5 @@ export class CoachClientiComponent implements OnInit {
 
   openClient(c: UserProfile): void {
     this.router.navigate(['/coach/clienti', c.uid]);
-  }
-
-  get myCode(): string {
-    return this.auth.currentUser()?.pairingCode ?? '';
-  }
-
-  async copyCode(): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(this.myCode);
-      this.copied = true;
-      setTimeout(() => { this.copied = false; }, 2000);
-    } catch {
-      // clipboard non disponibile: l'utente puo' comunque selezionare il testo a mano
-    }
   }
 }
