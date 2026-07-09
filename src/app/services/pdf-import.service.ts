@@ -139,6 +139,8 @@ export class PdfImportService {
     const buf = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
     const pages: string[] = [];
+    // eslint-disable-next-line no-console
+    console.log(`[extractText] "${file.name}": ${pdf.numPages} pagine, ${buf.byteLength} byte`);
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const content = await page.getTextContent();
@@ -150,9 +152,16 @@ export class PdfImportService {
         pageText += it.str;
         pageText += it.hasEOL ? '\n' : ' ';
       }
+      // Diagnostica temporanea per investigare un caso di estrazione incompleta
+      // segnalato in produzione (dati mancanti solo su alcuni dispositivi/browser).
+      // eslint-disable-next-line no-console
+      console.log(`[extractText] pagina ${i}/${pdf.numPages}: ${content.items.length} elementi, ${pageText.length} caratteri`, pageText);
       pages.push(pageText);
     }
-    return pages.join('\n');
+    const full = pages.join('\n');
+    // eslint-disable-next-line no-console
+    console.log(`[extractText] "${file.name}" TOTALE: ${full.length} caratteri`);
+    return full;
   }
 
   /**
