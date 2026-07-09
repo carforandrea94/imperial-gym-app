@@ -1,17 +1,4 @@
-<p class="sectiontitle">Il tuo codice</p>
-<div class="infocard mycode-card">
-  <p class="bacheca-text" style="margin-bottom:12px">
-    Comunica questo codice ai tuoi clienti: lo useranno in fase di registrazione per accoppiarsi a te.
-  </p>
-  <div class="mycode-row">
-    <span class="mycode-value">{{ myCode }}</span>
-    <button class="confirmbtn cancel mycode-copybtn" (click)="copyCode()">
-      {{ copied ? 'Copiato ✓' : 'Copia' }}
-    </button>
-  </div>
-</div>
-
-<p class="sectiontitle">I tuoi clienti</p>
+<p class="sectiontitle" style="margin-top:0">I tuoi clienti</p>
 
 <div *ngIf="loading" class="history-empty">Caricamento…</div>
 
