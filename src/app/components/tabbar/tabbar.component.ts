@@ -3,8 +3,8 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
-type ClientTab = 'scheda' | 'dieta' | 'misure';
-type CoachTab = 'bacheca' | 'clienti';
+type ClientTab = 'scheda' | 'dieta' | 'misure' | 'account';
+type CoachTab = 'bacheca' | 'clienti' | 'account';
 
 @Component({
   selector: 'app-tabbar',
@@ -23,11 +23,15 @@ export class TabbarComponent {
     const url = this.router.url;
     if (url.startsWith('/dieta')) return 'dieta';
     if (url.startsWith('/misure')) return 'misure';
+    if (url.startsWith('/account')) return 'account';
     return 'scheda';
   }
 
   get activeCoachTab(): CoachTab {
-    return this.router.url.startsWith('/coach/clienti') ? 'clienti' : 'bacheca';
+    const url = this.router.url;
+    if (url.startsWith('/coach/clienti')) return 'clienti';
+    if (url.startsWith('/account')) return 'account';
+    return 'bacheca';
   }
 
   navigate(tab: ClientTab): void {
@@ -35,6 +39,10 @@ export class TabbarComponent {
   }
 
   navigateCoach(tab: CoachTab): void {
-    this.router.navigate(['/coach/' + tab]);
+    if (tab === 'account') {
+      this.router.navigate(['/account']);
+    } else {
+      this.router.navigate(['/coach/' + tab]);
+    }
   }
 }

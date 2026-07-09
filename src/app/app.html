@@ -6,16 +6,12 @@
   [showHistory]="showHistory"
   [showInfo]="showInfo"
   [showAnalytics]="showAnalytics"
-  [showLogout]="true"
   [showShoppingList]="showShoppingList"
-  [showAccount]="true"
   (backClick)="onBack()"
   (historyClick)="onHistory()"
   (infoClick)="onInfo()"
   (analyticsClick)="onAnalytics()"
-  (logoutClick)="onLogout()"
-  (shoppingListClick)="onShoppingList()"
-  (accountClick)="onAccount()">
+  (shoppingListClick)="onShoppingList()">
 </app-navbar>
 
 <div class="content" [class.no-chrome]="!showChrome">
