@@ -58,10 +58,10 @@ export class CoachProtocolImportComponent {
       const days = this.pdfSvc.parseWorkoutText(schedaText);
       const diet = this.pdfSvc.parseDietText(dietaText);
 
-      let infoNote = '';
+      let infoNote = this.pdfSvc.extractDietNotes(dietaText);
       if (this.integrazioneFile) {
         const integrazioneText = await this.pdfSvc.extractText(this.integrazioneFile);
-        infoNote = integrazioneText.trim();
+        infoNote = [infoNote, integrazioneText.trim()].filter(Boolean).join('\n\n');
       }
 
       await this.protocolSvc.update(this.clientId, id, {
