@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { isIosSafariNotStandalone } from '../../core/utils/platform.util';
 
 @Component({
   selector: 'app-account',
@@ -59,6 +60,10 @@ export class AccountComponent implements OnInit {
 
   get roleLabel(): string {
     return this.auth.isCoach ? 'Coach' : 'Cliente';
+  }
+
+  get showIosNotificationHint(): boolean {
+    return isIosSafariNotStandalone();
   }
 
   get memberSince(): string {

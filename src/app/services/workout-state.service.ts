@@ -1,6 +1,7 @@
 import { Injectable, signal, effect } from '@angular/core';
 import { AppStateService } from './app-state.service';
 import { AuthService } from '../core/services/auth.service';
+import { isIosSafariNotStandalone } from '../core/utils/platform.util';
 
 export interface RestTimerState {
   show: boolean;
@@ -116,6 +117,9 @@ export class WorkoutStateService {
   /** Richiede il permesso di notifica alla prima partenza del timer di recupero; e' un no-op se gia' concesso/negato. */
   private requestNotificationPermission(): void {
     if (!('Notification' in window) || Notification.permission !== 'default') return;
+    // Su iOS da scheda Safari (non installata in Home Screen) il permesso non
+    // verrebbe comunque mai concesso davvero: evita di chiederlo a vuoto.
+    if (isIosSafariNotStandalone()) return;
     Notification.requestPermission().catch(() => { /* l'utente puo' sempre negare/ignorare il prompt */ });
   }
 
