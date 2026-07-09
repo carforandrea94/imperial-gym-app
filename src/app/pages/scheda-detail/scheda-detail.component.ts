@@ -94,7 +94,7 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
     this.exercises = this.day.ex.map(ex => {
       const { sets, reps } = this.workoutData.getExSetsReps(ex, week);
       const rows: SerieRow[] = Array.from({ length: sets }, (_, i) => ({
-        reps: '',
+        reps: String(reps[i] ?? ''),
         load: '',
         done: false,
         ripPlaceholder: String(reps[i] ?? ''),
