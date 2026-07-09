@@ -93,6 +93,7 @@ export class WorkoutStateService {
 
   startRestTimer(durationSeconds?: number): void {
     this.stopRestTimer();
+    this.requestNotificationPermission();
     const duration = durationSeconds && durationSeconds > 0 ? durationSeconds : REST_DURATION;
     let remaining = duration;
 
@@ -106,9 +107,41 @@ export class WorkoutStateService {
       if (remaining <= 0) {
         if (this.ticker) { clearInterval(this.ticker); this.ticker = null; }
         if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+        this.notifyRestFinished();
         this.closeTimeout = setTimeout(() => this.stopRestTimer(), 4000);
       }
     }, 1000);
+  }
+
+  /** Richiede il permesso di notifica alla prima partenza del timer di recupero; e' un no-op se gia' concesso/negato. */
+  private requestNotificationPermission(): void {
+    if (!('Notification' in window) || Notification.permission !== 'default') return;
+    Notification.requestPermission().catch(() => { /* l'utente puo' sempre negare/ignorare il prompt */ });
+  }
+
+  /**
+   * Notifica di sistema a fine recupero, utile quando l'utente ha messo l'app
+   * in background (schermo bloccato, altra app in primo piano): se l'app e'
+   * gia' visibile basta il banner interno, non serve raddoppiare l'avviso.
+   */
+  private notifyRestFinished(): void {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    if (document.visibilityState === 'visible') return;
+
+    const title = 'Recupero finito!';
+    const options: NotificationOptions = {
+      body: 'Torna al tuo allenamento 💪',
+      icon: 'icons/icon-192x192.png',
+      tag: 'rest-timer'
+    };
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready
+        .then(reg => reg.showNotification(title, options))
+        .catch(() => new Notification(title, options));
+    } else {
+      new Notification(title, options);
+    }
   }
 
   stopRestTimer(): void {
