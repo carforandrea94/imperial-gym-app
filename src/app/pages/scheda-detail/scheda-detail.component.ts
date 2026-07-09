@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ElementRef, ViewChild, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
@@ -27,9 +27,6 @@ interface ExerciseVM {
   restSeconds: number;
 }
 
-type ViewMode = 'list' | 'slider';
-const VIEW_MODE_KEY = 'schedaViewMode';
-
 @Component({
   selector: 'app-scheda-detail',
   standalone: true,
@@ -42,14 +39,12 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
   dayIndex = 0;
   exercises: ExerciseVM[] = [];
   loading = true;
-  saveStatus: 'idle' | 'saving' | 'saved' | 'err' = 'idle';
   private draftTimer: ReturnType<typeof setTimeout> | null = null;
 
   restModalOpen = false;
   restModalVm: ExerciseVM | null = null;
   restModalValue = 90;
 
-  viewMode: ViewMode = 'list';
   sliderIndex = 0;
   private scrollTicking = false;
 
@@ -65,12 +60,18 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
     private confirm: ConfirmDialogService,
     private sanitizer: DomSanitizer,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) {
+    // Il toggle vive nella navbar (fuori da questa pagina): quando si passa
+    // a "slider" da un'altra vista/pagina, riparte sempre dalla prima card.
+    effect(() => {
+      if (this.state.viewMode() === 'slider') {
+        this.sliderIndex = 0;
+        setTimeout(() => this.scrollToIndex(0), 0);
+      }
+    });
+  }
 
   ngOnInit(): void {
-    const savedMode = localStorage.getItem(VIEW_MODE_KEY);
-    if (savedMode === 'list' || savedMode === 'slider') this.viewMode = savedMode;
-
     const n = parseInt(this.route.snapshot.paramMap.get('n') ?? '0', 10);
     this.dayIndex = n;
     this.day = this.workoutData.days[n];
@@ -82,6 +83,7 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
     this.buildExercises({});
     this.loading = false;
 
+    this.state.registerSaveHandler(() => this.saveWorkout());
     this.loadRemoteData();
   }
 
@@ -98,6 +100,7 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.draftTimer) clearTimeout(this.draftTimer);
+    this.state.registerSaveHandler(null);
   }
 
   private buildExercises(restOverrides: Record<string, number>): void {
@@ -225,16 +228,6 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
     vm.open = !vm.open;
   }
 
-  setViewMode(mode: ViewMode): void {
-    if (this.viewMode === mode) return;
-    this.viewMode = mode;
-    localStorage.setItem(VIEW_MODE_KEY, mode);
-    if (mode === 'slider') {
-      this.sliderIndex = 0;
-      setTimeout(() => this.scrollToIndex(0), 0);
-    }
-  }
-
   onSliderScroll(): void {
     if (this.scrollTicking) return;
     this.scrollTicking = true;
@@ -349,9 +342,8 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
   }
 
   async saveWorkout(): Promise<void> {
-    if (this.saveStatus === 'saving') return; // evita doppio invio mentre e' gia' in corso
-    this.saveStatus = 'saving';
-    this.cdr.detectChanges();
+    if (this.state.saveStatus() === 'saving') return; // evita doppio invio mentre e' gia' in corso
+    this.state.saveStatus.set('saving');
 
     const isoDate = new Date().toISOString().split('T')[0];
     const session: WorkoutSession = {
@@ -372,29 +364,15 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
       const ok = await Promise.race([this.sessions.save(session), timeout]);
       if (ok) {
         await this.appState.deleteFieldPath(`workoutDrafts.${this.day.id}`);
-        this.saveStatus = 'saved';
+        this.state.saveStatus.set('saved');
       } else {
-        this.saveStatus = 'err';
+        this.state.saveStatus.set('err');
       }
     } catch (e: any) {
       console.error('Errore salvataggio allenamento:', e);
-      this.saveStatus = 'err';
+      this.state.saveStatus.set('err');
     } finally {
-      this.cdr.detectChanges();
-      setTimeout(() => { this.saveStatus = 'idle'; this.cdr.detectChanges(); }, 2000);
+      setTimeout(() => this.state.saveStatus.set('idle'), 2000);
     }
-  }
-
-  getSaveBtnClass(): string {
-    if (this.saveStatus === 'saved') return 'savebtn saved';
-    if (this.saveStatus === 'err') return 'savebtn err';
-    return 'savebtn';
-  }
-
-  getSaveBtnText(): string {
-    if (this.saveStatus === 'saving') return 'Salvataggio…';
-    if (this.saveStatus === 'saved') return '✓ Allenamento salvato!';
-    if (this.saveStatus === 'err') return '✕ Errore salvataggio, riprova';
-    return 'Completa allenamento';
   }
 }
