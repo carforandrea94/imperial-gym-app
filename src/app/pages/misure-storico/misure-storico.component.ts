@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MeasurementDataService } from '../../services/measurement-data.service';
@@ -26,7 +26,8 @@ export class MisureStoricoComponent implements OnInit {
   constructor(
     private data: MeasurementDataService,
     private confirm: ConfirmDialogService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -36,8 +37,13 @@ export class MisureStoricoComponent implements OnInit {
   async load(): Promise<void> {
     this.loading = true;
     this.errorMsg = '';
+
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('TIMEOUT')), 12000)
+    );
+
     try {
-      const history = await this.data.loadHistory(); // dalla piu' recente
+      const history = await Promise.race([this.data.loadHistory(), timeout]); // dalla piu' recente
       this.rows = history.map((entry, i) => {
         const date = new Date(entry.date + 'T00:00:00');
         const displayDate = date.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -51,9 +57,12 @@ export class MisureStoricoComponent implements OnInit {
       });
     } catch (e: any) {
       console.error('Errore caricamento storico misure:', e);
-      this.errorMsg = 'Errore nel caricamento dello storico. Riprova.';
+      this.errorMsg = e?.message === 'TIMEOUT'
+        ? 'La connessione sta impiegando troppo tempo. Controlla la rete e riprova.'
+        : 'Errore nel caricamento dello storico. Riprova.';
     } finally {
       this.loading = false;
+      this.cdr.detectChanges();
     }
   }
 
