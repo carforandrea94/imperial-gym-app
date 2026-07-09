@@ -89,7 +89,7 @@ button { border: none; background: transparent; cursor: pointer; }
 a { color: inherit; text-decoration: none; }
 
 /* ===== NAV BAR ===== */
-.navbar{position:fixed;top:0;left:0;right:0;z-index:50;padding-top:calc(var(--safe-t) + 6px);background:var(--glass-bg);backdrop-filter:blur(20px) saturate(140%);-webkit-backdrop-filter:blur(20px) saturate(140%);border-bottom:1px solid rgba(255,255,255,0.14);box-shadow:inset 0 1px 4px rgba(255,255,255,.35),inset 0 -1px 5px rgba(0,0,0,.28),inset 1px 0 3px rgba(255,255,255,.06),inset -1px 0 3px rgba(255,255,255,.06),0 8px 26px rgba(0,0,0,.35);}
+.navbar{position:fixed;top:0;left:0;right:0;z-index:50;padding-top:calc(var(--safe-t) + 6px);background:transparent;border-bottom:none;box-shadow:none;}
 .navbar .inner{position:relative;z-index:2;padding:10px 18px 12px;max-width:640px;margin:0 auto;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:10px;transition:padding .25s ease;}
 .navbar .titleblock{min-width:0;flex:1;}
 .navbar h1{font-family:'Inter',sans-serif;font-weight:800;font-size:26px;letter-spacing:-.01em;line-height:1.1;margin-top:3px;transition:font-size .25s ease;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -450,9 +450,8 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .ex-num { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 17px; }
 
 /* Strato di rifrazione dietro il contenuto delle superfici "chrome"
-   (navbar, tabbar, rest timer, rocker, dialog): campiona ciò che sta
-   dietro l'elemento e lo distorce. */
-.navbar::before,
+   (tabbar, rest timer, rocker, dialog): campiona ciò che sta dietro
+   l'elemento e lo distorce. La navbar resta trasparente e senza bordi. */
 .tabbar::before,
 .resttimer::before,
 .rocker::before,
@@ -468,7 +467,6 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 }
 
 /* Gloss / riflesso superiore del vetro */
-.navbar::after,
 .tabbar::after,
 .resttimer::after,
 .rocker::after,
@@ -505,7 +503,7 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .ex > * { position: relative; z-index: 1; }
 
 /* Bordo "liquido" più marcato: doppio inset highlight/ombra come nella repo */
-.navbar, .tabbar, .resttimer, .rocker, .confirmbox,
+.tabbar, .resttimer, .rocker, .confirmbox,
 .daycard, .ex, .meal, .infocard, .weekpicker {
   box-shadow:
     inset 1px 1px 2px 0 rgba(255,255,255,0.22),
@@ -515,15 +513,15 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 
 /* Fallback: niente displacement/gloss dove la trasparenza è ridotta */
 @media (prefers-reduced-transparency: reduce) {
-  .navbar::before, .tabbar::before, .resttimer::before,
+  .tabbar::before, .resttimer::before,
   .rocker::before, .confirmbox::before,
-  .navbar::after, .tabbar::after, .resttimer::after, .rocker::after,
+  .tabbar::after, .resttimer::after, .rocker::after,
   .daycard::after, .ex::after, .meal::after, .infocard::after, .weekpicker::after {
     display: none;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .navbar::before, .tabbar::before, .resttimer::before,
+  .tabbar::before, .resttimer::before,
   .rocker::before, .confirmbox::before { filter: none; -webkit-filter: none; }
 }
 
