@@ -236,6 +236,21 @@
               <span class="fname">{{ it.name }}</span>
               <span class="fqty">{{ it.qty }}</span>
             </div>
+
+            <ng-container *ngIf="itemAlt(it).length > 0">
+              <div class="altwrap-header" (click)="toggleItemAltExpanded(getActiveCombo(meal), cat, $event)">
+                <span>Alternative ({{ itemAlt(it).length }})</span>
+                <span class="chevron">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                </span>
+              </div>
+              <div class="altlist" *ngIf="isItemAltExpanded(getActiveCombo(meal), cat)" (click)="$event.stopPropagation()">
+                <div class="row" *ngFor="let a of itemAlt(it)">
+                  <span>{{ a.name }}</span>
+                  <span>{{ a.qty }}</span>
+                </div>
+              </div>
+            </ng-container>
           </div>
         </ng-container>
 
@@ -310,6 +325,28 @@
             </div>
             <button class="delete-btn" (click)="clearComboItem(getActiveCombo(em), cat, $event)">✕</button>
           </div>
+
+          <ng-container *ngIf="getActiveCombo(em)[cat] as item2">
+            <div class="altwrap-header" (click)="toggleItemAltExpanded(getActiveCombo(em), cat)" style="margin-top:10px">
+              <span>Alternative per questo alimento ({{ itemAlt(item2).length }})</span>
+              <span class="chevron">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+              </span>
+            </div>
+            <ng-container *ngIf="isItemAltExpanded(getActiveCombo(em), cat)">
+              <div class="builder-item" *ngFor="let a of itemAlt(item2)" style="margin-top:8px">
+                <div class="measure-input-wrap">
+                  <input type="text" [(ngModel)]="a.name" placeholder="Alimento alternativo" />
+                </div>
+                <div class="measure-input-wrap builder-qty">
+                  <input type="text" [(ngModel)]="a.qty" placeholder="Quantita'" />
+                </div>
+                <button class="delete-btn" (click)="removeItemAltEntry(item2, a)">✕</button>
+              </div>
+              <button class="confirmbtn cancel" style="width:100%;margin-top:8px" (click)="addItemAltEntry(item2)">+ Alternativa</button>
+            </ng-container>
+          </ng-container>
+
           <ng-template #noComboItem>
             <div class="builder-item">
               <div class="measure-input-wrap">
