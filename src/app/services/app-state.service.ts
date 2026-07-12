@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { doc, getDoc, setDoc, updateDoc, deleteField, runTransaction } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, deleteField, runTransaction } from 'firebase/firestore';
 import { FirebaseService } from '../core/services/firebase.service';
 import { AuthService } from '../core/services/auth.service';
 import { ZoneFixService } from '../core/utils/zone.util';
