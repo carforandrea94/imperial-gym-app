@@ -37,7 +37,10 @@ const MEAL_HEADER_DEFS: { name: string; re: RegExp }[] = [
 ];
 
 const GIORNO_HEADER_RE = /^GIORNO\s+(.+)$/i;
-const CONTINUA_RE = /^[.…]{2,}\s*continua\b/i;
+// Marcatore di continuazione a inizio pagina ("...Continua Cena" / "…Continua Day 2").
+// Accetta sia i puntini di sospensione veri (U+2026, spesso inseriti da Word/InDesign)
+// sia tre o piu' punti separati, in qualunque combinazione: molti PDF usano l'uno o l'altro.
+const CONTINUA_RE = /^(?:\.{2,}|…+)\s*continua\b/i;
 const ALTERNATIVE_MARKER_RE = /^alternative\s*:?\s*$/i;
 
 /** Riga tipo "Farina d'avena 5 Cucchiai 50 g": cattura la quantita' in grammi/ml/l a fine riga. */
@@ -45,7 +48,7 @@ const GRAM_TAIL_RE = /(\d+(?:[.,]\d+)?)\s*(g|kg|ml|l)\.?\s*$/i;
 
 /** Separa dal testo prima dei grammi l'eventuale "misura" (es. "5 Cucchiai", "3/4 di Piatto",
  *  "1 Piatto e 1/4") dal nome dell'alimento. Se non trova una misura riconosciuta, non c'e' match. */
-const MISURA_RE = /^(.*?)\s+((?:\d+(?:[\/.,]\d+)?\s+)?(?:di\s+)?(?:cucchiai(?:ni|no)?|fett[ae]|piatt[oi]|panin[oi])(?:\s+e\s+\d+(?:[\/.,]\d+)?)?)$/i;
+const MISURA_RE = /^(.*?)\s+((?:\d+(?:[\/.,]\d+)?\s+)?(?:di\s+)?(?:cucchiai(?:ni|no|o)?|fett[ae]|piatt[oi]|panin[oi])(?:\s+e\s+\d+(?:[\/.,]\d+)?)?)$/i;
 
 const CARB_KEYWORDS = [
   'avena', 'riso', 'pasta', 'patate', 'pane', 'gallette', 'fette biscottate', 'crusca',
@@ -82,7 +85,11 @@ const DAY_HEADER_RE = /^DAY\s*(\d+)\s*:\s*(.+?)\s+REC\s+TRA\s+([\d\-]+)[”"″'
 const EX_HEADER_RE = /^EX\.?\s*(\d+)\s*\/\s*(.+)$/i;
 /** Coppie "SxR" isolate su una riga schema, es. "4X10 4X10 4X8 ... 5X6" o "2x8 1x20". */
 const PAIR_RE = /(\d+)\s*[xX×]\s*(\d+)/g;
-const WAVE_MARKER_RE = /riprendi|aumentando/i;
+// Segnale di progressione "wave": lo schema a piu' coppie va letto come ciclo che si ripete
+// sulle settimane, non sommato. Il fraseggio del coach varia ("...riprendi da 4X10 aumentando
+// il carico", ma anche "...ricomincia dal ciclo 1", "ripeti dal ciclo", "torna al ciclo"):
+// accettiamo tutte queste varianti (additivo, le frasi gia' riconosciute restano valide).
+const WAVE_MARKER_RE = /riprendi|aumentando|ricomincia|ripeti\s+dal\s+ciclo|torna\s+al\s+ciclo/i;
 /** "4X10+ ULTIMA IN STRIP..." / "3X12/15 con fermo in basso di 2”": sets + descrittore reps + nota libera. */
 const SINGLE_SCHEME_RE = /^(\d+)\s*[xX×]\s*(\S+)(?:\s+(.*))?$/;
 
@@ -200,14 +207,28 @@ export class PdfImportService {
 
     for (const line of rawLines) {
       if (DURATA_RE.test(line)) continue;
+      // Riga di continuazione tra pagine ("…Continua Day 2"): il contesto (giorno ed
+      // esercizio in sospeso) resta invariato, NON e' una riga di schema serie/ripetizioni.
+      // Va intercettata prima del ramo "if (pendingExercise)" che altrimenti la leggerebbe
+      // come schema fasullo, perdendo lo schema reale che segue l'interruzione di pagina.
+      if (CONTINUA_RE.test(line)) continue;
 
       const dayMatch = line.match(DAY_HEADER_RE);
       if (dayMatch) {
-        finalizePending();
         const label = dayMatch[2].trim();
-        currentDayMuscles = label.split(/[-,/]/).map(s => s.trim()).filter(Boolean);
-        currentDay = { id: `day${days.length + 1}`, label: toTitleCase(label), rec: `${dayMatch[3].trim()}"`, ex: [] };
-        days.push(currentDay);
+        const dayLabel = toTitleCase(label);
+        // Stesso fix del parser dieta: "DAY N: ..." e' anche l'intestazione ripetuta a
+        // inizio di OGNI pagina, non solo a inizio sezione. Se e' lo stesso giorno gia' in
+        // corso, e' un semplice ri-attraversamento di pagina: non va creato un secondo
+        // giorno duplicato ne' interrotta la lista esercizi (si perderebbe l'esercizio in
+        // sospeso e il suo schema, spezzati dall'interruzione di pagina).
+        const existingDay = days.find(d => d.label === dayLabel);
+        if (existingDay !== currentDay) {
+          finalizePending();
+          currentDayMuscles = label.split(/[-,/]/).map(s => s.trim()).filter(Boolean);
+          currentDay = existingDay ?? { id: `day${days.length + 1}`, label: dayLabel, rec: `${dayMatch[3].trim()}"`, ex: [] };
+          if (!existingDay) days.push(currentDay);
+        }
         continue;
       }
 
@@ -256,7 +277,16 @@ export class PdfImportService {
     if (single) {
       const sets = parseInt(single[1], 10) || 1;
       let repsRaw = single[2];
-      const note = single[3]?.trim() || undefined;
+      let note = single[3]?.trim() || undefined;
+      // Un descrittore reps NON numerico e' una frase di piu' parole (es. "AL CEDIMENTO"):
+      // SINGLE_SCHEME_RE ne cattura solo la prima parola in reps e spinge il resto nella nota,
+      // spezzando "AL CEDIMENTO" in reps="AL" + nota="CEDIMENTO". Se le reps non contengono
+      // cifre, la "nota" fa in realta' parte delle reps: la riuniamo. Quando invece le reps
+      // sono numeriche ("10+", "12/15", "2'") la nota resta separata (drop-set, tempo di recupero).
+      if (note && !/\d/.test(repsRaw)) {
+        repsRaw = `${repsRaw} ${note}`;
+        note = undefined;
+      }
       if (repsRaw.endsWith('+')) repsRaw = repsRaw.slice(0, -1); // "10+" = nota a seguire, non bilaterale ("12+12")
       return { name, scheme: 'plain', sets, muscle, reps: buildReps(sets, repsRaw), note, text: line };
     }
@@ -350,12 +380,22 @@ export class PdfImportService {
 
     const idx = lines.findIndex(l => /^consigli di base$/i.test(l));
     if (idx >= 0) {
-      const tips = lines.slice(idx + 1).filter(l =>
-        !/^consigli di base$/i.test(l) &&
-        !/^dott\.?\s/i.test(l) &&
-        !/^\d{2}\/\d{2}\/\d{4}/.test(l) &&
-        !/^pagina\s+\d+\s+di\s+\d+$/i.test(l)
-      );
+      const tips: string[] = [];
+      for (const line of lines.slice(idx + 1)) {
+        // Chiusura esplicita della sezione "Consigli di base": senza un limite, consumava
+        // ogni riga fino a fine documento, trascinando dentro i consigli anche il contenuto
+        // delle sezioni successive (un altro "Giorno X", un pasto, una pagina "...Continua").
+        if (
+          CONTINUA_RE.test(line) ||
+          GIORNO_HEADER_RE.test(line) ||
+          MEAL_HEADER_DEFS.some(d => d.re.test(line))
+        ) break;
+        if (/^consigli di base$/i.test(line)) continue; // intestazione ripetuta su piu' pagine
+        if (/^dott\.?\s/i.test(line)) continue;
+        if (/^\d{2}\/\d{2}\/\d{4}/.test(line)) continue;
+        if (/^pagina\s+\d+\s+di\s+\d+$/i.test(line)) continue;
+        tips.push(line);
+      }
       if (tips.length > 0) notes.push('Consigli di base:\n' + tips.map(t => `- ${t}`).join('\n'));
     }
 
@@ -431,6 +471,27 @@ export class PdfImportService {
             if (meal.combinations.length === 0) meal.combinations.push(newCombination('Base'));
             currentCombo = meal.combinations[0];
           }
+          lastItem = null;
+          collectingAlt = false;
+          continue;
+        }
+
+        // Intestazione di pasto non prevista in MEAL_HEADER_DEFS (es. "SPUNTINO SERALE"):
+        // una riga tutta in maiuscolo, corta, senza quantita' in grammi (quindi non un
+        // alimento) e diversa dal marcatore "Alternative:" e' comunque l'inizio di un nuovo
+        // pasto. La apriamo come pasto a se' (nome = testo grezzo) invece di lasciar cadere
+        // la riga e far confluire i suoi alimenti nel pasto precedente (corrompendolo).
+        if (
+          !ALTERNATIVE_MARKER_RE.test(line) &&
+          !GRAM_TAIL_RE.test(line) &&
+          line === line.toUpperCase() &&
+          /[A-ZÀ-Ù]/.test(line) &&
+          line.split(/\s+/).length <= 5
+        ) {
+          const meal = findOrCreateMeal(currentPlan, line);
+          currentMeal = meal;
+          if (meal.combinations.length === 0) meal.combinations.push(newCombination('Base'));
+          currentCombo = meal.combinations[0];
           lastItem = null;
           collectingAlt = false;
           continue;

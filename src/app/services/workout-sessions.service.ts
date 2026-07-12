@@ -53,8 +53,16 @@ export class WorkoutSessionsService {
     })());
   }
 
-  delete(id: string): Promise<void> {
-    return this.zoneFix.run(deleteDoc(doc(this.col(), id)));
+  delete(id: string): Promise<boolean> {
+    return this.zoneFix.run((async () => {
+      try {
+        await deleteDoc(doc(this.col(), id));
+        return true;
+      } catch (e) {
+        console.error('Errore eliminazione sessione allenamento:', e);
+        return false;
+      }
+    })());
   }
 
   /** Tutte le sessioni salvate (storico completo), piu' recenti prima. */

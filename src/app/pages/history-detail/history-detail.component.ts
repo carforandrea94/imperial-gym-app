@@ -52,7 +52,7 @@ export class HistoryDetailComponent implements OnInit {
     try {
       this.session = await Promise.race([this.sessionsSvc.get(this.key), timeout]);
       if (this.session) {
-        const date = new Date(this.session.date);
+        const date = new Date(this.session.date + 'T00:00:00');
         this.displayDate = date.toLocaleDateString('it-IT', {
           weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
         });
@@ -86,10 +86,14 @@ export class HistoryDetailComponent implements OnInit {
   }
 
   async deleteSession(): Promise<void> {
-    const ok = await this.confirm.confirm('Eliminare questa seduta dallo storico?');
+    const confirmed = await this.confirm.confirm('Eliminare questa seduta dallo storico?');
+    if (!confirmed) return;
+    const ok = await this.sessionsSvc.delete(this.key);
     if (ok) {
-      await this.sessionsSvc.delete(this.key);
       this.router.navigate(['/scheda/storico']);
+    } else {
+      this.errorMsg = 'Errore durante l\'eliminazione. Riprova.';
+      this.cdr.detectChanges();
     }
   }
 

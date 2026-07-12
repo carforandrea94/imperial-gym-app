@@ -23,15 +23,18 @@ export class ConfirmDialogComponent implements OnInit, OnDestroy {
   visible = false;
   message = '';
   private currentResolve: ((v: boolean) => void) | null = null;
+  private queue: ConfirmRequest[] = [];
   private sub: Subscription | null = null;
 
   constructor(private svc: ConfirmDialogService) {}
 
   ngOnInit(): void {
     this.sub = this.svc.request$.subscribe((req: ConfirmRequest) => {
-      this.message = req.message;
-      this.currentResolve = req.resolve;
-      this.visible = true;
+      if (this.visible) {
+        this.queue.push(req);
+      } else {
+        this.show(req);
+      }
     });
   }
 
@@ -39,10 +42,20 @@ export class ConfirmDialogComponent implements OnInit, OnDestroy {
     this.sub?.unsubscribe();
   }
 
+  private show(req: ConfirmRequest): void {
+    this.message = req.message;
+    this.currentResolve = req.resolve;
+    this.visible = true;
+  }
+
   answer(result: boolean): void {
     this.visible = false;
     this.currentResolve?.(result);
     this.currentResolve = null;
+    const next = this.queue.shift();
+    if (next) {
+      setTimeout(() => this.show(next), 250);
+    }
   }
 
   onOverlayClick(e: MouseEvent): void {

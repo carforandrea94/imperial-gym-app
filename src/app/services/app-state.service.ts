@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { doc, getDoc, setDoc, updateDoc, deleteField } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, deleteField, runTransaction } from 'firebase/firestore';
 import { FirebaseService } from '../core/services/firebase.service';
 import { AuthService } from '../core/services/auth.service';
 import { ZoneFixService } from '../core/utils/zone.util';
@@ -51,10 +51,16 @@ export class AppStateService {
   }
 
   private async ensureDoc(): Promise<void> {
-    const snap = await getDoc(this.ref());
-    if (!snap.exists()) {
-      await setDoc(this.ref(), emptyState());
-    }
+    // Transazione invece di getDoc+setDoc separati: se due chiamate concorrenti
+    // (es. cambio vista + autosalvataggio bozza) trovano entrambe il doc
+    // mancante, solo una delle due lo crea davvero; l'altra la vede gia'
+    // esistente e non sovrascrive nulla.
+    await runTransaction(this.fb.db, async (tx) => {
+      const snap = await tx.get(this.ref());
+      if (!snap.exists()) {
+        tx.set(this.ref(), emptyState());
+      }
+    });
   }
 
   patch(partial: Partial<AppState>): Promise<void> {

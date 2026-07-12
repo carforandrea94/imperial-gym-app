@@ -1,6 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { isIosSafariNotStandalone } from '../../core/utils/platform.util';
 
@@ -46,7 +45,7 @@ import { isIosSafariNotStandalone } from '../../core/utils/platform.util';
 export class AccountComponent implements OnInit {
   copied = false;
 
-  constructor(public auth: AuthService, private router: Router) {}
+  constructor(public auth: AuthService) {}
 
   ngOnInit(): void {
     if (this.auth.isCoach) {
@@ -86,6 +85,10 @@ export class AccountComponent implements OnInit {
 
   async logout(): Promise<void> {
     await this.auth.logout();
-    this.router.navigate(['/login']);
+    // Reload completo (non router.navigate) cosi' tutti i singleton
+    // (AppStateService, ProtocolBootstrapService, WorkoutDataService,
+    // DietDataService, ecc.) ripartono da zero: evita che i dati
+    // dell'account precedente restino in memoria per il prossimo login.
+    window.location.href = '/login';
   }
 }

@@ -1,8 +1,15 @@
-<div *ngIf="!hasAnyHistory" class="history-empty">
+<div *ngIf="loading" class="history-empty">Caricamento…</div>
+
+<div *ngIf="!loading && errorMsg" class="history-empty">
+  {{ errorMsg }}<br>
+  <button class="savebtn" style="margin-top:12px" (click)="load()">Riprova</button>
+</div>
+
+<div *ngIf="!loading && !errorMsg && !hasAnyHistory" class="history-empty">
   Nessuna misurazione salvata.<br>Inserisci le tue misure per vedere qui l'andamento nel tempo.
 </div>
 
-<ng-container *ngIf="hasAnyHistory">
+<ng-container *ngIf="!loading && !errorMsg && hasAnyHistory">
 
   <!-- Grafico unico -->
   <div class="infocard chart-card">

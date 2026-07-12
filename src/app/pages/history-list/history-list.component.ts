@@ -46,7 +46,7 @@ export class HistoryListComponent implements OnInit {
     try {
       const all = await Promise.race([this.sessionsSvc.listAll(), timeout]);
       this.sessions = all.map(({ id, session }) => {
-        const date = new Date(session.date);
+        const date = new Date(session.date + 'T00:00:00');
         const displayDate = date.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
         const completedSets = session.exercises.reduce((acc, ex) =>
           acc + ex.sets.filter(s => s.done).length, 0);
@@ -69,10 +69,14 @@ export class HistoryListComponent implements OnInit {
 
   async deleteSession(key: string, event: MouseEvent): Promise<void> {
     event.stopPropagation();
-    const ok = await this.confirm.confirm('Eliminare questa seduta dallo storico?');
+    const confirmed = await this.confirm.confirm('Eliminare questa seduta dallo storico?');
+    if (!confirmed) return;
+    const ok = await this.sessionsSvc.delete(key);
     if (ok) {
-      await this.sessionsSvc.delete(key);
       await this.loadSessions();
+    } else {
+      this.errorMsg = 'Errore durante l\'eliminazione. Riprova.';
+      this.cdr.detectChanges();
     }
   }
 }

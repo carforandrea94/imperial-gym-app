@@ -9,6 +9,7 @@ import { AppStateService, WorkoutDraftRow } from '../../services/app-state.servi
 import { WorkoutSessionsService } from '../../services/workout-sessions.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { Day, Exercise, WorkoutSession, ExInsight } from '../../models/workout.model';
+import { todayLocalISO } from '../../core/utils/date.util';
 
 interface SerieRow {
   reps: string;
@@ -196,7 +197,7 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
       const lastEx = lastSession?.exercises.find(e => e.name === exName);
       let lastText = '';
       if (lastEx && lastSession) {
-        const d = lastSession.date ? new Date(lastSession.date) : null;
+        const d = lastSession.date ? new Date(lastSession.date + 'T00:00:00') : null;
         const dd = d ? `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}` : '';
         const maxLoad = Math.max(...lastEx.sets.map(s => parseFloat(s.load ?? '') || 0).filter(l => l > 0));
         lastText = dd ? `Ultimo (${dd}): ${maxLoad > 0 ? maxLoad + ' kg' : '—'}` : '';
@@ -350,8 +351,9 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
   async saveWorkout(): Promise<void> {
     if (this.state.saveStatus() === 'saving') return; // evita doppio invio mentre e' gia' in corso
     this.state.saveStatus.set('saving');
+    if (this.draftTimer) { clearTimeout(this.draftTimer); this.draftTimer = null; }
 
-    const isoDate = new Date().toISOString().split('T')[0];
+    const isoDate = todayLocalISO();
     const session: WorkoutSession = {
       dayId: this.day.id,
       dayLabel: this.day.label,

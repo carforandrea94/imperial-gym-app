@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { ProtocolService } from '../../services/protocol.service';
 import { AuthService } from '../../core/services/auth.service';
 
@@ -11,17 +12,26 @@ import { AuthService } from '../../core/services/auth.service';
   templateUrl: './coach-protocol-new.component.html',
   styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
 })
-export class CoachProtocolNewComponent {
+export class CoachProtocolNewComponent implements OnInit, OnDestroy {
   clientId = '';
   creating = false;
+  private paramSub: Subscription | null = null;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private protocolSvc: ProtocolService,
     private auth: AuthService
-  ) {
-    this.clientId = this.route.snapshot.paramMap.get('clientId') ?? '';
+  ) {}
+
+  ngOnInit(): void {
+    this.paramSub = this.route.paramMap.subscribe(params => {
+      this.clientId = params.get('clientId') ?? '';
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.paramSub?.unsubscribe();
   }
 
   async createManual(): Promise<void> {

@@ -39,9 +39,4 @@ export class ProtocolBootstrapService {
       this.loaded = true;
     }
   }
-
-  /** Forza un nuovo caricamento (es. dopo che il coach ha attivato un nuovo protocollo). */
-  reset(): void {
-    this.loaded = false;
-  }
 }

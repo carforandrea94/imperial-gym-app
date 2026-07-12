@@ -1,6 +1,7 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { doc, getDoc } from 'firebase/firestore';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { ProtocolService } from '../../services/protocol.service';
@@ -16,13 +17,14 @@ import { Protocol } from '../../models/protocol.model';
   templateUrl: './coach-client-detail.component.html',
   styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
 })
-export class CoachClientDetailComponent implements OnInit {
+export class CoachClientDetailComponent implements OnInit, OnDestroy {
   clientId = '';
   client: UserProfile | null = null;
   protocols: Protocol[] = [];
   loading = true;
   errorMsg = '';
   busyId: string | null = null;
+  private paramSub: Subscription | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -35,8 +37,14 @@ export class CoachClientDetailComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.clientId = this.route.snapshot.paramMap.get('clientId') ?? '';
-    this.load();
+    this.paramSub = this.route.paramMap.subscribe(params => {
+      this.clientId = params.get('clientId') ?? '';
+      this.load();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.paramSub?.unsubscribe();
   }
 
   async load(): Promise<void> {
