@@ -351,6 +351,7 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
   async saveWorkout(): Promise<void> {
     if (this.state.saveStatus() === 'saving') return; // evita doppio invio mentre e' gia' in corso
     this.state.saveStatus.set('saving');
+    if (this.draftTimer) { clearTimeout(this.draftTimer); this.draftTimer = null; }
 
     const isoDate = todayLocalISO();
     const session: WorkoutSession = {
@@ -371,7 +372,6 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
       const ok = await Promise.race([this.sessions.save(session), timeout]);
       if (ok) {
         await this.appState.deleteFieldPath(`workoutDrafts.${this.day.id}`);
-        if (this.draftTimer) { clearTimeout(this.draftTimer); this.draftTimer = null; }
         this.state.saveStatus.set('saved');
       } else {
         this.state.saveStatus.set('err');

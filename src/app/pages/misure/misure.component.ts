@@ -74,11 +74,11 @@ export class MisureComponent implements OnInit, OnDestroy {
 
   async saveMeasures(): Promise<void> {
     if (!this.hasAnyValue()) return;
+    if (this.draftTimer) { clearTimeout(this.draftTimer); this.draftTimer = null; }
     this.entry.date = this.todayISO();
     const ok = await this.data.saveEntry(this.entry);
     if (ok) {
       await this.data.clearDraft();
-      if (this.draftTimer) { clearTimeout(this.draftTimer); this.draftTimer = null; }
       this.placeholders = await this.data.getLastValues();
       this.entry = emptyMeasurementEntry(this.todayISO());
       this.saveStatus = 'saved';
