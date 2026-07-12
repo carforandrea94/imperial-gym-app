@@ -87,7 +87,7 @@
   <div class="exslider-counter">Pasto {{ sliderIndex + 1 }} di {{ meals.length }}</div>
 
   <div class="exslider" #sliderEl (scroll)="onSliderScroll()">
-    <div class="meal mealslide" *ngFor="let vm of meals">
+    <div class="meal mealslide exslide" *ngFor="let vm of meals">
       <div class="meal-summary noclick">
         <span>{{ vm.meal.name }}</span>
       </div>
