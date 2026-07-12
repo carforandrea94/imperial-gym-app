@@ -6,6 +6,7 @@ import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import {
   MeasurementEntry,
   MeasureField,
+  MeasureCategory,
   PESO_FIELDS,
   PLICHE_FIELDS,
   CENTIMETRI_FIELDS
@@ -93,6 +94,10 @@ export class MisureStoricoDetailComponent implements OnInit {
 
   hasValue(rows: FieldRow[]): boolean {
     return rows.some(r => !!r.value);
+  }
+
+  editCategory(category: MeasureCategory): void {
+    this.router.navigate(['/misure', category], { queryParams: { date: this.date } });
   }
 
   async deleteEntry(): Promise<void> {
