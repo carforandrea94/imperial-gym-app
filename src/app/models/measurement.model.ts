@@ -4,6 +4,14 @@ export interface MeasurementEntry {
   plicaPetto: string | null;
   plicaAddome: string | null;
   plicaVita: string | null;
+  plicaSottoscapolareSx: string | null;
+  plicaSottoscapolareDx: string | null;
+  plicaSovrailiacaSx: string | null;
+  plicaSovrailiacaDx: string | null;
+  plicaAscellareSx: string | null;
+  plicaAscellareDx: string | null;
+  plicaTricipiteSx: string | null;
+  plicaTricipiteDx: string | null;
   plicaGambaSx: string | null;
   plicaGambaDx: string | null;
   cmPetto: string | null;
@@ -37,6 +45,14 @@ export const PLICHE_FIELDS: MeasureField[] = [
   { key: 'plicaPetto', label: 'Plica petto', unit: 'mm' },
   { key: 'plicaAddome', label: 'Plica addome', unit: 'mm' },
   { key: 'plicaVita', label: 'Plica vita', unit: 'mm' },
+  { key: 'plicaSottoscapolareSx', label: 'Plica sottoscapolare Sx', unit: 'mm' },
+  { key: 'plicaSottoscapolareDx', label: 'Plica sottoscapolare Dx', unit: 'mm' },
+  { key: 'plicaSovrailiacaSx', label: 'Plica sovrailiaca Sx', unit: 'mm' },
+  { key: 'plicaSovrailiacaDx', label: 'Plica sovrailiaca Dx', unit: 'mm' },
+  { key: 'plicaAscellareSx', label: 'Plica ascellare Sx', unit: 'mm' },
+  { key: 'plicaAscellareDx', label: 'Plica ascellare Dx', unit: 'mm' },
+  { key: 'plicaTricipiteSx', label: 'Plica tricipite Sx', unit: 'mm' },
+  { key: 'plicaTricipiteDx', label: 'Plica tricipite Dx', unit: 'mm' },
   { key: 'plicaGambaSx', label: 'Plica gamba Sx', unit: 'mm' },
   { key: 'plicaGambaDx', label: 'Plica gamba Dx', unit: 'mm' }
 ];

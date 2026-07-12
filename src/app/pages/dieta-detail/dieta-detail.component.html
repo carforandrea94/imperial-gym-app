@@ -1,80 +1,107 @@
 <p class="sectiontitle">{{ plan?.name }}</p>
 
-<!-- Meals -->
-<div *ngFor="let vm of meals">
-  <div class="meal" [class.open]="vm.open">
-    <div class="meal-summary" (click)="toggleMeal(vm)">
-      <span>{{ vm.meal.name }}</span>
-      <span class="chevron">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-      </span>
-    </div>
+<ng-template #mealDetail let-vm="vm">
+  <!-- Tab combinazioni (Base + alternative) -->
+  <p class="fooditem-category" *ngIf="hasMultipleCombinations(vm)">Combinazioni</p>
+  <div class="variant-tabs" *ngIf="hasMultipleCombinations(vm)">
+    <button
+      *ngFor="let combo of getCombinations(vm)"
+      [class.active]="vm.selectedComboId === combo.id"
+      (click)="selectCombo(vm, combo)">
+      {{ combo.label }}
+    </button>
+  </div>
 
-    <div class="content-inner" *ngIf="vm.open">
-
-      <!-- Tab combinazioni (Base + alternative) -->
-      <p class="fooditem-category" *ngIf="hasMultipleCombinations(vm)">Combinazioni</p>
-      <div class="variant-tabs" *ngIf="hasMultipleCombinations(vm)">
-        <button
-          *ngFor="let combo of getCombinations(vm)"
-          [class.active]="vm.selectedComboId === combo.id"
-          (click)="selectCombo(vm, combo)">
-          {{ combo.label }}
-        </button>
-      </div>
-
-      <!-- Un alimento per macro nella combinazione selezionata -->
-      <ng-container *ngFor="let cat of foodCategories">
-        <ng-container *ngIf="comboItem(vm, cat) as item">
-          <p class="fooditem-category">{{ foodCategoryLabels[cat] }}</p>
-          <div class="fooditem">
-            <div class="row">
-              <span class="fname">{{ item.name }}</span>
-              <span class="fqty">{{ item.qty }}</span>
-            </div>
-
-            <ng-container *ngIf="item.alt && item.alt.length > 0">
-              <div class="altwrap" [class.open]="isItemAltOpen(vm, cat)">
-                <div class="altwrap-header" (click)="toggleItemAlt(vm, cat)">
-                  <span>{{ isItemAltOpen(vm, cat) ? 'Nascondi alternative' : 'Alternative (' + item.alt.length + ')' }}</span>
-                  <span class="chevron">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-                  </span>
-                </div>
-                <div class="altlist" *ngIf="isItemAltOpen(vm, cat)">
-                  <div class="row" *ngFor="let alt of item.alt">
-                    <span>{{ alt.name }}</span>
-                    <span>{{ alt.qty }}</span>
-                  </div>
-                </div>
-              </div>
-            </ng-container>
-          </div>
-        </ng-container>
-      </ng-container>
-
-      <!-- Alternative per macro, un unico accordion -->
-      <ng-container *ngIf="totalAlternatives(vm) > 0">
-        <div class="altwrap-header" (click)="toggleMacroAltExpanded(vm)" style="margin-top:14px">
-          <span>Alternative ({{ totalAlternatives(vm) }})</span>
-          <span class="chevron">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-          </span>
+  <!-- Un alimento per macro nella combinazione selezionata -->
+  <ng-container *ngFor="let cat of foodCategories">
+    <ng-container *ngIf="comboItem(vm, cat) as item">
+      <p class="fooditem-category">{{ foodCategoryLabels[cat] }}</p>
+      <div class="fooditem">
+        <div class="row">
+          <span class="fname">{{ item.name }}</span>
+          <span class="fqty">{{ item.qty }}</span>
         </div>
-        <div class="altlist" *ngIf="isMacroAltExpanded(vm)">
-          <ng-container *ngFor="let cat of foodCategories">
-            <ng-container *ngIf="macroAlternatives(vm, cat).length > 0">
-              <p class="fooditem-category" style="margin-top:10px">{{ foodCategoryLabels[cat] }}</p>
-              <div class="row" *ngFor="let alt of macroAlternatives(vm, cat)">
+
+        <ng-container *ngIf="item.alt && item.alt.length > 0">
+          <div class="altwrap" [class.open]="isItemAltOpen(vm, cat)">
+            <div class="altwrap-header" (click)="toggleItemAlt(vm, cat)">
+              <span>{{ isItemAltOpen(vm, cat) ? 'Nascondi alternative' : 'Alternative (' + item.alt.length + ')' }}</span>
+              <span class="chevron">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+              </span>
+            </div>
+            <div class="altlist" *ngIf="isItemAltOpen(vm, cat)">
+              <div class="row" *ngFor="let alt of item.alt">
                 <span>{{ alt.name }}</span>
                 <span>{{ alt.qty }}</span>
               </div>
-            </ng-container>
-          </ng-container>
-        </div>
-      </ng-container>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+    </ng-container>
+  </ng-container>
 
+  <!-- Alternative per macro, un unico accordion -->
+  <ng-container *ngIf="totalAlternatives(vm) > 0">
+    <div class="altwrap-header" (click)="toggleMacroAltExpanded(vm)" style="margin-top:14px">
+      <span>Alternative ({{ totalAlternatives(vm) }})</span>
+      <span class="chevron">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </span>
     </div>
+    <div class="altlist" *ngIf="isMacroAltExpanded(vm)">
+      <ng-container *ngFor="let cat of foodCategories">
+        <ng-container *ngIf="macroAlternatives(vm, cat).length > 0">
+          <p class="fooditem-category" style="margin-top:10px">{{ foodCategoryLabels[cat] }}</p>
+          <div class="row" *ngFor="let alt of macroAlternatives(vm, cat)">
+            <span>{{ alt.name }}</span>
+            <span>{{ alt.qty }}</span>
+          </div>
+        </ng-container>
+      </ng-container>
+    </div>
+  </ng-container>
+</ng-template>
+
+<!-- Vista lista (accordion) -->
+<div *ngIf="plan && state.viewMode() === 'list'">
+  <div *ngFor="let vm of meals">
+    <div class="meal" [class.open]="vm.open">
+      <div class="meal-summary" (click)="toggleMeal(vm)">
+        <span>{{ vm.meal.name }}</span>
+        <span class="chevron">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </span>
+      </div>
+
+      <div class="content-inner" *ngIf="vm.open">
+        <ng-container *ngTemplateOutlet="mealDetail; context: { vm: vm }"></ng-container>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Vista slider (card scorrevoli, una per volta) -->
+<div class="exslider-wrap" *ngIf="plan && state.viewMode() === 'slider'">
+  <div class="exslider-counter">Pasto {{ sliderIndex + 1 }} di {{ meals.length }}</div>
+
+  <div class="exslider" #sliderEl (scroll)="onSliderScroll()">
+    <div class="meal mealslide exslide" *ngFor="let vm of meals">
+      <div class="meal-summary noclick">
+        <span>{{ vm.meal.name }}</span>
+      </div>
+
+      <div class="content-inner">
+        <ng-container *ngTemplateOutlet="mealDetail; context: { vm: vm }"></ng-container>
+      </div>
+    </div>
+  </div>
+
+  <div class="exslider-dots" *ngIf="meals.length > 1">
+    <span *ngFor="let vm of meals; let i = index"
+      class="exslider-dot" [class.active]="i === sliderIndex"
+      (click)="scrollToIndex(i)"></span>
   </div>
 </div>
 

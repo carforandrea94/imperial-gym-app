@@ -1,7 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ElementRef, ViewChild, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DietDataService } from '../../services/diet-data.service';
+import { DietStateService } from '../../services/diet-state.service';
+import { findClosestSlideIndex, scrollToSlide } from '../../core/utils/horizontal-slider.util';
 import { DietPlan, NamedMeal, MealCombination, FoodItem, FoodCategory, FOOD_CATEGORIES, FOOD_CATEGORY_LABELS } from '../../models/diet.model';
 
 interface MealVM {
@@ -24,11 +26,27 @@ export class DietaDetailComponent implements OnInit {
   readonly foodCategories = FOOD_CATEGORIES;
   readonly foodCategoryLabels = FOOD_CATEGORY_LABELS;
 
+  sliderIndex = 0;
+  private scrollTicking = false;
+
+  @ViewChild('sliderEl') sliderEl?: ElementRef<HTMLDivElement>;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    public dietData: DietDataService
-  ) {}
+    public dietData: DietDataService,
+    public state: DietStateService,
+    private cdr: ChangeDetectorRef
+  ) {
+    // Il toggle vive nella navbar (fuori da questa pagina): quando si passa
+    // a "slider" da un'altra vista/pagina, riparte sempre dalla prima card.
+    effect(() => {
+      if (this.state.viewMode() === 'slider') {
+        this.sliderIndex = 0;
+        setTimeout(() => this.scrollToIndex(0), 0);
+      }
+    });
+  }
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('mode') ?? ''; // param storico 'mode', ora contiene l'id del piano
@@ -97,5 +115,24 @@ export class DietaDetailComponent implements OnInit {
   toggleMacroAltExpanded(vm: MealVM): void {
     if (this.macroAltExpanded.has(vm.meal.id)) this.macroAltExpanded.delete(vm.meal.id);
     else this.macroAltExpanded.add(vm.meal.id);
+  }
+
+  onSliderScroll(): void {
+    if (this.scrollTicking) return;
+    this.scrollTicking = true;
+    requestAnimationFrame(() => {
+      this.scrollTicking = false;
+      const el = this.sliderEl?.nativeElement;
+      if (!el) return;
+      const closest = findClosestSlideIndex(el);
+      if (closest !== this.sliderIndex) {
+        this.sliderIndex = closest;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  scrollToIndex(idx: number): void {
+    scrollToSlide(this.sliderEl?.nativeElement, idx);
   }
 }
