@@ -69,10 +69,14 @@ export class HistoryListComponent implements OnInit {
 
   async deleteSession(key: string, event: MouseEvent): Promise<void> {
     event.stopPropagation();
-    const ok = await this.confirm.confirm('Eliminare questa seduta dallo storico?');
+    const confirmed = await this.confirm.confirm('Eliminare questa seduta dallo storico?');
+    if (!confirmed) return;
+    const ok = await this.sessionsSvc.delete(key);
     if (ok) {
-      await this.sessionsSvc.delete(key);
       await this.loadSessions();
+    } else {
+      this.errorMsg = 'Errore durante l\'eliminazione. Riprova.';
+      this.cdr.detectChanges();
     }
   }
 }
