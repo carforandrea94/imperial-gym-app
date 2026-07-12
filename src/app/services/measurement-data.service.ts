@@ -1,15 +1,22 @@
 import { Injectable } from '@angular/core';
-import { doc, getDoc, setDoc, deleteDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, collection } from 'firebase/firestore';
 import { FirebaseService } from '../core/services/firebase.service';
 import { AuthService } from '../core/services/auth.service';
 import { AppStateService } from './app-state.service';
-import { MeasurementEntry, ALL_MEASURE_FIELDS, MeasurementKey } from '../models/measurement.model';
+import {
+  MeasurementEntry,
+  MeasurementKey,
+  MeasureCategory,
+  CATEGORY_FIELDS,
+  ALL_MEASURE_FIELDS
+} from '../models/measurement.model';
 import { ZoneFixService } from '../core/utils/zone.util';
+import { todayLocalISO } from '../core/utils/date.util';
 
 /**
  * Dati misure su Firestore:
  * - storico: users/{uid}/measurements/{isoDate}
- * - bozza in corso: campo measureDraft del doc users/{uid}/state/app
+ * - bozza in corso: campo measureDraft.{categoria} del doc users/{uid}/state/app
  */
 @Injectable({ providedIn: 'root' })
 export class MeasurementDataService {
@@ -26,17 +33,17 @@ export class MeasurementDataService {
     return collection(this.fb.db, 'users', uid, 'measurements');
   }
 
-  async loadDraft(): Promise<MeasurementEntry | null> {
+  async loadDraft(category: MeasureCategory): Promise<Record<string, string | null> | null> {
     const state = await this.appState.load();
-    return (state.measureDraft as unknown as MeasurementEntry) ?? null;
+    return state.measureDraft?.[category] ?? null;
   }
 
-  async saveDraft(entry: MeasurementEntry): Promise<void> {
-    await this.appState.patch({ measureDraft: entry as any });
+  async saveDraft(category: MeasureCategory, values: Record<string, string | null>): Promise<void> {
+    await this.appState.patchField(`measureDraft.${category}`, values);
   }
 
-  async clearDraft(): Promise<void> {
-    await this.appState.patch({ measureDraft: null });
+  async clearDraft(category: MeasureCategory): Promise<void> {
+    await this.appState.deleteFieldPath(`measureDraft.${category}`);
   }
 
   /** Tutte le voci storiche, ordinate dalla piu' recente. */
@@ -46,17 +53,6 @@ export class MeasurementDataService {
       return snap.docs
         .map(d => d.data() as MeasurementEntry)
         .sort((a, b) => b.date.localeCompare(a.date));
-    })());
-  }
-
-  saveEntry(entry: MeasurementEntry): Promise<boolean> {
-    return this.zoneFix.run((async () => {
-      try {
-        await setDoc(doc(this.col(), entry.date), entry);
-        return true;
-      } catch {
-        return false;
-      }
     })());
   }
 
@@ -91,6 +87,84 @@ export class MeasurementDataService {
     return history.find(e => e.date < beforeDate) ?? null;
   }
 
+  /** I soli campi di una categoria per una data specifica (per precompilare il form di modifica). */
+  async getCategoryValues(category: MeasureCategory, date: string): Promise<Record<string, string | null>> {
+    const history = await this.loadHistory();
+    const entry = history.find(e => e.date === date);
+    const out: Record<string, string | null> = {};
+    for (const f of CATEGORY_FIELDS[category]) {
+      out[f.key] = entry?.[f.key] ?? null;
+    }
+    return out;
+  }
+
+  /** Unisce i campi di una categoria nella voce storico di oggi (la crea se non esiste). */
+  saveCategoryToday(category: MeasureCategory, values: Record<string, string | null>): Promise<boolean> {
+    return this.zoneFix.run((async () => {
+      try {
+        const date = todayLocalISO();
+        await setDoc(doc(this.col(), date), { date, ...values }, { merge: true });
+        return true;
+      } catch {
+        return false;
+      }
+    })());
+  }
+
+  /**
+   * Salva i campi di una categoria per una data che puo' essere diversa da
+   * quella originale della voce (modifica dallo storico con cambio data).
+   * - Stessa data: aggiorna solo i campi di questa categoria in quella voce.
+   * - Data diversa: se la voce di destinazione ha gia' valori non nulli per
+   *   questa categoria, l'operazione viene bloccata ('collision') per non
+   *   sovrascrivere dati esistenti. Altrimenti scrive i campi nella voce di
+   *   destinazione (merge) e li rimuove da quella di origine, eliminando
+   *   quest'ultima se resta priva di valori in ogni categoria.
+   */
+  moveCategoryEntry(
+    category: MeasureCategory,
+    oldDate: string,
+    newDate: string,
+    values: Record<string, string | null>
+  ): Promise<'ok' | 'collision' | 'error'> {
+    return this.zoneFix.run((async () => {
+      try {
+        if (oldDate === newDate) {
+          await setDoc(doc(this.col(), newDate), { date: newDate, ...values }, { merge: true });
+          return 'ok';
+        }
+
+        const targetSnap = await getDoc(doc(this.col(), newDate));
+        if (targetSnap.exists()) {
+          const targetData = targetSnap.data() as MeasurementEntry;
+          const hasCollision = CATEGORY_FIELDS[category].some(f => !!targetData[f.key]);
+          if (hasCollision) return 'collision';
+        }
+
+        await setDoc(doc(this.col(), newDate), { date: newDate, ...values }, { merge: true });
+
+        const oldSnap = await getDoc(doc(this.col(), oldDate));
+        if (oldSnap.exists()) {
+          const oldData = oldSnap.data() as MeasurementEntry;
+          const cleared: Partial<Record<MeasurementKey, null>> = {};
+          CATEGORY_FIELDS[category].forEach(f => { cleared[f.key] = null; });
+          const remaining = { ...oldData, ...cleared };
+          const stillHasValues = ALL_MEASURE_FIELDS.some(f => !!remaining[f.key]);
+          if (stillHasValues) {
+            await updateDoc(doc(this.col(), oldDate), cleared as any);
+          } else {
+            await deleteDoc(doc(this.col(), oldDate));
+          }
+        }
+
+        return 'ok';
+      } catch (e) {
+        console.error('Errore spostamento misurazione:', e);
+        return 'error';
+      }
+    })());
+  }
+
   /**
    * Genera un grafico a linea SVG per l'andamento di un campo nel tempo.
    * points: array di {date, value} gia' ordinato dal piu' vecchio al piu' recente.
@@ -120,7 +194,6 @@ export class MeasurementDataService {
       return `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="${isLast ? 4 : 2.5}" fill="${isLast ? 'var(--accent)' : 'var(--label-2)'}" stroke="var(--bg)" stroke-width="1.5"/>`;
     }).join('');
 
-    // Griglia orizzontale: max, meta', min
     const gridYs = [padT, padT + innerH / 2, padT + innerH];
     const gridLabels = [max, (max + min) / 2, min];
     const grid = gridYs.map((gy, i) => `
