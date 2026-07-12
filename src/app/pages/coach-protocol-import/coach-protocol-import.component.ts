@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { PdfImportService } from '../../services/pdf-import.service';
 import { ProtocolService } from '../../services/protocol.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -54,8 +55,9 @@ const STEP_TIMEOUT_MS = 25000;
     }
   `]
 })
-export class CoachProtocolImportComponent {
+export class CoachProtocolImportComponent implements OnInit, OnDestroy {
   clientId = '';
+  private paramSub: Subscription | null = null;
 
   schedaFile: File | null = null;
   dietaFile: File | null = null;
@@ -74,8 +76,16 @@ export class CoachProtocolImportComponent {
     private pdfSvc: PdfImportService,
     private protocolSvc: ProtocolService,
     private auth: AuthService
-  ) {
-    this.clientId = this.route.snapshot.paramMap.get('clientId') ?? '';
+  ) {}
+
+  ngOnInit(): void {
+    this.paramSub = this.route.paramMap.subscribe(params => {
+      this.clientId = params.get('clientId') ?? '';
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.paramSub?.unsubscribe();
   }
 
   onFile(event: Event, which: 'scheda' | 'dieta' | 'integrazione'): void {

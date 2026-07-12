@@ -1,7 +1,8 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { ProtocolService } from '../../services/protocol.service';
 import { WorkoutDataService } from '../../services/workout-data.service';
 import { Protocol } from '../../models/protocol.model';
@@ -17,13 +18,14 @@ type Tab = 'scheda' | 'dieta' | 'info';
   templateUrl: './coach-protocol-builder.component.html',
   styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
 })
-export class CoachProtocolBuilderComponent implements OnInit {
+export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
   clientId = '';
   protocolId = '';
   protocol: Protocol | null = null;
   loading = true;
   saving = false;
   saveMsg = '';
+  private paramSub: Subscription | null = null;
 
   tab: Tab = 'scheda';
   editingPlan: DietPlan | null = null;
@@ -42,9 +44,19 @@ export class CoachProtocolBuilderComponent implements OnInit {
     private cdr: ChangeDetectorRef
   ) {}
 
-  async ngOnInit(): Promise<void> {
-    this.clientId = this.route.snapshot.paramMap.get('clientId') ?? '';
-    this.protocolId = this.route.snapshot.paramMap.get('protocolId') ?? '';
+  ngOnInit(): void {
+    this.paramSub = this.route.paramMap.subscribe(params => {
+      this.clientId = params.get('clientId') ?? '';
+      this.protocolId = params.get('protocolId') ?? '';
+      this.load();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.paramSub?.unsubscribe();
+  }
+
+  private async load(): Promise<void> {
     this.loading = true;
     this.protocol = await this.protocolSvc.get(this.clientId, this.protocolId);
     if (!this.protocol) { this.router.navigate(['/coach/clienti', this.clientId]); return; }
