@@ -11,6 +11,7 @@ import { ConfirmDialogComponent } from './components/confirm-dialog/confirm-dial
 import { WorkoutDataService } from './services/workout-data.service';
 import { WorkoutStateService } from './services/workout-state.service';
 import { AuthService } from './core/services/auth.service';
+import { CATEGORY_LABELS, MeasureCategory } from './models/measurement.model';
 
 @Component({
   selector: 'app-root',
@@ -229,6 +230,18 @@ export class App implements OnInit, OnDestroy {
       return;
     }
 
+    const categoriaMatch = u.match(/^\/misure\/(peso|centimetri|pliche)$/);
+    if (categoriaMatch) {
+      const isEdit = /[?&]date=/.test(url);
+      this.navTitle = CATEGORY_LABELS[categoriaMatch[1] as MeasureCategory];
+      this.navSubtitle = isEdit ? 'Modifica misurazione' : 'Nuova misurazione';
+      this.showBack = true;
+      this.showHistory = false;
+      this.showInfo = false;
+      this.showAnalytics = false;
+      return;
+    }
+
     if (u === '/scheda/storico') {
       this.navTitle = 'Storico';
       this.navSubtitle = 'Sedute salvate';
@@ -303,6 +316,8 @@ export class App implements OnInit, OnDestroy {
       this.router.navigate(['/misure/storico']);
     } else if (u === '/misure/storico' || u === '/misure/analytics') {
       this.router.navigate(['/misure']);
+    } else if (/^\/misure\/(peso|centimetri|pliche)$/.test(u)) {
+      this.router.navigate(this.router.url.includes('date=') ? ['/misure/storico'] : ['/misure']);
     } else if (/^\/coach\/clienti\/[^/]+\/builder\/[^/]+$/.test(u)) {
       const clientId = u.split('/')[3];
       this.router.navigate(['/coach/clienti', clientId]);
