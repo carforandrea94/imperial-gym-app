@@ -35,7 +35,7 @@
   </div>
 
   <!-- Lista misure selezionabili -->
-  <p class="sectiontitle">Corpo</p>
+  <p class="sectiontitle">Peso</p>
   <div class="grouplist measure-selectlist">
     <div class="daycard press-fx measure-selectrow" *ngFor="let o of group1"
       [class.selected]="isSelected(o.field)" (click)="selectField(o.field)">
@@ -61,7 +61,7 @@
     </div>
   </div>
 
-  <p class="sectiontitle">Circonferenze</p>
+  <p class="sectiontitle">Centimetri</p>
   <div class="grouplist measure-selectlist">
     <div class="daycard press-fx measure-selectrow" *ngFor="let o of group3"
       [class.selected]="isSelected(o.field)" (click)="selectField(o.field)">

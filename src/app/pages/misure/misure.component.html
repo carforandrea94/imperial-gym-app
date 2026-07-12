@@ -1,53 +1,10 @@
-<p class="sectiontitle">Corpo</p>
-<div class="infocard measure-card">
-  <div class="measure-grid cols-2">
-    <div class="measure-field" *ngFor="let f of card1">
-      <label>{{ f.label }}</label>
-      <div class="measure-input-wrap">
-        <input type="text" inputmode="decimal"
-          [(ngModel)]="entry[f.key]"
-          [placeholder]="placeholders[f.key] ?? '—'"
-          (input)="onInput()" />
-        <span class="unit">{{ f.unit }}</span>
-      </div>
+<p class="sectiontitle">Misure</p>
+<div class="grouplist">
+  <div class="daycard press-fx" *ngFor="let c of categories" (click)="goTo(c.id)">
+    <div class="badge">{{ c.badge }}</div>
+    <div class="info">
+      <div class="lbl">{{ c.label }}</div>
     </div>
+    <span class="chev">›</span>
   </div>
-</div>
-
-<p class="sectiontitle">Pliche</p>
-<div class="infocard measure-card">
-  <div class="measure-grid cols-2">
-    <div class="measure-field" *ngFor="let f of card2">
-      <label>{{ f.label }}</label>
-      <div class="measure-input-wrap">
-        <input type="text" inputmode="decimal"
-          [(ngModel)]="entry[f.key]"
-          [placeholder]="placeholders[f.key] ?? '—'"
-          (input)="onInput()" />
-        <span class="unit">{{ f.unit }}</span>
-      </div>
-    </div>
-  </div>
-</div>
-
-<p class="sectiontitle">Circonferenze</p>
-<div class="infocard measure-card">
-  <div class="measure-grid cols-2">
-    <div class="measure-field" *ngFor="let f of card3">
-      <label>{{ f.label }}</label>
-      <div class="measure-input-wrap">
-        <input type="text" inputmode="decimal"
-          [(ngModel)]="entry[f.key]"
-          [placeholder]="placeholders[f.key] ?? '—'"
-          (input)="onInput()" />
-        <span class="unit">{{ f.unit }}</span>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="savebar">
-  <button [class]="getSaveBtnClass()" (click)="saveMeasures()">
-    {{ getSaveBtnText() }}
-  </button>
 </div>

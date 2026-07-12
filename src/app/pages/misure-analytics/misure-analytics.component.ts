@@ -5,9 +5,9 @@ import { MeasurementDataService } from '../../services/measurement-data.service'
 import {
   MeasureField,
   MeasurementKey,
-  MEASURE_CARD_1,
-  MEASURE_CARD_2,
-  MEASURE_CARD_3
+  PESO_FIELDS,
+  PLICHE_FIELDS,
+  CENTIMETRI_FIELDS
 } from '../../models/measurement.model';
 
 interface FieldOption {
@@ -77,9 +77,9 @@ export class MisureAnalyticsComponent implements OnInit {
           lastValue: lastValues[field.key] ?? null
         }));
 
-      this.group1 = buildGroup(MEASURE_CARD_1);
-      this.group2 = buildGroup(MEASURE_CARD_2);
-      this.group3 = buildGroup(MEASURE_CARD_3);
+      this.group1 = buildGroup(PESO_FIELDS);
+      this.group2 = buildGroup(PLICHE_FIELDS);
+      this.group3 = buildGroup(CENTIMETRI_FIELDS);
 
       // Seleziona di default il primo campo con dati sufficienti (almeno 2 punti), altrimenti 'peso'
       const allOptions = [...this.group1, ...this.group2, ...this.group3];
