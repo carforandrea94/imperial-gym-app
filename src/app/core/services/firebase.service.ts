@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { initializeApp, FirebaseApp } from 'firebase/app';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { initializeFirestore, Firestore } from 'firebase/firestore';
 import { getAuth, Auth } from 'firebase/auth';
 import { Analytics, getAnalytics, isSupported } from 'firebase/analytics';
 import { environment } from '../../../environments/environment';
@@ -20,7 +20,14 @@ export class FirebaseService {
 
   constructor() {
     this.app = initializeApp(environment.firebase);
-    this.db = getFirestore(this.app);
+    // Safari (in particolare con iCloud Private Relay, content blocker o certe reti
+    // mobili/aziendali) puo' bloccare in modo silenzioso lo stream WebChannel di
+    // Firestore usato di default: la richiesta resta sospesa a tempo indeterminato
+    // senza mai risolversi ne' rigettarsi. Forziamo il long-polling (auto-rilevato)
+    // per usare normali richieste HTTP invece dello streaming, compatibili ovunque.
+    this.db = initializeFirestore(this.app, {
+      experimentalAutoDetectLongPolling: true
+    });
     this.auth = getAuth(this.app);
 
     isSupported()
