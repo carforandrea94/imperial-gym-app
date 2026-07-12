@@ -25,7 +25,7 @@ export class MisuraCategoriaComponent implements OnInit, OnDestroy {
   maxDate = todayLocalISO();
 
   values: Record<string, string | null> = {};
-  placeholders: Record<string, string> = {};
+  placeholders: Partial<Record<string, string>> = {};
 
   saveStatus: 'idle' | 'err' = 'idle';
   errorMsg = '';
