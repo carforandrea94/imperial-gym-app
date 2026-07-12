@@ -10,6 +10,7 @@ import { RestTimerComponent } from './components/rest-timer/rest-timer.component
 import { ConfirmDialogComponent } from './components/confirm-dialog/confirm-dialog.component';
 import { WorkoutDataService } from './services/workout-data.service';
 import { WorkoutStateService } from './services/workout-state.service';
+import { DietStateService } from './services/diet-state.service';
 import { AuthService } from './core/services/auth.service';
 import { CATEGORY_LABELS, MeasureCategory } from './models/measurement.model';
 
@@ -29,6 +30,7 @@ export class App implements OnInit, OnDestroy {
   showAnalytics = false;
   showShoppingList = false;
   showViewToggle = false;
+  viewToggleTarget: 'scheda' | 'dieta' = 'scheda';
   showSaveWorkout = false;
   showChrome = false;
 
@@ -38,6 +40,7 @@ export class App implements OnInit, OnDestroy {
     private router: Router,
     private workoutData: WorkoutDataService,
     public workoutState: WorkoutStateService,
+    public dietState: DietStateService,
     public auth: AuthService,
     private swUpdate: SwUpdate
   ) {}
@@ -197,6 +200,8 @@ export class App implements OnInit, OnDestroy {
       this.showHistory = false;
       this.showInfo = false;
       this.showAnalytics = false;
+      this.showViewToggle = true;
+      this.viewToggleTarget = 'dieta';
       return;
     }
 
@@ -273,6 +278,7 @@ export class App implements OnInit, OnDestroy {
       this.showInfo = false;
       this.showAnalytics = false;
       this.showViewToggle = true;
+      this.viewToggleTarget = 'scheda';
       this.showSaveWorkout = true;
       return;
     }
@@ -357,8 +363,16 @@ export class App implements OnInit, OnDestroy {
     this.router.navigate(['/dieta/lista-spesa']);
   }
 
+  currentViewMode(): 'list' | 'slider' {
+    return this.viewToggleTarget === 'dieta' ? this.dietState.viewMode() : this.workoutState.viewMode();
+  }
+
   onViewModeChange(mode: 'list' | 'slider'): void {
-    this.workoutState.setViewMode(mode);
+    if (this.viewToggleTarget === 'dieta') {
+      this.dietState.setViewMode(mode);
+    } else {
+      this.workoutState.setViewMode(mode);
+    }
   }
 
   onSaveWorkoutClick(): void {
