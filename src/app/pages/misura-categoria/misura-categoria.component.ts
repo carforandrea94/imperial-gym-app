@@ -44,6 +44,10 @@ export class MisuraCategoriaComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.paramSub = this.route.paramMap.subscribe(params => {
       this.category = params.get('categoria') as MeasureCategory;
+      if (!CATEGORY_FIELDS[this.category]) {
+        this.router.navigate(['/misure']);
+        return;
+      }
       this.fields = CATEGORY_FIELDS[this.category];
       this.title = CATEGORY_LABELS[this.category];
       this.load();

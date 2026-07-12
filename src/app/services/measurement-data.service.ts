@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, collection } from 'firebase/firestore';
+import { doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, collection, writeBatch } from 'firebase/firestore';
 import { FirebaseService } from '../core/services/firebase.service';
 import { AuthService } from '../core/services/auth.service';
 import { AppStateService } from './app-state.service';
@@ -141,7 +141,8 @@ export class MeasurementDataService {
           if (hasCollision) return 'collision';
         }
 
-        await setDoc(doc(this.col(), newDate), { date: newDate, ...values }, { merge: true });
+        const batch = writeBatch(this.fb.db);
+        batch.set(doc(this.col(), newDate), { date: newDate, ...values }, { merge: true });
 
         const oldSnap = await getDoc(doc(this.col(), oldDate));
         if (oldSnap.exists()) {
@@ -151,12 +152,13 @@ export class MeasurementDataService {
           const remaining = { ...oldData, ...cleared };
           const stillHasValues = ALL_MEASURE_FIELDS.some(f => !!remaining[f.key]);
           if (stillHasValues) {
-            await updateDoc(doc(this.col(), oldDate), cleared as any);
+            batch.update(doc(this.col(), oldDate), cleared as any);
           } else {
-            await deleteDoc(doc(this.col(), oldDate));
+            batch.delete(doc(this.col(), oldDate));
           }
         }
 
+        await batch.commit();
         return 'ok';
       } catch (e) {
         console.error('Errore spostamento misurazione:', e);

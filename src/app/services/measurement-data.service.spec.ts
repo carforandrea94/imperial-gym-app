@@ -22,6 +22,29 @@ vi.mock('firebase/firestore', () => ({
   },
   deleteDoc: async (ref: { id: string }) => {
     mockDocs.delete(ref.id);
+  },
+  writeBatch: (_db: any) => {
+    const ops: (() => void)[] = [];
+    return {
+      set: (ref: { id: string }, data: any, opts?: { merge?: boolean }) => {
+        ops.push(() => {
+          const existing = mockDocs.get(ref.id) ?? {};
+          mockDocs.set(ref.id, opts?.merge ? { ...existing, ...data } : data);
+        });
+      },
+      update: (ref: { id: string }, data: any) => {
+        ops.push(() => {
+          const existing = mockDocs.get(ref.id) ?? {};
+          mockDocs.set(ref.id, { ...existing, ...data });
+        });
+      },
+      delete: (ref: { id: string }) => {
+        ops.push(() => { mockDocs.delete(ref.id); });
+      },
+      commit: async () => {
+        ops.forEach(op => op());
+      }
+    };
   }
 }));
 
