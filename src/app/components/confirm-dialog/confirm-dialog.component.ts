@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { ConfirmDialogService, ConfirmRequest } from '../../services/confirm-dialog.service';
@@ -26,7 +26,7 @@ export class ConfirmDialogComponent implements OnInit, OnDestroy {
   private queue: ConfirmRequest[] = [];
   private sub: Subscription | null = null;
 
-  constructor(private svc: ConfirmDialogService) {}
+  constructor(private svc: ConfirmDialogService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.sub = this.svc.request$.subscribe((req: ConfirmRequest) => {
@@ -54,7 +54,7 @@ export class ConfirmDialogComponent implements OnInit, OnDestroy {
     this.currentResolve = null;
     const next = this.queue.shift();
     if (next) {
-      setTimeout(() => this.show(next), 250);
+      setTimeout(() => { this.show(next); this.cdr.detectChanges(); }, 250);
     }
   }
 

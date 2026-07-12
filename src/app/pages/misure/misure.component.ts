@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -36,7 +36,8 @@ export class MisureComponent implements OnInit, OnDestroy {
 
   constructor(
     private data: MeasurementDataService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -82,11 +83,12 @@ export class MisureComponent implements OnInit, OnDestroy {
       this.placeholders = await this.data.getLastValues();
       this.entry = emptyMeasurementEntry(this.todayISO());
       this.saveStatus = 'saved';
-      setTimeout(() => { this.saveStatus = 'idle'; }, 2000);
+      setTimeout(() => { this.saveStatus = 'idle'; this.cdr.detectChanges(); }, 2000);
     } else {
       this.saveStatus = 'err';
-      setTimeout(() => { this.saveStatus = 'idle'; }, 2000);
+      setTimeout(() => { this.saveStatus = 'idle'; this.cdr.detectChanges(); }, 2000);
     }
+    this.cdr.detectChanges();
   }
 
   getSaveBtnClass(): string {
