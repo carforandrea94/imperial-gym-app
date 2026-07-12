@@ -14,7 +14,7 @@ export interface WorkoutDraftRow {
 export interface AppState {
   workoutDrafts: Record<string, { rows: WorkoutDraftRow[] }[]>;
   restOverrides: Record<string, number>;
-  measureDraft: Record<string, string | null> | null;
+  measureDraft: Record<string, Record<string, string | null>> | null;
   shoppingChecked: Record<string, boolean>;
   workoutViewMode: 'list' | 'slider';
 }
