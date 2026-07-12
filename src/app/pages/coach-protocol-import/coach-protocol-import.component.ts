@@ -128,7 +128,7 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
     try {
       this.setStage('Creazione bozza protocollo…', 5);
       const coach = this.auth.currentUser()!;
-      const id = await this.protocolSvc.create(this.clientId, coach.uid);
+      const id = await this.withTimeout(this.protocolSvc.create(this.clientId, coach.uid), 'Creazione bozza protocollo');
 
       this.setStage('Lettura scheda allenamento…', 20);
       const schedaText = await this.withTimeout(this.pdfSvc.extractText(this.schedaFile!), 'Lettura scheda');
@@ -149,13 +149,13 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
       }
 
       this.setStage('Salvataggio protocollo…', 90);
-      await this.protocolSvc.update(this.clientId, id, {
+      await this.withTimeout(this.protocolSvc.update(this.clientId, id, {
         name: 'Protocollo da PDF',
         source: 'pdf',
         workout: { weekPlan: Array.from({ length: durationWeeks }, () => ({ sets: 4, reps: 10 })), days, programStart: new Date().toISOString().split('T')[0] },
         diet,
         infoNote
-      });
+      }), 'Salvataggio protocollo');
 
       this.setStage('Completato', 100);
       this.router.navigate(['/coach/clienti', this.clientId]);
