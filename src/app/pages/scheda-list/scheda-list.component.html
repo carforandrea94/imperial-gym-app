@@ -2,7 +2,7 @@
   <div class="weekpicker">
     <div class="wk-info">
       <div class="wk-label">Settimana {{ currentWeek }} di {{ weekPlan.length }} &nbsp;·&nbsp; {{ getWaveInfo() }}</div>
-      <div class="wk-sub">WAVE LOADING — S{{ currentWeek }}</div>
+      <div class="wk-sub">{{ todayWeekday }} &nbsp;·&nbsp; WAVE LOADING — S{{ currentWeek }}</div>
       <div class="weekdots">
         <span *ngFor="let w of weeks" [class.active]="w === currentWeek"></span>
       </div>
