@@ -198,6 +198,60 @@ describe('PdfImportService', () => {
     expect(diet.length).toBe(1);
     expect(diet[0].meals.map(m => m.name)).toEqual(['Colazione', 'Pranzo']);
   });
+
+  // Bug #8: un'intestazione di pasto non prevista in MEAL_HEADER_DEFS (es. "SPUNTINO SERALE")
+  // veniva lasciata cadere e i suoi alimenti confluivano nel pasto precedente, corrompendolo.
+  it('apre un nuovo pasto per un\'intestazione non riconosciuta invece di fonderla nel precedente', () => {
+    const text = `
+Giorno ON
+COLAZIONE
+Uova di gallina - albume 200 g
+SPUNTINO SERALE
+Bresaola 70 g
+PRANZO
+Petto di pollo 200 g
+`;
+    const diet = service.parseDietText(text);
+    const colazione = diet[0].meals.find(m => m.name === 'Colazione')!;
+    // La Bresaola NON deve finire tra le alternative della proteina della Colazione
+    expect(colazione.combinations[0].protein?.name).toBe('Uova di gallina - albume');
+    expect(colazione.combinations[0].protein?.alt ?? []).toEqual([]);
+    // Deve invece esistere un pasto a se' col testo grezzo come nome, che contiene la Bresaola
+    const serale = diet[0].meals.find(m => m.name === 'SPUNTINO SERALE');
+    expect(serale).toBeDefined();
+    expect(serale!.combinations[0].protein?.name).toBe('Bresaola');
+  });
+
+  // Bug #17: la sezione "Consigli di base" non aveva un confine di chiusura e consumava ogni
+  // riga fino a fine documento, trascinando dentro il contenuto delle sezioni successive.
+  it('chiude i "Consigli di base" a una intestazione successiva ("Giorno X")', () => {
+    const text = `
+Giorno ON
+Consigli di base
+Bere molta acqua naturale
+Giorno OFF
+COLAZIONE
+Segreto da non includere 999 g
+`;
+    const notes = service.extractDietNotes(text);
+    expect(notes).toContain('Bere molta acqua naturale');
+    expect(notes).not.toContain('Segreto da non includere');
+  });
+
+  // Bug #18: la misura singolare "cucchiaio" non era riconosciuta (solo "cucchiai"/"cucchiaino").
+  it('riconosce la misura singolare "cucchiaio" come le altre misure', () => {
+    const text = `
+Giorno ON
+COLAZIONE
+Miele 1 cucchiaio 20 g
+`;
+    const diet = service.parseDietText(text);
+    const colazione = diet[0].meals.find(m => m.name === 'Colazione')!;
+    const values = colazione.combinations[0];
+    const miele = [values.carb, values.protein, values.fat].find(v => v?.name === 'Miele');
+    expect(miele).toBeDefined();
+    expect(miele!.qty).toBe('1 cucchiaio · 20 g');
+  });
 });
 
 // Testo ricostruito riga per riga come lo produrrebbe extractText() a partire dal PDF
@@ -362,5 +416,100 @@ describe('PdfImportService - scheda allenamento', () => {
     const days = service.parseWorkoutText(genericText);
     expect(days.length).toBe(1);
     expect(days[0].ex.map(e => e.name)).toEqual(['Panca piana', 'Squat']);
+  });
+
+  // Bug #5: "DAY N: ..." si ripete come intestazione di OGNI pagina, anche a meta' della lista
+  // esercizi di un giorno. Senza guardia creava un secondo giorno duplicato e, se cadeva mentre
+  // un esercizio era in sospeso, ne perdeva lo schema (finalizzato col default) e spezzava la lista.
+  it('non duplica il giorno quando "DAY N" si ripete come intestazione di pagina a meta\' lista', () => {
+    const text = `
+DURATA 8 SETTIMANE
+DAY 1 : PETTO REC TRA 60-90”
+EX.1/SPINTE MANUBRI PANCA PIANA
+5X8
+DAY 2: DORSO REC TRA 60-90”
+EX.1/LAT MACHINE AVANTI
+5X8
+EX.2/T BAR
+DAY 2: DORSO REC TRA 60-90”
+4X10
+EX.3/REMATORE MANUBRIO
+4X8
+`;
+    const days = service.parseWorkoutText(text);
+    // Un solo giorno "Dorso", non due
+    expect(days.filter(d => d.label === 'Dorso').length).toBe(1);
+    const day2 = days.find(d => d.label === 'Dorso')!;
+    expect(day2.ex.map(e => e.name)).toEqual(['LAT MACHINE AVANTI', 'T BAR', 'REMATORE MANUBRIO']);
+    // L'esercizio in sospeso all'interruzione di pagina (T BAR) riceve il suo schema reale
+    // ("4X10"), non il default "schema non trovato".
+    const tBar = day2.ex.find(e => e.name === 'T BAR')!;
+    expect(tBar.sets).toBe(4);
+    expect(tBar.reps).toEqual(['10', '10', '10', '10']);
+    expect(tBar.note).toBeUndefined();
+  });
+
+  // Bug #6 + #7: il marcatore "...Continua" non era mai controllato nel parser scheda (veniva
+  // letto come riga di schema fasulla) e il regex non riconosceva i puntini di sospensione veri.
+  it('ignora la riga di continuazione pagina con puntini di sospensione veri (U+2026)', () => {
+    const text = `
+DURATA 8 SETTIMANE
+DAY 1 : PETTO REC TRA 60-90”
+EX.1/SPINTE MANUBRI PANCA PIANA
+…Continua Day 1
+5X8
+`;
+    const days = service.parseWorkoutText(text);
+    const ex1 = days[0].ex[0];
+    expect(ex1.name).toBe('SPINTE MANUBRI PANCA PIANA');
+    expect(ex1.sets).toBe(5);
+    expect(ex1.reps).toEqual(['8', '8', '8', '8', '8']);
+    expect(ex1.note).toBeUndefined();
+  });
+
+  it('ignora la riga di continuazione pagina anche con tre punti letterali ("...Continua")', () => {
+    const text = `
+DURATA 8 SETTIMANE
+DAY 1 : PETTO REC TRA 60-90”
+EX.1/SPINTE MANUBRI PANCA PIANA
+...Continua Day 1
+5X8
+`;
+    const days = service.parseWorkoutText(text);
+    const ex1 = days[0].ex[0];
+    expect(ex1.sets).toBe(5);
+    expect(ex1.reps).toEqual(['8', '8', '8', '8', '8']);
+    expect(ex1.note).toBeUndefined();
+  });
+
+  // Bug #9: la progressione wave veniva riconosciuta solo col fraseggio "riprendi"/"aumentando";
+  // un fraseggio alternativo di ripresa ciclo ("ricomincia dal ciclo 1") va comunque letto come wave.
+  it('riconosce la progressione wave anche con un fraseggio di ripresa ciclo alternativo', () => {
+    const text = `
+DURATA 8 SETTIMANE
+DAY 1 : PETTO REC TRA 60-90”
+EX.1/SPINTE MANUBRI PANCA PIANA
+4X10 4X10 4X8 4X8 5X6 5X6… ricomincia dal ciclo 1
+`;
+    const days = service.parseWorkoutText(text);
+    const ex1 = days[0].ex[0];
+    expect(ex1.scheme).toBe('wave');
+    expect(ex1.weekPlan?.length).toBe(8);
+  });
+
+  // Bug #19: un descrittore reps di piu' parole ("AL CEDIMENTO") veniva troncato alla prima
+  // parola (reps="AL") e il resto finiva nella nota (nota="CEDIMENTO").
+  it('cattura un descrittore reps di piu\' parole ("AL CEDIMENTO") senza spezzarlo nella nota', () => {
+    const text = `
+DURATA 8 SETTIMANE
+DAY 1 : PETTO REC TRA 60-90”
+EX.1/CROCI AI CAVI
+3X AL CEDIMENTO
+`;
+    const days = service.parseWorkoutText(text);
+    const ex1 = days[0].ex[0];
+    expect(ex1.sets).toBe(3);
+    expect(ex1.reps).toEqual(['AL CEDIMENTO', 'AL CEDIMENTO', 'AL CEDIMENTO']);
+    expect(ex1.note).toBeUndefined();
   });
 });
