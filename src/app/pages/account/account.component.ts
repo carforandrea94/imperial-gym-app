@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 import { isIosSafariNotStandalone } from '../../core/utils/platform.util';
@@ -45,7 +45,7 @@ import { isIosSafariNotStandalone } from '../../core/utils/platform.util';
 export class AccountComponent implements OnInit {
   copied = false;
 
-  constructor(public auth: AuthService) {}
+  constructor(public auth: AuthService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     if (this.auth.isCoach) {
@@ -77,7 +77,7 @@ export class AccountComponent implements OnInit {
     try {
       await navigator.clipboard.writeText(code);
       this.copied = true;
-      setTimeout(() => { this.copied = false; }, 2000);
+      setTimeout(() => { this.copied = false; this.cdr.detectChanges(); }, 2000);
     } catch {
       // clipboard non disponibile: l'utente puo' comunque selezionare il testo a mano
     }

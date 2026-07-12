@@ -53,4 +53,9 @@ export class SchedaListComponent implements OnInit {
     const wp = this.workoutData.WEEK_PLAN[this.currentWeek - 1];
     return `${wp.sets}×${wp.reps} reps`;
   }
+
+  get todayWeekday(): string {
+    const raw = new Date().toLocaleDateString('it-IT', { weekday: 'long' });
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
+  }
 }
