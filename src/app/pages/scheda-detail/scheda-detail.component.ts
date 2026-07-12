@@ -10,6 +10,7 @@ import { WorkoutSessionsService } from '../../services/workout-sessions.service'
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { Day, Exercise, WorkoutSession, ExInsight } from '../../models/workout.model';
 import { todayLocalISO } from '../../core/utils/date.util';
+import { findClosestSlideIndex, scrollToSlide } from '../../core/utils/horizontal-slider.util';
 
 interface SerieRow {
   reps: string;
@@ -242,13 +243,7 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
       this.scrollTicking = false;
       const el = this.sliderEl?.nativeElement;
       if (!el) return;
-      const children = Array.from(el.children) as HTMLElement[];
-      let closest = 0;
-      let minDist = Infinity;
-      children.forEach((child, idx) => {
-        const dist = Math.abs(child.offsetLeft - el.scrollLeft);
-        if (dist < minDist) { minDist = dist; closest = idx; }
-      });
+      const closest = findClosestSlideIndex(el);
       if (closest !== this.sliderIndex) {
         this.sliderIndex = closest;
         this.cdr.detectChanges();
@@ -257,9 +252,7 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
   }
 
   scrollToIndex(idx: number): void {
-    const el = this.sliderEl?.nativeElement;
-    const child = el?.children[idx] as HTMLElement | undefined;
-    child?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    scrollToSlide(this.sliderEl?.nativeElement, idx);
   }
 
   onSetCheck(vm: ExerciseVM, rowIdx: number): void {
