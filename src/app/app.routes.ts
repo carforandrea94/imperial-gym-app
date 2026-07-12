@@ -116,6 +116,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/misure-analytics/misure-analytics.component').then(m => m.MisureAnalyticsComponent)
   },
   {
+    path: 'misure/:categoria',
+    canActivate: [authGuard, clientGuard],
+    loadComponent: () => import('./pages/misura-categoria/misura-categoria.component').then(m => m.MisuraCategoriaComponent)
+  },
+  {
     path: 'misure/storico/:key',
     canActivate: [authGuard, clientGuard],
     loadComponent: () => import('./pages/misure-storico-detail/misure-storico-detail.component').then(m => m.MisureStoricoDetailComponent)

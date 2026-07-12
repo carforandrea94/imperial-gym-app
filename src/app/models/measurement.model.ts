@@ -1,7 +1,6 @@
 export interface MeasurementEntry {
   date: string; // ISO yyyy-mm-dd
   peso: string | null;
-  altezza: string | null;
   plicaPetto: string | null;
   plicaAddome: string | null;
   plicaVita: string | null;
@@ -28,12 +27,13 @@ export interface MeasureField {
   unit: string;
 }
 
-export const MEASURE_CARD_1: MeasureField[] = [
-  { key: 'peso', label: 'Peso', unit: 'kg' },
-  { key: 'altezza', label: 'Altezza', unit: 'cm' }
+export type MeasureCategory = 'peso' | 'centimetri' | 'pliche';
+
+export const PESO_FIELDS: MeasureField[] = [
+  { key: 'peso', label: 'Peso', unit: 'kg' }
 ];
 
-export const MEASURE_CARD_2: MeasureField[] = [
+export const PLICHE_FIELDS: MeasureField[] = [
   { key: 'plicaPetto', label: 'Plica petto', unit: 'mm' },
   { key: 'plicaAddome', label: 'Plica addome', unit: 'mm' },
   { key: 'plicaVita', label: 'Plica vita', unit: 'mm' },
@@ -41,7 +41,7 @@ export const MEASURE_CARD_2: MeasureField[] = [
   { key: 'plicaGambaDx', label: 'Plica gamba Dx', unit: 'mm' }
 ];
 
-export const MEASURE_CARD_3: MeasureField[] = [
+export const CENTIMETRI_FIELDS: MeasureField[] = [
   { key: 'cmPetto', label: 'Petto', unit: 'cm' },
   { key: 'cmAddome', label: 'Addome', unit: 'cm' },
   { key: 'cmVita', label: 'Vita', unit: 'cm' },
@@ -55,8 +55,26 @@ export const MEASURE_CARD_3: MeasureField[] = [
   { key: 'cmCavigliaDx', label: 'Caviglia Dx', unit: 'cm' }
 ];
 
+export const CATEGORY_FIELDS: Record<MeasureCategory, MeasureField[]> = {
+  peso: PESO_FIELDS,
+  centimetri: CENTIMETRI_FIELDS,
+  pliche: PLICHE_FIELDS
+};
+
+export const CATEGORY_LABELS: Record<MeasureCategory, string> = {
+  peso: 'Peso',
+  centimetri: 'Centimetri',
+  pliche: 'Pliche'
+};
+
+export const CATEGORY_UNIT_BADGE: Record<MeasureCategory, string> = {
+  peso: 'kg',
+  centimetri: 'cm',
+  pliche: 'mm'
+};
+
 export const ALL_MEASURE_FIELDS: MeasureField[] = [
-  ...MEASURE_CARD_1, ...MEASURE_CARD_2, ...MEASURE_CARD_3
+  ...PESO_FIELDS, ...PLICHE_FIELDS, ...CENTIMETRI_FIELDS
 ];
 
 export function emptyMeasurementEntry(date: string): MeasurementEntry {

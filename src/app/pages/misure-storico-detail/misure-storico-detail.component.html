@@ -14,7 +14,7 @@
   </div>
 
   <ng-container *ngIf="hasValue(rows1)">
-    <p class="sectiontitle">Corpo</p>
+    <p class="sectiontitle">Peso</p>
     <div class="infocard measure-card">
       <div class="measure-readrow" *ngFor="let r of rows1">
         <span class="mr-label">{{ r.field.label }}</span>
@@ -26,6 +26,7 @@
           </span>
         </span>
       </div>
+      <button class="savebtn" style="margin-top:12px" (click)="editCategory('peso')">Modifica peso</button>
     </div>
   </ng-container>
 
@@ -42,11 +43,12 @@
           </span>
         </span>
       </div>
+      <button class="savebtn" style="margin-top:12px" (click)="editCategory('pliche')">Modifica pliche</button>
     </div>
   </ng-container>
 
   <ng-container *ngIf="hasValue(rows3)">
-    <p class="sectiontitle">Circonferenze</p>
+    <p class="sectiontitle">Centimetri</p>
     <div class="infocard measure-card">
       <div class="measure-readrow" *ngFor="let r of rows3">
         <span class="mr-label">{{ r.field.label }}</span>
@@ -58,6 +60,7 @@
           </span>
         </span>
       </div>
+      <button class="savebtn" style="margin-top:12px" (click)="editCategory('centimetri')">Modifica centimetri</button>
     </div>
   </ng-container>
 

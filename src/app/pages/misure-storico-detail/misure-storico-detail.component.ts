@@ -6,9 +6,10 @@ import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import {
   MeasurementEntry,
   MeasureField,
-  MEASURE_CARD_1,
-  MEASURE_CARD_2,
-  MEASURE_CARD_3
+  MeasureCategory,
+  PESO_FIELDS,
+  PLICHE_FIELDS,
+  CENTIMETRI_FIELDS
 } from '../../models/measurement.model';
 
 interface FieldRow {
@@ -65,9 +66,9 @@ export class MisureStoricoDetailComponent implements OnInit {
       this.displayDate = d.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
       const prev = await this.data.getPreviousEntry(this.entry.date);
-      this.rows1 = this.buildRows(MEASURE_CARD_1, this.entry, prev);
-      this.rows2 = this.buildRows(MEASURE_CARD_2, this.entry, prev);
-      this.rows3 = this.buildRows(MEASURE_CARD_3, this.entry, prev);
+      this.rows1 = this.buildRows(PESO_FIELDS, this.entry, prev);
+      this.rows2 = this.buildRows(PLICHE_FIELDS, this.entry, prev);
+      this.rows3 = this.buildRows(CENTIMETRI_FIELDS, this.entry, prev);
     } catch (e: any) {
       console.error('Errore caricamento dettaglio misurazione:', e);
       this.errorMsg = e?.message === 'TIMEOUT'
@@ -93,6 +94,10 @@ export class MisureStoricoDetailComponent implements OnInit {
 
   hasValue(rows: FieldRow[]): boolean {
     return rows.some(r => !!r.value);
+  }
+
+  editCategory(category: MeasureCategory): void {
+    this.router.navigate(['/misure', category], { queryParams: { date: this.date } });
   }
 
   async deleteEntry(): Promise<void> {
