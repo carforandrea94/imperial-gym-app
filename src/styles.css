@@ -374,6 +374,8 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .meal .chevron svg{display:block;}
 .meal.open .chevron{transform:rotate(180deg);color:var(--accent);}
 .meal .content-inner{padding:0 16px 15px;border-top:1px solid var(--separator);}
+.meal.mealslide{margin-bottom:0;}
+.meal-summary.noclick{cursor:default;}
 .variant-tabs{display:flex;gap:6px;margin:13px 0 10px;flex-wrap:wrap;}
 .variant-tabs button{font-family:'IBM Plex Mono',monospace;font-size:11.5px;padding:8px 12px;min-height:38px;border-radius:10px;border:1px solid var(--content-glass-border);background:rgba(255,255,255,0.05);backdrop-filter:blur(9px) saturate(115%);-webkit-backdrop-filter:blur(9px) saturate(115%);color:var(--label-2);cursor:pointer;}
 .variant-tabs button.active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
