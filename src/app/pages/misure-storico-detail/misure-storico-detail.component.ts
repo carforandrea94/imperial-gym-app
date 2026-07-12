@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MeasurementDataService } from '../../services/measurement-data.service';
@@ -28,6 +28,8 @@ export class MisureStoricoDetailComponent implements OnInit {
   entry: MeasurementEntry | null = null;
   displayDate = '';
   date = '';
+  loading = true;
+  errorMsg = '';
 
   rows1: FieldRow[] = [];
   rows2: FieldRow[] = [];
@@ -37,22 +39,44 @@ export class MisureStoricoDetailComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private data: MeasurementDataService,
-    private confirm: ConfirmDialogService
+    private confirm: ConfirmDialogService,
+    private cdr: ChangeDetectorRef
   ) {}
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
     this.date = this.route.snapshot.paramMap.get('key') ?? '';
-    const history = await this.data.loadHistory();
-    this.entry = history.find(e => e.date === this.date) ?? null;
-    if (!this.entry) { this.router.navigate(['/misure/storico']); return; }
+    this.load();
+  }
 
-    const d = new Date(this.entry.date + 'T00:00:00');
-    this.displayDate = d.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  async load(): Promise<void> {
+    this.loading = true;
+    this.errorMsg = '';
 
-    const prev = await this.data.getPreviousEntry(this.entry.date);
-    this.rows1 = this.buildRows(MEASURE_CARD_1, this.entry, prev);
-    this.rows2 = this.buildRows(MEASURE_CARD_2, this.entry, prev);
-    this.rows3 = this.buildRows(MEASURE_CARD_3, this.entry, prev);
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('TIMEOUT')), 12000)
+    );
+
+    try {
+      const history = await Promise.race([this.data.loadHistory(), timeout]);
+      this.entry = history.find(e => e.date === this.date) ?? null;
+      if (!this.entry) { this.router.navigate(['/misure/storico']); return; }
+
+      const d = new Date(this.entry.date + 'T00:00:00');
+      this.displayDate = d.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+      const prev = await this.data.getPreviousEntry(this.entry.date);
+      this.rows1 = this.buildRows(MEASURE_CARD_1, this.entry, prev);
+      this.rows2 = this.buildRows(MEASURE_CARD_2, this.entry, prev);
+      this.rows3 = this.buildRows(MEASURE_CARD_3, this.entry, prev);
+    } catch (e: any) {
+      console.error('Errore caricamento dettaglio misurazione:', e);
+      this.errorMsg = e?.message === 'TIMEOUT'
+        ? 'La connessione sta impiegando troppo tempo. Controlla la rete e riprova.'
+        : 'Errore nel caricamento della misurazione. Riprova.';
+    } finally {
+      this.loading = false;
+      this.cdr.detectChanges();
+    }
   }
 
   private buildRows(fields: MeasureField[], entry: MeasurementEntry, prev: MeasurementEntry | null): FieldRow[] {

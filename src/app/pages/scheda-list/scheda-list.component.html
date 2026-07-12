@@ -1,7 +1,7 @@
 <ng-container *ngIf="days.length > 0">
   <div class="weekpicker">
     <div class="wk-info">
-      <div class="wk-label">Settimana {{ currentWeek }} di 8 &nbsp;·&nbsp; {{ getWaveInfo() }}</div>
+      <div class="wk-label">Settimana {{ currentWeek }} di {{ weekPlan.length }} &nbsp;·&nbsp; {{ getWaveInfo() }}</div>
       <div class="wk-sub">WAVE LOADING — S{{ currentWeek }}</div>
       <div class="weekdots">
         <span *ngFor="let w of weeks" [class.active]="w === currentWeek"></span>

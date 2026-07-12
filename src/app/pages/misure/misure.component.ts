@@ -78,6 +78,7 @@ export class MisureComponent implements OnInit, OnDestroy {
     const ok = await this.data.saveEntry(this.entry);
     if (ok) {
       await this.data.clearDraft();
+      if (this.draftTimer) { clearTimeout(this.draftTimer); this.draftTimer = null; }
       this.placeholders = await this.data.getLastValues();
       this.entry = emptyMeasurementEntry(this.todayISO());
       this.saveStatus = 'saved';

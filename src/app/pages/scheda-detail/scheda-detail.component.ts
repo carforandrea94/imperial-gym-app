@@ -371,6 +371,7 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
       const ok = await Promise.race([this.sessions.save(session), timeout]);
       if (ok) {
         await this.appState.deleteFieldPath(`workoutDrafts.${this.day.id}`);
+        if (this.draftTimer) { clearTimeout(this.draftTimer); this.draftTimer = null; }
         this.state.saveStatus.set('saved');
       } else {
         this.state.saveStatus.set('err');

@@ -15,7 +15,8 @@ import { AppStateService } from '../../services/app-state.service';
 export class SchedaListComponent implements OnInit {
   readonly days;
   readonly currentWeek;
-  readonly weeks = [1,2,3,4,5,6,7,8];
+  readonly weekPlan;
+  readonly weeks: number[];
 
   private draftDayIds = new Set<string>();
 
@@ -27,6 +28,8 @@ export class SchedaListComponent implements OnInit {
   ) {
     this.days = workoutData.days;
     this.currentWeek = state.currentWeek;
+    this.weekPlan = workoutData.WEEK_PLAN;
+    this.weeks = Array.from({ length: this.weekPlan.length }, (_, i) => i + 1);
   }
 
   async ngOnInit(): Promise<void> {

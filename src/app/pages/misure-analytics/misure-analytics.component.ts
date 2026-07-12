@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { MeasurementDataService } from '../../services/measurement-data.service';
@@ -42,35 +42,58 @@ export class MisureAnalyticsComponent implements OnInit {
   private allEntries: import('../../models/measurement.model').MeasurementEntry[] = [];
   private allHistory: { date: string; value: number }[] = [];
   loading = true;
+  errorMsg = '';
 
   constructor(
     private data: MeasurementDataService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private cdr: ChangeDetectorRef
   ) {}
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
+    this.load();
+  }
+
+  async load(): Promise<void> {
     this.loading = true;
-    const history = await this.data.loadHistory();
-    this.allEntries = history;
-    this.hasAnyHistory = history.length > 0;
+    this.errorMsg = '';
 
-    const lastValues = await this.data.getLastValues();
-    const buildGroup = (fields: MeasureField[]): FieldOption[] =>
-      fields.map(field => ({
-        field,
-        hasData: history.some(e => !!e[field.key]),
-        lastValue: lastValues[field.key] ?? null
-      }));
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('TIMEOUT')), 12000)
+    );
 
-    this.group1 = buildGroup(MEASURE_CARD_1);
-    this.group2 = buildGroup(MEASURE_CARD_2);
-    this.group3 = buildGroup(MEASURE_CARD_3);
+    try {
+      const [history, lastValues] = await Promise.race([
+        Promise.all([this.data.loadHistory(), this.data.getLastValues()]),
+        timeout
+      ]);
+      this.allEntries = history;
+      this.hasAnyHistory = history.length > 0;
 
-    // Seleziona di default il primo campo con dati sufficienti (almeno 2 punti), altrimenti 'peso'
-    const allOptions = [...this.group1, ...this.group2, ...this.group3];
-    const firstWithData = allOptions.find(o => o.hasData);
-    this.selectField(firstWithData ? firstWithData.field : this.group1[0].field);
-    this.loading = false;
+      const buildGroup = (fields: MeasureField[]): FieldOption[] =>
+        fields.map(field => ({
+          field,
+          hasData: history.some(e => !!e[field.key]),
+          lastValue: lastValues[field.key] ?? null
+        }));
+
+      this.group1 = buildGroup(MEASURE_CARD_1);
+      this.group2 = buildGroup(MEASURE_CARD_2);
+      this.group3 = buildGroup(MEASURE_CARD_3);
+
+      // Seleziona di default il primo campo con dati sufficienti (almeno 2 punti), altrimenti 'peso'
+      const allOptions = [...this.group1, ...this.group2, ...this.group3];
+      const firstWithData = allOptions.find(o => o.hasData);
+      this.selectField(firstWithData ? firstWithData.field : this.group1[0].field);
+    } catch (e: any) {
+      console.error('Errore caricamento analisi misure:', e);
+      this.errorMsg = e?.message === 'TIMEOUT'
+        ? 'La connessione sta impiegando troppo tempo. Controlla la rete e riprova.'
+        : 'Errore nel caricamento dei dati. Riprova.';
+    } finally {
+      this.loading = false;
+      this.cdr.detectChanges();
+    }
   }
 
   selectField(field: MeasureField): void {
