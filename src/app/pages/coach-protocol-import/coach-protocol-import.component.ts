@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -75,7 +75,8 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
     private router: Router,
     private pdfSvc: PdfImportService,
     private protocolSvc: ProtocolService,
-    private auth: AuthService
+    private auth: AuthService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -118,6 +119,11 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
   private setStage(stage: string, percent: number): void {
     this.stage = stage;
     this.progressPercent = percent;
+    // App senza zone.js: senza questa chiamata esplicita la vista non si
+    // ridisegna dopo un await su Promise "pure" (Firestore, worker pdf.js),
+    // restando visivamente bloccata sull'ultimo stage anche se lo stato interno
+    // e' gia' avanzato (stesso problema che ZoneFixService risolve altrove).
+    this.cdr.detectChanges();
   }
 
   async process(): Promise<void> {
@@ -166,6 +172,7 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
       this.processing = false;
       this.stage = '';
       this.progressPercent = 0;
+      this.cdr.detectChanges();
     }
   }
 }
