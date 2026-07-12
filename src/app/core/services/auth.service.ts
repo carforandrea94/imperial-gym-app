@@ -68,6 +68,16 @@ export class AuthService {
     return snap.exists() ? (snap.data() as UserProfile) : null;
   }
 
+  /** Genera un codice coach garantito univoco, riprovando in caso di rara collisione. */
+  private async generateUniqueCoachCode(): Promise<string> {
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const code = generateCode();
+      const snap = await getDoc(doc(this.fb.db, 'coachCodes', code));
+      if (!snap.exists()) return code;
+    }
+    throw new Error('Impossibile generare un codice coach univoco, riprova.');
+  }
+
   login(email: string, password: string): Promise<UserProfile> {
     return this.zoneFix.run((async () => {
       const cred = await signInWithEmailAndPassword(this.fb.auth, email.trim(), password);
@@ -98,7 +108,7 @@ export class AuthService {
   registerCoach(email: string, password: string, displayName: string): Promise<UserProfile> {
     return this.zoneFix.run((async () => {
       const cred = await createUserWithEmailAndPassword(this.fb.auth, email.trim(), password);
-      const pairingCode = generateCode();
+      const pairingCode = await this.generateUniqueCoachCode();
       const profile: UserProfile = {
         uid: cred.user.uid,
         email: email.trim(),
