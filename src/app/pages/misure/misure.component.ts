@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MeasurementDataService } from '../../services/measurement-data.service';
+import { todayLocalISO } from '../../core/utils/date.util';
 import {
   MeasurementEntry,
   MeasurementKey,
@@ -53,7 +54,7 @@ export class MisureComponent implements OnInit, OnDestroy {
   }
 
   private todayISO(): string {
-    return new Date().toISOString().split('T')[0];
+    return todayLocalISO();
   }
 
   onInput(): void {

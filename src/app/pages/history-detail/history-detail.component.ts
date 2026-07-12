@@ -52,7 +52,7 @@ export class HistoryDetailComponent implements OnInit {
     try {
       this.session = await Promise.race([this.sessionsSvc.get(this.key), timeout]);
       if (this.session) {
-        const date = new Date(this.session.date);
+        const date = new Date(this.session.date + 'T00:00:00');
         this.displayDate = date.toLocaleDateString('it-IT', {
           weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
         });

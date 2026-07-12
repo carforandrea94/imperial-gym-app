@@ -46,7 +46,7 @@ export class HistoryListComponent implements OnInit {
     try {
       const all = await Promise.race([this.sessionsSvc.listAll(), timeout]);
       this.sessions = all.map(({ id, session }) => {
-        const date = new Date(session.date);
+        const date = new Date(session.date + 'T00:00:00');
         const displayDate = date.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
         const completedSets = session.exercises.reduce((acc, ex) =>
           acc + ex.sets.filter(s => s.done).length, 0);
