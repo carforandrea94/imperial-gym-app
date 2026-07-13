@@ -265,8 +265,19 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
     }
 
     if (this.dietaFile || this.integrazioneFile) {
-      patch.dietNotesSource = dietNotesSource;
-      patch.supplementNotesSource = supplementNotesSource;
+      // Scriviamo un campo sorgente nel patch SOLO se e' stato genuinamente ricaricato
+      // in questa operazione, oppure era gia' tracciato in precedenza. Se scrivessimo
+      // sempre entrambi i campi (anche quello NON ricaricato), un protocollo legacy
+      // (entrambi undefined) verrebbe silenziosamente "promosso" a tracciato-come-vuoto
+      // sul lato non toccato. Al ricaricamento singolo SUCCESSIVO dello stesso lato,
+      // l'altra sorgente risulterebbe erroneamente gia' nota, facendo ricalcolare
+      // infoNote e cancellando comunque il contenuto legacy mai davvero ricaricato.
+      if (this.dietaFile || dietSourceWasTracked) {
+        patch.dietNotesSource = dietNotesSource;
+      }
+      if (this.integrazioneFile || supplementSourceWasTracked) {
+        patch.supplementNotesSource = supplementNotesSource;
+      }
 
       const bothReloadedTogether = !!this.dietaFile && !!this.integrazioneFile;
       const otherSourceIsKnown = this.dietaFile
@@ -279,8 +290,9 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
       // else: il protocollo e' precedente a questa feature e l'altra sorgente non era mai
       // stata tracciata — non possiamo sapere quale porzione di infoNote le apparteneva,
       // quindi lo lasciamo invariato invece di rischiare di cancellarne il contenuto.
-      // dietNotesSource/supplementNotesSource restano comunque aggiornati, cosi' il
-      // PROSSIMO ricaricamento su questo protocollo potra' ricalcolare infoNote in sicurezza.
+      // dietNotesSource/supplementNotesSource restano comunque aggiornati (solo per il
+      // lato genuinamente ricaricato), cosi' il PROSSIMO ricaricamento su questo
+      // protocollo potra' ricalcolare infoNote in sicurezza.
     }
 
     this.setStage('Salvataggio protocollo…', 90);
