@@ -240,6 +240,13 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
       percent = 40;
     }
 
+    // Un protocollo creato prima di questa feature ha dietNotesSource/supplementNotesSource
+    // entrambi undefined anche se infoNote contiene gia' testo reale (scritto alla vecchia
+    // maniera). Teniamo traccia qui, PRIMA di leggere i PDF, di quali dei due erano gia'
+    // "tracciati": ci serve piu' sotto per capire se e' sicuro ricalcolare infoNote.
+    const dietSourceWasTracked = existing.dietNotesSource !== undefined;
+    const supplementSourceWasTracked = existing.supplementNotesSource !== undefined;
+
     let dietNotesSource = existing.dietNotesSource ?? '';
     let supplementNotesSource = existing.supplementNotesSource ?? '';
 
@@ -260,7 +267,20 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
     if (this.dietaFile || this.integrazioneFile) {
       patch.dietNotesSource = dietNotesSource;
       patch.supplementNotesSource = supplementNotesSource;
-      patch.infoNote = [dietNotesSource, supplementNotesSource].filter(Boolean).join('\n\n');
+
+      const bothReloadedTogether = !!this.dietaFile && !!this.integrazioneFile;
+      const otherSourceIsKnown = this.dietaFile
+        ? (this.integrazioneFile ? true : supplementSourceWasTracked)
+        : dietSourceWasTracked;
+
+      if (bothReloadedTogether || otherSourceIsKnown) {
+        patch.infoNote = [dietNotesSource, supplementNotesSource].filter(Boolean).join('\n\n');
+      }
+      // else: il protocollo e' precedente a questa feature e l'altra sorgente non era mai
+      // stata tracciata — non possiamo sapere quale porzione di infoNote le apparteneva,
+      // quindi lo lasciamo invariato invece di rischiare di cancellarne il contenuto.
+      // dietNotesSource/supplementNotesSource restano comunque aggiornati, cosi' il
+      // PROSSIMO ricaricamento su questo protocollo potra' ricalcolare infoNote in sicurezza.
     }
 
     this.setStage('Salvataggio protocollo…', 90);
