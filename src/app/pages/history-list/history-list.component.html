@@ -9,7 +9,7 @@
   Nessuna seduta salvata.<br>Completa il primo allenamento per vedere lo storico qui.
 </div>
 
-<ng-container *ngIf="!loading && !errorMsg && sessions.length > 0">
+<ng-container *ngIf="!loading && sessions.length > 0">
   <ng-container *ngFor="let g of weekGroups">
     <p class="sectiontitle">{{ g.label }}</p>
     <div class="grouplist">
