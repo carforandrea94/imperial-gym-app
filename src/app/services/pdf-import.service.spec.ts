@@ -349,6 +349,50 @@ describe('PdfImportService - scheda allenamento', () => {
     expect(ex1.muscle).toBe('Petto');
   });
 
+  it('deriva la progressione wave del protocollo dalla piu\' comune tra gli esercizi wave, invece di uno schema fisso', () => {
+    const days = service.parseWorkoutText(SCHEDA_TEXT);
+    const weekPlan = service.detectProtocolWeekPlan(days, 8);
+    expect(weekPlan).toEqual([
+      { sets: 4, reps: 10 }, { sets: 4, reps: 10 },
+      { sets: 4, reps: 8 }, { sets: 4, reps: 8 },
+      { sets: 5, reps: 6 }, { sets: 5, reps: 6 },
+      { sets: 4, reps: 10 }, { sets: 4, reps: 10 }
+    ]);
+  });
+
+  it('ripiega su uno schema fisso 4x10 quando non ci sono esercizi wave nel PDF', () => {
+    const days = [{ id: 'day1', label: 'Giorno 1', rec: '60-90"', ex: [
+      { name: 'Panca piana', scheme: 'plain' as const, sets: 3, muscle: 'Petto', reps: ['12', '12', '12'], text: '3x12' }
+    ] }];
+    const weekPlan = service.detectProtocolWeekPlan(days, 4);
+    expect(weekPlan).toEqual([
+      { sets: 4, reps: 10 }, { sets: 4, reps: 10 }, { sets: 4, reps: 10 }, { sets: 4, reps: 10 }
+    ]);
+  });
+
+  it('sceglie la progressione piu\' frequente quando gli esercizi wave hanno progressioni diverse tra loro', () => {
+    const mixedText = `
+DURATA 4 SETTIMANE
+DAY 1 : PETTO REC TRA 60-90”
+EX.1/PANCA PIANA
+4X10 4X8… E RIPRENDI DA 4X10 AUMENTANDO IL CARICO RISPETTO ALL SETT.1 SCORSA
+EX.2/CHEST PRESS
+4X10 4X8… E RIPRENDI DA 4X10 AUMENTANDO IL CARICO RISPETTO ALL SETT.1 SCORSA
+EX.3/SQUAT
+3X12 3X10… E RIPRENDI DA 3X12 AUMENTANDO IL CARICO RISPETTO ALL SETT.1 SCORSA
+`;
+    const days = service.parseWorkoutText(mixedText);
+    const weekPlan = service.detectProtocolWeekPlan(days, 4);
+    // 2 esercizi su 3 usano 4x10/4x8 (la piu' frequente), 1 solo usa 3x12/3x10.
+    // La frase "…E RIPRENDI DA 4X10" ripete la prima coppia (stesso comportamento
+    // gia' verificato sopra per SCHEDA_TEXT): il ciclo e' quindi [4x10,4x8,4x10],
+    // non [4x10,4x8].
+    expect(weekPlan).toEqual([
+      { sets: 4, reps: 10 }, { sets: 4, reps: 8 },
+      { sets: 4, reps: 10 }, { sets: 4, reps: 10 }
+    ]);
+  });
+
   it('interpreta gli schemi semplici (sequenza per-set, range, bodyweight, isometria)', () => {
     const days = service.parseWorkoutText(SCHEDA_TEXT);
     const day1ByName = (n: string) => days[0].ex.find(e => e.name === n)!;

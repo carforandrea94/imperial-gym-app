@@ -147,6 +147,7 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
       const days = this.pdfSvc.parseWorkoutText(schedaText);
       const diet = this.pdfSvc.parseDietText(dietaText);
       const durationWeeks = this.pdfSvc.detectProgramDurationWeeks(schedaText);
+      const weekPlan = this.pdfSvc.detectProtocolWeekPlan(days, durationWeeks);
 
       let infoNote = this.pdfSvc.extractDietNotes(dietaText);
       if (this.integrazioneFile) {
@@ -159,7 +160,7 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
       await this.withTimeout(this.protocolSvc.update(this.clientId, id, {
         name: 'Protocollo da PDF',
         source: 'pdf',
-        workout: { weekPlan: Array.from({ length: durationWeeks }, () => ({ sets: 4, reps: 10 })), days, programStart: todayLocalISO() },
+        workout: { weekPlan, days, programStart: todayLocalISO() },
         diet,
         infoNote
       }), 'Salvataggio protocollo');
