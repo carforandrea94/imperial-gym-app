@@ -55,6 +55,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/coach-protocol-import/coach-protocol-import.component').then(m => m.CoachProtocolImportComponent)
   },
   {
+    path: 'coach/clienti/:clientId/aggiorna-pdf/:protocolId',
+    canActivate: [authGuard, coachGuard],
+    loadComponent: () => import('./pages/coach-protocol-import/coach-protocol-import.component').then(m => m.CoachProtocolImportComponent)
+  },
+  {
     path: 'coach/clienti/:clientId/builder/:protocolId',
     canActivate: [authGuard, coachGuard],
     loadComponent: () => import('./pages/coach-protocol-builder/coach-protocol-builder.component').then(m => m.CoachProtocolBuilderComponent)

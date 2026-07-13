@@ -32,6 +32,7 @@ export class App implements OnInit, OnDestroy {
   showViewToggle = false;
   viewToggleTarget: 'scheda' | 'dieta' = 'scheda';
   showSaveWorkout = false;
+  showSettings = false;
   showChrome = false;
 
   private routeSub: Subscription | null = null;
@@ -101,6 +102,7 @@ export class App implements OnInit, OnDestroy {
     this.showShoppingList = false;
     this.showViewToggle = false;
     this.showSaveWorkout = false;
+    this.showSettings = false;
 
     if (u === '/account') {
       this.navTitle = 'Account';
@@ -169,6 +171,7 @@ export class App implements OnInit, OnDestroy {
       this.showHistory = false;
       this.showInfo = false;
       this.showAnalytics = false;
+      this.showSettings = true;
       return;
     }
 
@@ -327,6 +330,9 @@ export class App implements OnInit, OnDestroy {
     } else if (/^\/coach\/clienti\/[^/]+\/builder\/[^/]+$/.test(u)) {
       const clientId = u.split('/')[3];
       this.router.navigate(['/coach/clienti', clientId]);
+    } else if (/^\/coach\/clienti\/[^/]+\/aggiorna-pdf\/[^/]+$/.test(u)) {
+      const parts = u.split('/');
+      this.router.navigate(['/coach/clienti', parts[3], 'builder', parts[5]]);
     } else if (/^\/coach\/clienti\/[^/]+\/importa-pdf$/.test(u)) {
       const clientId = u.split('/')[3];
       this.router.navigate(['/coach/clienti', clientId, 'nuovo']);
@@ -353,6 +359,13 @@ export class App implements OnInit, OnDestroy {
 
   onInfo(): void {
     this.router.navigate(['/scheda/info']);
+  }
+
+  onSettingsClick(): void {
+    const u = this.router.url.split('?')[0];
+    const match = u.match(/^\/coach\/clienti\/([^/]+)\/builder\/([^/]+)$/);
+    if (!match) return;
+    this.router.navigate(['/coach/clienti', match[1], 'aggiorna-pdf', match[2]]);
   }
 
   onAnalytics(): void {

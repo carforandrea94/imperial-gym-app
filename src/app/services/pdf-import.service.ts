@@ -180,6 +180,40 @@ export class PdfImportService {
     return m ? parseInt(m[1], 10) : 8;
   }
 
+  /**
+   * Onda di carico a livello di protocollo (usata nella schermata "Onda di carico" e
+   * nel riepilogo "Settimana X di N"): deriva la progressione piu' frequente tra gli
+   * esercizi wave effettivamente trovati nel PDF, invece di uno schema fisso identico
+   * per ogni settimana. Se il PDF non contiene esercizi wave (es. programma tutto a
+   * schemi fissi, o parser generico di fallback), ripiega su un default 4x10.
+   */
+  detectProtocolWeekPlan(days: Day[], totalWeeks: number): WeekPlan[] {
+    const waveWeekPlans = days
+      .flatMap(d => d.ex)
+      .filter(ex => ex.scheme === 'wave' && ex.weekPlan && ex.weekPlan.length > 0)
+      .map(ex => ex.weekPlan!);
+
+    if (waveWeekPlans.length === 0) {
+      return Array.from({ length: totalWeeks }, () => ({ sets: 4, reps: 10 }));
+    }
+
+    const key = (wp: WeekPlan[]) => wp.map(w => `${w.sets}x${w.reps}`).join('|');
+    const counts = new Map<string, { plan: WeekPlan[]; count: number }>();
+    for (const wp of waveWeekPlans) {
+      const k = key(wp);
+      const entry = counts.get(k);
+      if (entry) entry.count++;
+      else counts.set(k, { plan: wp, count: 1 });
+    }
+
+    let best = waveWeekPlans[0];
+    let bestCount = 0;
+    for (const { plan, count } of counts.values()) {
+      if (count > bestCount) { best = plan; bestCount = count; }
+    }
+    return best;
+  }
+
   /** Parsing a template: "DAY N: Gruppo REC TRA X-Y", poi per ogni "EX.N/Nome" la riga
    *  successiva con lo schema serie/ripetizioni (semplice, a piu' segmenti o "wave"). */
   private parseWorkoutTemplate(text: string): Day[] | null {
