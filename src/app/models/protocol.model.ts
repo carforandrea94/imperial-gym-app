@@ -21,6 +21,12 @@ export interface Protocol {
   workout: WorkoutProtocol;
   diet: Diet;
   infoNote: string;
+  /** Ultima estrazione da extractDietNotes(dietaText): permette di ricaricare
+   *  solo l'integrazione senza perdere le note gia' derivate dalla dieta. */
+  dietNotesSource?: string;
+  /** Ultimo testo del PDF integrazione (trim): permette di ricaricare solo
+   *  la dieta senza perdere le note gia' derivate dall'integrazione. */
+  supplementNotesSource?: string;
   createdAt: string;
   updatedAt: string;
 }
