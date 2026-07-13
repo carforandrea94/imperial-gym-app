@@ -27,10 +27,15 @@
 
   <div class="infocard">
     <h3>Storico e carichi</h3>
-    <p>Ogni allenamento completato viene salvato sul tuo account. Nella scheda dettaglio puoi vedere:</p>
-    <p>— L'ultimo carico usato per ogni esercizio (suggerito come placeholder)</p>
-    <p>— Il grafico sparkline della progressione dei carichi</p>
-    <p>— Un suggerimento di carico per gli esercizi wave</p>
+    <p *ngIf="loadingHistory">Caricamento storico...</p>
+    <p *ngIf="!loadingHistory && totalWorkouts === 0">
+      Non hai ancora registrato allenamenti. Il tuo storico apparirà qui dopo il primo allenamento completato.
+    </p>
+    <ng-container *ngIf="!loadingHistory && totalWorkouts > 0">
+      <p>Allenamenti completati: <b>{{ totalWorkouts }}</b></p>
+      <p>Ultimo allenamento: <b>{{ lastWorkoutDate }}</b></p>
+      <p>Nella scheda dettaglio puoi vedere, per ogni esercizio: l'ultimo carico usato, il grafico della progressione e un suggerimento di carico per gli esercizi wave.</p>
+    </ng-container>
   </div>
 
   <div class="consigli">
@@ -38,7 +43,7 @@
     <ul>
       <li>Recupero tra le serie: segui i tempi indicati (timer automatico)</li>
       <li>Progressione: aumenta il carico quando completi tutte le serie con buona tecnica</li>
-      <li>Per gli esercizi wave: aumenta di 2.5–5 kg quando completi tutte le serie</li>
+      <li *ngIf="hasWaveExercises">Per gli esercizi wave: aumenta di 2.5–5 kg quando completi tutte le serie</li>
       <li>Bevi almeno 2L di acqua al giorno, di più nei giorni di allenamento</li>
       <li>Assicurati di dormire almeno 7–8 ore per ottimizzare il recupero</li>
     </ul>
