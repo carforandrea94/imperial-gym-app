@@ -5,6 +5,7 @@ import { Subscription } from 'rxjs';
 import { PdfImportService } from '../../services/pdf-import.service';
 import { ProtocolService } from '../../services/protocol.service';
 import { AuthService } from '../../core/services/auth.service';
+import { todayLocalISO } from '../../core/utils/date.util';
 
 /** Tempo massimo per ciascuna fase prima di rinunciare e segnalare un errore
  *  invece di restare bloccati a tempo indeterminato senza alcun feedback
@@ -158,7 +159,7 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
       await this.withTimeout(this.protocolSvc.update(this.clientId, id, {
         name: 'Protocollo da PDF',
         source: 'pdf',
-        workout: { weekPlan: Array.from({ length: durationWeeks }, () => ({ sets: 4, reps: 10 })), days, programStart: new Date().toISOString().split('T')[0] },
+        workout: { weekPlan: Array.from({ length: durationWeeks }, () => ({ sets: 4, reps: 10 })), days, programStart: todayLocalISO() },
         diet,
         infoNote
       }), 'Salvataggio protocollo');
