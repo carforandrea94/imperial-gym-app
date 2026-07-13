@@ -1,19 +1,24 @@
-<p class="sectiontitle">Carica i PDF</p>
+<p class="sectiontitle">{{ isUpdateMode ? 'Aggiorna da PDF' : 'Carica i PDF' }}</p>
 
 <div class="infocard" style="margin-bottom:14px">
-  <p class="bacheca-text" style="margin-bottom:14px">
+  <p class="bacheca-text" style="margin-bottom:14px" *ngIf="!isUpdateMode">
     L'app prova a leggere i PDF ed estrarre esercizi e alimenti automaticamente.
     E' un'estrazione best-effort: funziona meglio se il PDF ha un formato semplice
     (una riga per esercizio/alimento). Rivedi sempre la bozza nel builder prima di attivarla.
   </p>
+  <p class="bacheca-text" style="margin-bottom:14px" *ngIf="isUpdateMode">
+    Carica almeno uno dei PDF per aggiornare le parti corrispondenti del
+    protocollo. Ricaricare la dieta o l'integrazione da sola non cancella le
+    note dell'altra.
+  </p>
 
   <div class="authfield">
-    <label>Scheda allenamento (obbligatorio)</label>
+    <label>{{ isUpdateMode ? 'Scheda allenamento' : 'Scheda allenamento (obbligatorio)' }}</label>
     <input type="file" accept="application/pdf" (change)="onFile($event, 'scheda')" />
   </div>
 
   <div class="authfield">
-    <label>Dieta (obbligatorio)</label>
+    <label>{{ isUpdateMode ? 'Dieta' : 'Dieta (obbligatorio)' }}</label>
     <input type="file" accept="application/pdf" (change)="onFile($event, 'dieta')" />
   </div>
 
@@ -27,7 +32,7 @@
 
 <div class="savebar">
   <button class="savebtn" [disabled]="!canProcess" (click)="process()">
-    {{ processing ? 'Elaborazione in corso…' : 'Elabora e crea bozza' }}
+    {{ processing ? 'Elaborazione in corso…' : (isUpdateMode ? 'Aggiorna protocollo' : 'Elabora e crea bozza') }}
   </button>
 </div>
 

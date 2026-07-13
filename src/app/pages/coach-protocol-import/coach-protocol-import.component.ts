@@ -4,8 +4,10 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { PdfImportService } from '../../services/pdf-import.service';
 import { ProtocolService } from '../../services/protocol.service';
+import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { AuthService } from '../../core/services/auth.service';
 import { todayLocalISO } from '../../core/utils/date.util';
+import { Protocol } from '../../models/protocol.model';
 
 /** Tempo massimo per ciascuna fase prima di rinunciare e segnalare un errore
  *  invece di restare bloccati a tempo indeterminato senza alcun feedback
@@ -58,6 +60,9 @@ const STEP_TIMEOUT_MS = 25000;
 })
 export class CoachProtocolImportComponent implements OnInit, OnDestroy {
   clientId = '';
+  /** Vuoto in modalita' creazione; valorizzato in modalita' aggiornamento (route con :protocolId). */
+  protocolId = '';
+  private existingProtocol: Protocol | null = null;
   private paramSub: Subscription | null = null;
 
   schedaFile: File | null = null;
@@ -76,18 +81,32 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
     private router: Router,
     private pdfSvc: PdfImportService,
     private protocolSvc: ProtocolService,
+    private confirm: ConfirmDialogService,
     private auth: AuthService,
     private cdr: ChangeDetectorRef
   ) {}
 
+  get isUpdateMode(): boolean {
+    return !!this.protocolId;
+  }
+
   ngOnInit(): void {
     this.paramSub = this.route.paramMap.subscribe(params => {
       this.clientId = params.get('clientId') ?? '';
+      this.protocolId = params.get('protocolId') ?? '';
+      if (this.protocolId) this.loadExisting();
     });
   }
 
   ngOnDestroy(): void {
     this.paramSub?.unsubscribe();
+  }
+
+  private async loadExisting(): Promise<void> {
+    const p = await this.protocolSvc.get(this.clientId, this.protocolId);
+    if (!p) { this.router.navigate(['/coach/clienti', this.clientId]); return; }
+    this.existingProtocol = p;
+    this.cdr.detectChanges();
   }
 
   onFile(event: Event, which: 'scheda' | 'dieta' | 'integrazione'): void {
@@ -99,7 +118,9 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
   }
 
   get canProcess(): boolean {
-    return !!this.schedaFile && !!this.dietaFile && !this.processing;
+    if (this.processing) return false;
+    if (this.isUpdateMode) return !!(this.schedaFile || this.dietaFile || this.integrazioneFile);
+    return !!this.schedaFile && !!this.dietaFile;
   }
 
   private async withTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
@@ -127,46 +148,31 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
+  private buildConfirmMessage(): string {
+    const parts: string[] = [];
+    if (this.schedaFile) parts.push('giorni di allenamento e onda di carico');
+    if (this.dietaFile) parts.push('dieta e note');
+    if (this.integrazioneFile) parts.push('note integrazione');
+    return `Verranno aggiornati: ${parts.join(', ')}. Continuare?`;
+  }
+
   async process(): Promise<void> {
     if (!this.canProcess) return;
+
+    if (this.isUpdateMode) {
+      const ok = await this.confirm.confirm(this.buildConfirmMessage());
+      if (!ok) return;
+    }
+
     this.processing = true;
     this.errorMsg = '';
 
     try {
-      this.setStage('Creazione bozza protocollo…', 5);
-      const coach = this.auth.currentUser()!;
-      const id = await this.withTimeout(this.protocolSvc.create(this.clientId, coach.uid), 'Creazione bozza protocollo');
-
-      this.setStage('Lettura scheda allenamento…', 20);
-      const schedaText = await this.withTimeout(this.pdfSvc.extractText(this.schedaFile!), 'Lettura scheda');
-
-      this.setStage('Lettura dieta…', 40);
-      const dietaText = await this.withTimeout(this.pdfSvc.extractText(this.dietaFile!), 'Lettura dieta');
-
-      this.setStage('Analisi esercizi e alimenti…', 65);
-      const days = this.pdfSvc.parseWorkoutText(schedaText);
-      const diet = this.pdfSvc.parseDietText(dietaText);
-      const durationWeeks = this.pdfSvc.detectProgramDurationWeeks(schedaText);
-      const weekPlan = this.pdfSvc.detectProtocolWeekPlan(days, durationWeeks);
-
-      let infoNote = this.pdfSvc.extractDietNotes(dietaText);
-      if (this.integrazioneFile) {
-        this.setStage('Lettura integrazione…', 75);
-        const integrazioneText = await this.withTimeout(this.pdfSvc.extractText(this.integrazioneFile), 'Lettura integrazione');
-        infoNote = [infoNote, integrazioneText.trim()].filter(Boolean).join('\n\n');
+      if (this.isUpdateMode) {
+        await this.processUpdate();
+      } else {
+        await this.processCreate();
       }
-
-      this.setStage('Salvataggio protocollo…', 90);
-      await this.withTimeout(this.protocolSvc.update(this.clientId, id, {
-        name: 'Protocollo da PDF',
-        source: 'pdf',
-        workout: { weekPlan, days, programStart: todayLocalISO() },
-        diet,
-        infoNote
-      }), 'Salvataggio protocollo');
-
-      this.setStage('Completato', 100);
-      this.router.navigate(['/coach/clienti', this.clientId]);
     } catch (e: any) {
       console.error('Errore importazione PDF:', e);
       this.errorMsg = e?.message || 'Errore durante la lettura dei PDF. Riprova o crea il protocollo manualmente.';
@@ -176,5 +182,91 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
       this.progressPercent = 0;
       this.cdr.detectChanges();
     }
+  }
+
+  private async processCreate(): Promise<void> {
+    this.setStage('Creazione bozza protocollo…', 5);
+    const coach = this.auth.currentUser()!;
+    const id = await this.withTimeout(this.protocolSvc.create(this.clientId, coach.uid), 'Creazione bozza protocollo');
+
+    this.setStage('Lettura scheda allenamento…', 20);
+    const schedaText = await this.withTimeout(this.pdfSvc.extractText(this.schedaFile!), 'Lettura scheda');
+
+    this.setStage('Lettura dieta…', 40);
+    const dietaText = await this.withTimeout(this.pdfSvc.extractText(this.dietaFile!), 'Lettura dieta');
+
+    this.setStage('Analisi esercizi e alimenti…', 65);
+    const days = this.pdfSvc.parseWorkoutText(schedaText);
+    const diet = this.pdfSvc.parseDietText(dietaText);
+    const durationWeeks = this.pdfSvc.detectProgramDurationWeeks(schedaText);
+    const weekPlan = this.pdfSvc.detectProtocolWeekPlan(days, durationWeeks);
+
+    const dietNotesSource = this.pdfSvc.extractDietNotes(dietaText);
+    let supplementNotesSource = '';
+    if (this.integrazioneFile) {
+      this.setStage('Lettura integrazione…', 75);
+      const integrazioneText = await this.withTimeout(this.pdfSvc.extractText(this.integrazioneFile), 'Lettura integrazione');
+      supplementNotesSource = integrazioneText.trim();
+    }
+    const infoNote = [dietNotesSource, supplementNotesSource].filter(Boolean).join('\n\n');
+
+    this.setStage('Salvataggio protocollo…', 90);
+    await this.withTimeout(this.protocolSvc.update(this.clientId, id, {
+      name: 'Protocollo da PDF',
+      source: 'pdf',
+      workout: { weekPlan, days, programStart: todayLocalISO() },
+      diet,
+      dietNotesSource,
+      supplementNotesSource,
+      infoNote
+    }), 'Salvataggio protocollo');
+
+    this.setStage('Completato', 100);
+    this.router.navigate(['/coach/clienti', this.clientId]);
+  }
+
+  private async processUpdate(): Promise<void> {
+    const existing = this.existingProtocol!;
+    const patch: Partial<Protocol> = {};
+    let percent = 10;
+
+    if (this.schedaFile) {
+      this.setStage('Lettura scheda allenamento…', percent);
+      const schedaText = await this.withTimeout(this.pdfSvc.extractText(this.schedaFile), 'Lettura scheda');
+      const days = this.pdfSvc.parseWorkoutText(schedaText);
+      const durationWeeks = this.pdfSvc.detectProgramDurationWeeks(schedaText);
+      const weekPlan = this.pdfSvc.detectProtocolWeekPlan(days, durationWeeks);
+      patch.workout = { ...existing.workout, days, weekPlan };
+      percent = 40;
+    }
+
+    let dietNotesSource = existing.dietNotesSource ?? '';
+    let supplementNotesSource = existing.supplementNotesSource ?? '';
+
+    if (this.dietaFile) {
+      this.setStage('Lettura dieta…', percent);
+      const dietaText = await this.withTimeout(this.pdfSvc.extractText(this.dietaFile), 'Lettura dieta');
+      patch.diet = this.pdfSvc.parseDietText(dietaText);
+      dietNotesSource = this.pdfSvc.extractDietNotes(dietaText);
+      percent = 65;
+    }
+
+    if (this.integrazioneFile) {
+      this.setStage('Lettura integrazione…', percent);
+      const integrazioneText = await this.withTimeout(this.pdfSvc.extractText(this.integrazioneFile), 'Lettura integrazione');
+      supplementNotesSource = integrazioneText.trim();
+    }
+
+    if (this.dietaFile || this.integrazioneFile) {
+      patch.dietNotesSource = dietNotesSource;
+      patch.supplementNotesSource = supplementNotesSource;
+      patch.infoNote = [dietNotesSource, supplementNotesSource].filter(Boolean).join('\n\n');
+    }
+
+    this.setStage('Salvataggio protocollo…', 90);
+    await this.withTimeout(this.protocolSvc.update(this.clientId, this.protocolId, patch), 'Salvataggio protocollo');
+
+    this.setStage('Completato', 100);
+    this.router.navigate(['/coach/clienti', this.clientId, 'builder', this.protocolId]);
   }
 }
