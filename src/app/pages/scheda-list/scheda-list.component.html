@@ -4,7 +4,7 @@
       <div class="wk-label">Settimana {{ currentWeek }} di {{ weekPlan.length }} &nbsp;·&nbsp; {{ getWaveInfo() }}</div>
       <div class="wk-sub">{{ todayWeekday }} &nbsp;·&nbsp; WAVE LOADING — S{{ currentWeek }}</div>
       <div class="weekdots">
-        <span *ngFor="let w of weeks" [class.active]="w === currentWeek"></span>
+        <span *ngFor="let w of weeks" [class.completed]="w < currentWeek" [class.active]="w === currentWeek"></span>
       </div>
     </div>
   </div>
