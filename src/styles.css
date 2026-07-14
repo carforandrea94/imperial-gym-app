@@ -172,7 +172,7 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .exslider-counter{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--label-3);text-align:center;margin-bottom:10px;}
 .exslider{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:0 28px 2px;}
 .exslider::-webkit-scrollbar{display:none;}
-.exslide{flex:0 0 calc(100% - 56px);width:calc(100% - 56px);scroll-snap-align:center;scroll-snap-stop:always;}
+.exslide{flex:0 0 100%;width:100%;scroll-snap-align:center;scroll-snap-stop:always;}
 .ex-summary.noclick{cursor:default;}
 .exslider-dots{display:flex;justify-content:center;gap:6px;margin-top:12px;}
 .exslider-dot{width:6px;height:6px;border-radius:50%;background:var(--content-glass-border);cursor:pointer;transition:background .18s ease,transform .18s ease;}
