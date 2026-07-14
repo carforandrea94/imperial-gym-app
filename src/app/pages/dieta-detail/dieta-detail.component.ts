@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { DietDataService } from '../../services/diet-data.service';
 import { DietStateService } from '../../services/diet-state.service';
 import { findClosestSlideIndex, scrollToSlide } from '../../core/utils/horizontal-slider.util';
+import { findCurrentMealIndex } from '../../core/utils/meal-time.util';
 import { DietPlan, NamedMeal, MealCombination, FoodItem, FoodCategory, FOOD_CATEGORIES, FOOD_CATEGORY_LABELS } from '../../models/diet.model';
 
 interface MealVM {
@@ -39,11 +40,12 @@ export class DietaDetailComponent implements OnInit {
     private cdr: ChangeDetectorRef
   ) {
     // Il toggle vive nella navbar (fuori da questa pagina): quando si passa
-    // a "slider" da un'altra vista/pagina, riparte sempre dalla prima card.
+    // a "slider" da un'altra vista/pagina, parte dal pasto della fascia
+    // oraria corrente (findCurrentMealIndex), non sempre dalla prima card.
     effect(() => {
       if (this.state.viewMode() === 'slider') {
-        this.sliderIndex = 0;
-        setTimeout(() => this.scrollToIndex(0), 0);
+        this.sliderIndex = findCurrentMealIndex(this.plan?.meals ?? []);
+        setTimeout(() => this.scrollToIndex(this.sliderIndex), 0);
       }
     });
   }
