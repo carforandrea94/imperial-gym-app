@@ -178,8 +178,8 @@ sono gia' cambiati da un edit precedente nello stesso file):
 | 111 | `background:#30D158;` | `background:var(--state-success);` | `.saveworkout-icon.saved` — reale |
 | 112 | `background:#FF453A;` | `background:var(--state-danger);` | `.saveworkout-icon.err` — reale |
 | 215 | `color:#30D158;` | `color:var(--state-success);` | `.spark-delta.up` — reale |
-| 216 | `color:#FF6961;` | **invariato** | `.spark-delta.down` — fuori scope, colore diverso non discusso |
-| 236 | `color:#FF6961;` | **invariato** | `.delta.up` — fuori scope, idem |
+| 216 | `color:#FF6961;` | `color:var(--state-danger-text);` | `.spark-delta.down` — vedi secondo addendum sotto: non e' un colore separato |
+| 236 | `color:#FF6961;` | `color:var(--state-danger-text);` | `.delta.up` — idem |
 | 237 | `color:#30D158;` | `color:var(--state-success);` | `.delta.down` — reale |
 | 351 | `background:linear-gradient(90deg,#0F7A57,var(--imp-red));` | `background:linear-gradient(90deg,var(--state-success-deep),var(--imp-red));` | `.savebtn` — **codice morto** (sovrascritto da riga 586), aggiornato comunque per pulizia |
 | 363 | `background:#30D158;` | `background:var(--state-success);` | `.savebtn.saved` — codice morto (sovrascritto da riga 591) |
@@ -192,11 +192,44 @@ sono gia' cambiati da un edit precedente nello stesso file):
 | 592 | `background: rgba(255,69,58,0.85);` | `background: rgba(var(--state-danger-rgb),0.85);` | `.savebtn.err` (seconda definizione) — reale |
 | 596 | `background: linear-gradient(180deg, rgba(255,69,58,0.60), rgba(150,10,26,0.48));` | `background: linear-gradient(180deg, rgba(var(--state-danger-rgb),0.60), rgba(var(--state-danger-deep-rgb),0.48));` | `.confirmbtn.danger` (seconda definizione) — **reale, vince nella cascata** |
 
-Nessun colore di testo (`color:`) cambia in nessuna di queste regole —
-solo gli sfondi. `#FF6961` (righe 216, 236, un rosso "andamento
-sfavorevole" per le misure, distinto sia dal rosso errore sia da
-qualunque accento) resta **esplicitamente invariato**: non fa parte dei
-colori di stato discussi (solo verde salvato + rosso errore).
+Nessun colore di testo (`color:`) cambia in nessuna delle regole della
+tabella sopra — solo gli sfondi.
+
+## Secondo addendum: `#FF6961` non e' un colore separato
+
+L'implementazione ha rivelato che `#FF6961` (rgb 255,105,97) non e' un
+rosso "distinto" come inizialmente ipotizzato: e' semplicemente una
+tinta piu' chiara dello stesso `#FF453A` (rgb 255,69,58), usata per il
+testo leggibile su sfondo scuro dove il rosso pieno sarebbe meno
+leggibile — stessa famiglia, due sfumature (piena per sfondi/bordi,
+chiara per il testo). Confermato con l'utente: **anche questa famiglia
+segue la nuova tonalita'**, in tutti i punti dove compare, non solo nei
+3 stati gia' discussi.
+
+Nuova variabile aggiuntiva in `:root`:
+
+```css
+--state-danger-text: #A64D67;  /* tinta chiara del vino scuro, per testo leggibile */
+```
+
+**Occorrenze aggiuntive da sostituire in `src/styles.css`** (trovate
+grep-ando l'intero file, oltre a quelle gia' elencate sopra):
+
+| Riga | Oggi | Diventa |
+|------|------|---------|
+| 160 | `.delete-btn{...border:1px solid rgba(255,69,58,.3);background:rgba(255,69,58,.12);color:#FF6961;...}` | `border:1px solid rgba(var(--state-danger-rgb),.3);background:rgba(var(--state-danger-rgb),.12);color:var(--state-danger-text);` |
+| 225 | `.spark-delta.down{color:#FF6961;}` | `.spark-delta.down{color:var(--state-danger-text);}` |
+| 245 | `.delta.up{color:#FF6961;}` | `.delta.up{color:var(--state-danger-text);}` |
+| 273 | `.fielderr{...color:#FF6961;...}` | `.fielderr{...color:var(--state-danger-text);...}` |
+| 274 | `.autherror{...color:#FF6961;background:rgba(255,69,58,.10);border:1px solid rgba(255,69,58,.25);...}` | `color:var(--state-danger-text);background:rgba(var(--state-danger-rgb),.10);border:1px solid rgba(var(--state-danger-rgb),.25);` |
+| 363 | `.delete-session-btn{background:rgba(255,69,58,.16);color:#FF6961;border:1px solid rgba(255,69,58,.3);box-shadow:none;}` | `background:rgba(var(--state-danger-rgb),.16);color:var(--state-danger-text);border:1px solid rgba(var(--state-danger-rgb),.3);box-shadow:none;` |
+
+Dopo questo secondo addendum, **nessuna occorrenza letterale di
+`#FF453A`/`#FF6961`/`255,69,58` deve restare in `styles.css`** (a
+differenza di quanto detto nel primo addendum, che erroneamente
+considerava `#FF6961` fuori scope). Il colore "Bicipiti" in
+`workout-data.service.ts` (`#30D158`, palette categorica separata)
+resta l'unica esclusione confermata.
 
 ## Test
 
@@ -204,6 +237,8 @@ Nessun test automatico (modifica puramente di stile CSS, nessuna logica
 applicativa). Verifica tramite `npx tsc --noEmit -p tsconfig.app.json`,
 `npx ng test --watch=false` (conteggio invariato), `npx ng build`, e
 verifica visiva manuale: sfondo animato, bottoni/badge con i nuovi
-accenti, stato "salvato" verde lime, stato "errore" vino scuro, il
-bottone principale (Completa allenamento/Riprova) non piu' rosso, colori
-dei gruppi muscolari e del delta misure (`#FF6961`) invariati.
+accenti, stato "salvato" verde lime, stato "errore" vino scuro (incluso
+bottoni elimina, errori di validazione form, frecce andamento
+sfavorevole), il bottone principale (Completa allenamento/Riprova) non
+piu' rosso, colori dei gruppi muscolari invariati (unica esclusione
+confermata).
