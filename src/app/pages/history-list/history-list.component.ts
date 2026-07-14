@@ -89,7 +89,7 @@ export class HistoryListComponent implements OnInit {
     }
 
     const groups: WeekGroup[] = Array.from(byWeek.keys())
-      .sort((a, b) => a - b)
+      .sort((a, b) => b - a)
       .map(week => ({ label: `Settimana ${week}`, entries: byWeek.get(week)! }));
 
     if (others.length > 0) {
