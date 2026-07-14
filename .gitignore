@@ -48,3 +48,6 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Superpowers scratch (SDD ledger, brainstorming mockups)
+.superpowers/
