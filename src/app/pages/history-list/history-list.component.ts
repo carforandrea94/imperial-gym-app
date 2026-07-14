@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { WorkoutSessionsService } from '../../services/workout-sessions.service';
+import { WorkoutStateService } from '../../services/workout-state.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { WorkoutSession } from '../../models/workout.model';
 
@@ -10,6 +11,12 @@ interface SessionEntry {
   session: WorkoutSession;
   displayDate: string;
   completedSets: number;
+  weekNumber: number;
+}
+
+interface WeekGroup {
+  label: string;
+  entries: SessionEntry[];
 }
 
 @Component({
@@ -21,11 +28,13 @@ interface SessionEntry {
 })
 export class HistoryListComponent implements OnInit {
   sessions: SessionEntry[] = [];
+  weekGroups: WeekGroup[] = [];
   loading = true;
   errorMsg = '';
 
   constructor(
     private sessionsSvc: WorkoutSessionsService,
+    private state: WorkoutStateService,
     private confirm: ConfirmDialogService,
     private router: Router,
     private cdr: ChangeDetectorRef
@@ -50,8 +59,10 @@ export class HistoryListComponent implements OnInit {
         const displayDate = date.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
         const completedSets = session.exercises.reduce((acc, ex) =>
           acc + ex.sets.filter(s => s.done).length, 0);
-        return { key: id, session, displayDate, completedSets };
+        const weekNumber = this.state.weekNumberForDate(session.date, this.state.DEFAULT_PROGRAM_START);
+        return { key: id, session, displayDate, completedSets, weekNumber };
       });
+      this.weekGroups = this.groupByWeek(this.sessions);
     } catch (e: any) {
       console.error('Errore caricamento storico allenamenti:', e);
       this.errorMsg = e?.message === 'TIMEOUT'
@@ -61,6 +72,31 @@ export class HistoryListComponent implements OnInit {
       this.loading = false;
       this.cdr.detectChanges();
     }
+  }
+
+  private groupByWeek(entries: SessionEntry[]): WeekGroup[] {
+    const byWeek = new Map<number, SessionEntry[]>();
+    const others: SessionEntry[] = [];
+
+    for (const entry of entries) {
+      if (entry.weekNumber < 1) {
+        others.push(entry);
+      } else {
+        const list = byWeek.get(entry.weekNumber) ?? [];
+        list.push(entry);
+        byWeek.set(entry.weekNumber, list);
+      }
+    }
+
+    const groups: WeekGroup[] = Array.from(byWeek.keys())
+      .sort((a, b) => a - b)
+      .map(week => ({ label: `Settimana ${week}`, entries: byWeek.get(week)! }));
+
+    if (others.length > 0) {
+      groups.push({ label: 'Altre sedute', entries: others });
+    }
+
+    return groups;
   }
 
   goToDetail(key: string): void {

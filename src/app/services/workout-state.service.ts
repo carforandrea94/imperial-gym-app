@@ -96,6 +96,20 @@ export class WorkoutStateService {
     this.currentWeek = this.computeAutoWeek(programStart, maxWeeks);
   }
 
+  /**
+   * Numero di settimana del protocollo per una data qualsiasi (non solo oggi),
+   * stessa formula di computeAutoWeek ma senza clamp: un risultato <= 0 indica
+   * una data precedente all'inizio del programma attuale, un risultato oltre
+   * maxWeeks e' legittimo (nessun tetto superiore). Usato per raggruppare lo
+   * storico sedute per settimana.
+   */
+  weekNumberForDate(dateISO: string, programStart: string): number {
+    const start = new Date(programStart + 'T00:00:00');
+    const date = new Date(dateISO + 'T00:00:00');
+    const diffDays = Math.floor((date.getTime() - start.getTime()) / 86400000);
+    return Math.floor(diffDays / 7) + 1;
+  }
+
   private computeAutoWeek(startISO: string, maxWeeks = 8): number {
     const start = new Date(startISO + 'T00:00:00');
     const now = new Date();

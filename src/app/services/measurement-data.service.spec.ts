@@ -3,6 +3,8 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 const mockDocs = new Map<string, any>();
 
 vi.mock('firebase/firestore', () => ({
+  // Stubbed so this mock stays harmless if it leaks into another spec file (isolate: false shares modules across files) that constructs the real FirebaseService.
+  initializeFirestore: () => ({}) as any,
   collection: (_db: any, ...segments: string[]) => ({ path: segments.join('/') }),
   doc: (_col: any, id: string) => ({ id }),
   getDoc: async (ref: { id: string }) => {
