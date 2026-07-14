@@ -166,6 +166,7 @@ export class HistoryDetailComponent implements OnInit, OnDestroy {
       this.setDisplayDate(this.session.date);
       this.editSession = null;
       this.editMode = false;
+      this.cdr.detectChanges();
     } else if (result === 'collision') {
       this.errorMsg = 'Esiste gia\' una seduta per questo giorno di allenamento in questa data.';
       this.cdr.detectChanges();
