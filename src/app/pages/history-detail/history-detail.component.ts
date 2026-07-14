@@ -152,6 +152,11 @@ export class HistoryDetailComponent implements OnInit, OnDestroy {
 
   async saveEdit(): Promise<void> {
     if (!this.editSession) return;
+    if (!this.editDate || this.editDate > this.maxDate) {
+      this.errorMsg = 'Data non valida: non puoi salvare una seduta senza data o con una data futura.';
+      this.cdr.detectChanges();
+      return;
+    }
     this.errorMsg = '';
 
     const result = await this.sessionsSvc.moveSession(this.editSession, this.key, this.editDate);
