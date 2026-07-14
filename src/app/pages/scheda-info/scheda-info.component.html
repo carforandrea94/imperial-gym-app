@@ -15,7 +15,7 @@
     <p>Gli esercizi <b>wave</b> seguono questa progressione:</p>
     <div class="infowave" *ngFor="let wp of weekPlan; let i = index">
       S{{ i + 1 }} → {{ wp.sets }}×{{ wp.reps }} reps
-      <span *ngIf="i + 1 === currentWeek" style="margin-left:8px;color:#30D158">← sei qui</span>
+      <span *ngIf="i + 1 === currentWeek" style="margin-left:8px;color:var(--state-success)">← sei qui</span>
     </div>
   </div>
 
