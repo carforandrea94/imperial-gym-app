@@ -7,7 +7,8 @@ import {
   collection,
   query,
   where,
-  getDocs
+  getDocs,
+  writeBatch
 } from 'firebase/firestore';
 import { FirebaseService } from '../core/services/firebase.service';
 import { AuthService } from '../core/services/auth.service';
@@ -61,6 +62,39 @@ export class WorkoutSessionsService {
       } catch (e) {
         console.error('Errore eliminazione sessione allenamento:', e);
         return false;
+      }
+    })());
+  }
+
+  /**
+   * Sposta/aggiorna una sessione gia' salvata. Se la data non cambia, aggiorna
+   * il documento esistente in place. Se la data cambia, l'id cambia (id =
+   * `${dayId}_${isoDate}`): scrive il nuovo documento e cancella quello vecchio
+   * in un'unica writeBatch atomica, dopo aver verificato che la data di
+   * destinazione non abbia gia' una seduta salvata per lo stesso dayId.
+   */
+  moveSession(session: WorkoutSession, oldId: string, newDate: string): Promise<'ok' | 'collision' | 'error'> {
+    return this.zoneFix.run((async () => {
+      try {
+        const newId = this.sessionId(session.dayId, newDate);
+        const data = sanitizeForFirestore({ ...session, date: newDate });
+
+        if (newId === oldId) {
+          await setDoc(doc(this.col(), oldId), data);
+          return 'ok';
+        }
+
+        const targetSnap = await getDoc(doc(this.col(), newId));
+        if (targetSnap.exists()) return 'collision';
+
+        const batch = writeBatch(this.fb.db);
+        batch.set(doc(this.col(), newId), data);
+        batch.delete(doc(this.col(), oldId));
+        await batch.commit();
+        return 'ok';
+      } catch (e) {
+        console.error('Errore spostamento seduta:', e);
+        return 'error';
       }
     })());
   }
