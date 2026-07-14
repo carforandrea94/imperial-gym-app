@@ -184,7 +184,7 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .exlist{display:flex;flex-direction:column;gap:12px;}
 .exslider-wrap{display:flex;flex-direction:column;}
 .exslider-counter{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--label-3);text-align:center;margin-bottom:10px;}
-.exslider{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:0 28px 2px;}
+.exslider{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px;}
 .exslider::-webkit-scrollbar{display:none;}
 .exslide{flex:0 0 100%;width:100%;scroll-snap-align:center;scroll-snap-stop:always;}
 .ex-summary.noclick{cursor:default;}
