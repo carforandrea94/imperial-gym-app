@@ -130,11 +130,80 @@ numeri successivi — chi implementa deve cercare le stringhe esatte
   puramente di variabili CSS + un blocco di stile, nessun file `.ts`
   (eccetto l'unico stile inline sopra) viene toccato.
 
+## Addendum: occorrenze aggiuntive trovate scrivendo il piano
+
+Un'ispezione esaustiva di `styles.css` (grep di ogni valore da cambiare)
+ha rivelato piu' occorrenze di quelle elencate sopra, incluse due
+definizioni **duplicate e in conflitto** di `.savebtn` e
+`.confirmbtn.danger` (una prima, una dopo nel file — vince quella dopo
+per ordine di cascata CSS, l'altra e' codice morto mai renderizzato).
+Elenco completo, verificato riga per riga:
+
+**Nuove variabili da aggiungere in `:root`** (oltre a quelle gia'
+elencate sopra), per evitare di ripetere gli stessi valori come literal
+in piu' punti:
+
+```css
+--state-success: var(--imp-red);        /* #6DB458 */
+--state-success-rgb: 109,180,88;        /* per rgba(var(...), alpha) */
+--state-success-deep: #3C6330;          /* verde scuro, sostituisce #0F7A57 nei gradienti */
+--state-success-deep-rgb: 60,99,48;
+--state-danger: #5C2B39;
+--state-danger-rgb: 92,43,57;
+--state-danger-deep: #33181F;           /* vino scuro, per il secondo stop dei gradienti */
+--state-danger-deep-rgb: 51,24,31;
+```
+
+`--sys-red` diventa `var(--state-danger)` (nessun altro file lo
+referenzia con `var()`, ma resta coerente).
+
+**`.savebtn`/`.confirmbtn.danger` — la vera domanda emersa**: il bottone
+`.savebtn` (usato per "Completa allenamento", "Riprova" e altri bottoni
+primari in tutta l'app) ha oggi, nella definizione che vince davvero
+(quella piu' in basso nel file, righe 586-589), uno sfondo **rosso
+"vetro imperiale"** (`linear-gradient(180deg, rgba(255,46,46,0.52),
+rgba(150,10,26,0.42))`), indipendente da qualunque accento verde.
+Confermato con l'utente: **anche questo diventa la nuova palette**
+(lime/teal), non resta rosso.
+
+**Elenco esaustivo di ogni riga da modificare in `src/styles.css`** (i
+numeri sono quelli attuali, prima di qualunque modifica — chi implementa
+deve cercare le stringhe esatte, non affidarsi ciecamente ai numeri se
+sono gia' cambiati da un edit precedente nello stesso file):
+
+| Riga | Oggi | Diventa | Note |
+|------|------|---------|------|
+| 5 | `--bg:#0A0D13;` | `--bg:#181624;` | gia' previsto sopra |
+| 108 | `background:linear-gradient(90deg,#0F7A57,var(--imp-red));` | `background:linear-gradient(90deg,var(--state-success-deep),var(--imp-red));` | `.saveworkout-icon` — reale |
+| 111 | `background:#30D158;` | `background:var(--state-success);` | `.saveworkout-icon.saved` — reale |
+| 112 | `background:#FF453A;` | `background:var(--state-danger);` | `.saveworkout-icon.err` — reale |
+| 215 | `color:#30D158;` | `color:var(--state-success);` | `.spark-delta.up` — reale |
+| 216 | `color:#FF6961;` | **invariato** | `.spark-delta.down` — fuori scope, colore diverso non discusso |
+| 236 | `color:#FF6961;` | **invariato** | `.delta.up` — fuori scope, idem |
+| 237 | `color:#30D158;` | `color:var(--state-success);` | `.delta.down` — reale |
+| 351 | `background:linear-gradient(90deg,#0F7A57,var(--imp-red));` | `background:linear-gradient(90deg,var(--state-success-deep),var(--imp-red));` | `.savebtn` — **codice morto** (sovrascritto da riga 586), aggiornato comunque per pulizia |
+| 363 | `background:#30D158;` | `background:var(--state-success);` | `.savebtn.saved` — codice morto (sovrascritto da riga 591) |
+| 364 | `background:#FF453A;` | `background:var(--state-danger);` | `.savebtn.err` — codice morto (sovrascritto da riga 592) |
+| 415 | `background:rgba(48,209,88,0.3);` | `background:rgba(var(--state-success-rgb),0.3);` | `.resttimer.finished .resttimer-fill` — reale |
+| 419 | `color:#30D158;` | `color:var(--state-success);` | `.resttimer.finished .resttimer-time` — reale |
+| 431 | `background:#FF453A;` | `background:var(--state-danger);` | `.confirmbtn.danger` (prima definizione) — codice morto (sovrascritto da riga 596) |
+| 587 | `background: linear-gradient(180deg, rgba(255,46,46,0.52), rgba(150,10,26,0.42));` | `background: linear-gradient(180deg, rgba(var(--state-success-rgb),0.52), rgba(var(--state-success-deep-rgb),0.42));` | `.savebtn` (seconda definizione) — **reale, vince nella cascata** |
+| 591 | `background: rgba(48,209,88,0.85);` | `background: rgba(var(--state-success-rgb),0.85);` | `.savebtn.saved` (seconda definizione) — reale |
+| 592 | `background: rgba(255,69,58,0.85);` | `background: rgba(var(--state-danger-rgb),0.85);` | `.savebtn.err` (seconda definizione) — reale |
+| 596 | `background: linear-gradient(180deg, rgba(255,69,58,0.60), rgba(150,10,26,0.48));` | `background: linear-gradient(180deg, rgba(var(--state-danger-rgb),0.60), rgba(var(--state-danger-deep-rgb),0.48));` | `.confirmbtn.danger` (seconda definizione) — **reale, vince nella cascata** |
+
+Nessun colore di testo (`color:`) cambia in nessuna di queste regole —
+solo gli sfondi. `#FF6961` (righe 216, 236, un rosso "andamento
+sfavorevole" per le misure, distinto sia dal rosso errore sia da
+qualunque accento) resta **esplicitamente invariato**: non fa parte dei
+colori di stato discussi (solo verde salvato + rosso errore).
+
 ## Test
 
 Nessun test automatico (modifica puramente di stile CSS, nessuna logica
 applicativa). Verifica tramite `npx tsc --noEmit -p tsconfig.app.json`,
 `npx ng test --watch=false` (conteggio invariato), `npx ng build`, e
 verifica visiva manuale: sfondo animato, bottoni/badge con i nuovi
-accenti, stato "salvato" verde lime, stato "errore" vino scuro, colori
-dei gruppi muscolari invariati.
+accenti, stato "salvato" verde lime, stato "errore" vino scuro, il
+bottone principale (Completa allenamento/Riprova) non piu' rosso, colori
+dei gruppi muscolari e del delta misure (`#FF6961`) invariati.
