@@ -38,6 +38,7 @@ export class MisureAnalyticsComponent implements OnInit {
   firstValue: string | null = null;
   lastValue: string | null = null;
   delta: number | null = null;
+  deltaText: string | null = null;
 
   private allEntries: import('../../models/measurement.model').MeasurementEntry[] = [];
   private allHistory: { date: string; value: number }[] = [];
@@ -102,16 +103,15 @@ export class MisureAnalyticsComponent implements OnInit {
 
     const history = this.allEntries.slice().reverse(); // dal piu' vecchio al piu' recente
     const points = history
-      .filter(e => !!e[field.key])
-      .map(e => ({ date: e.date, value: parseFloat(e[field.key] as string) }))
-      .filter(p => !isNaN(p.value));
+      .map(e => ({ date: e.date, value: this.data.parseMeasureValue(e[field.key] as string | null) }))
+      .filter((p): p is { date: string; value: number } => p.value !== null);
 
     this.allHistory = points;
     this.hasEnoughData = points.length >= 2;
 
     if (points.length >= 1) {
-      this.firstValue = points[0].value.toString();
-      this.lastValue = points[points.length - 1].value.toString();
+      this.firstValue = this.data.formatMeasureNumber(points[0].value);
+      this.lastValue = this.data.formatMeasureNumber(points[points.length - 1].value);
     } else {
       this.firstValue = null;
       this.lastValue = null;
@@ -120,10 +120,12 @@ export class MisureAnalyticsComponent implements OnInit {
     if (this.hasEnoughData) {
       const diff = points[points.length - 1].value - points[0].value;
       this.delta = Math.round(diff * 10) / 10;
+      this.deltaText = (this.delta > 0 ? '+' : '') + this.data.formatMeasureNumber(this.delta);
       const svg = this.data.buildTrendSVG(points);
       this.chartSvg = this.sanitizer.bypassSecurityTrustHtml(svg);
     } else {
       this.delta = null;
+      this.deltaText = null;
       this.chartSvg = null;
     }
   }

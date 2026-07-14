@@ -9,6 +9,7 @@ interface EntryRow {
   entry: MeasurementEntry;
   displayDate: string;
   pesoDelta: number | null;
+  pesoDeltaText: string | null;
 }
 
 @Component({
@@ -49,11 +50,14 @@ export class MisureStoricoComponent implements OnInit {
         const displayDate = date.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
         const prev = history[i + 1];
         let pesoDelta: number | null = null;
-        if (entry.peso && prev?.peso) {
-          const diff = parseFloat(entry.peso) - parseFloat(prev.peso);
-          if (!isNaN(diff)) pesoDelta = Math.round(diff * 10) / 10;
+        let pesoDeltaText: string | null = null;
+        const cur = this.data.parseMeasureValue(entry.peso);
+        const prevVal = this.data.parseMeasureValue(prev?.peso);
+        if (cur !== null && prevVal !== null) {
+          pesoDelta = Math.round((cur - prevVal) * 10) / 10;
+          pesoDeltaText = (pesoDelta > 0 ? '+' : '') + this.data.formatMeasureNumber(pesoDelta);
         }
-        return { entry, displayDate, pesoDelta };
+        return { entry, displayDate, pesoDelta, pesoDeltaText };
       });
     } catch (e: any) {
       console.error('Errore caricamento storico misure:', e);

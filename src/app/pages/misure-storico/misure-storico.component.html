@@ -19,8 +19,8 @@
       <div class="meta">
         <ng-container *ngIf="r.entry.peso">{{ r.entry.peso }} kg</ng-container>
         <ng-container *ngIf="r.pesoDelta !== null">
-          &nbsp;·&nbsp;<span [class]="r.pesoDelta < 0 ? 'delta down' : (r.pesoDelta > 0 ? 'delta up' : 'delta')">
-            {{ r.pesoDelta > 0 ? '+' : '' }}{{ r.pesoDelta }} kg
+          &nbsp;·&nbsp;<span [class]="r.pesoDelta! < 0 ? 'delta down' : (r.pesoDelta! > 0 ? 'delta up' : 'delta')">
+            {{ r.pesoDeltaText }} kg
           </span>
         </ng-container>
         <ng-container *ngIf="!r.entry.peso">Misurazione salvata</ng-container>

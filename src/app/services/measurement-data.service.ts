@@ -225,6 +225,18 @@ export class MeasurementDataService {
     </svg>`;
   }
 
+  /** I valori sono digitati/salvati con la virgola italiana (es. "109,5"): parseFloat da sola tronca al primo carattere non numerico e perde il decimale. */
+  parseMeasureValue(raw: string | null | undefined): number | null {
+    if (!raw) return null;
+    const n = parseFloat(raw.replace(',', '.'));
+    return isNaN(n) ? null : n;
+  }
+
+  /** Formatta un numero calcolato (differenza, primo/ultimo valore) con la virgola italiana, coerente con come i valori grezzi sono gia' mostrati altrove. */
+  formatMeasureNumber(n: number): string {
+    return (Math.round(n * 10) / 10).toString().replace('.', ',');
+  }
+
   private formatAxisNum(n: number): string {
     return Number.isInteger(n) ? String(n) : n.toFixed(1);
   }

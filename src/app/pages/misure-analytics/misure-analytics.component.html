@@ -22,7 +22,7 @@
         <div class="chart-sub" *ngIf="!hasEnoughData">Servono almeno 2 misurazioni per il grafico</div>
       </div>
       <span *ngIf="delta !== null" [class]="getDeltaClass()">
-        {{ delta! > 0 ? '+' : '' }}{{ delta }} {{ selectedField?.unit }}
+        {{ deltaText }} {{ selectedField?.unit }}
       </span>
     </div>
 
