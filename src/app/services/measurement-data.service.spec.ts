@@ -102,3 +102,58 @@ describe('MeasurementDataService.moveCategoryEntry', () => {
     expect(mockDocs.get('2026-07-01')).toMatchObject({ peso: '81', cmVita: '90' });
   });
 });
+
+describe('MeasurementDataService.parseMeasureValue', () => {
+  let service: MeasurementDataService;
+
+  beforeEach(() => {
+    const fbStub = { db: {} } as any;
+    const authStub = { currentUser: () => ({ uid: 'u1' }) } as any;
+    const appStateStub = {} as any;
+    const zoneFixStub = { run: (p: Promise<any>) => p } as any;
+    service = new MeasurementDataService(fbStub, authStub, appStateStub, zoneFixStub);
+  });
+
+  it('interpreta la virgola italiana come separatore decimale', () => {
+    expect(service.parseMeasureValue('109,5')).toBe(109.5);
+    expect(service.parseMeasureValue('110,9')).toBe(110.9);
+  });
+
+  it('funziona anche con valori gia\' col punto come separatore', () => {
+    expect(service.parseMeasureValue('109.5')).toBe(109.5);
+  });
+
+  it('restituisce null per valori nulli, vuoti o non numerici', () => {
+    expect(service.parseMeasureValue(null)).toBeNull();
+    expect(service.parseMeasureValue(undefined)).toBeNull();
+    expect(service.parseMeasureValue('')).toBeNull();
+    expect(service.parseMeasureValue('abc')).toBeNull();
+  });
+
+  it('la differenza tra due valori con virgola mantiene la precisione decimale', () => {
+    const diff = service.parseMeasureValue('109,5')! - service.parseMeasureValue('110,9')!;
+    expect(Math.round(diff * 10) / 10).toBe(-1.4);
+  });
+});
+
+describe('MeasurementDataService.formatMeasureNumber', () => {
+  let service: MeasurementDataService;
+
+  beforeEach(() => {
+    const fbStub = { db: {} } as any;
+    const authStub = { currentUser: () => ({ uid: 'u1' }) } as any;
+    const appStateStub = {} as any;
+    const zoneFixStub = { run: (p: Promise<any>) => p } as any;
+    service = new MeasurementDataService(fbStub, authStub, appStateStub, zoneFixStub);
+  });
+
+  it('mostra i decimali con la virgola italiana', () => {
+    expect(service.formatMeasureNumber(-1.4)).toBe('-1,4');
+    expect(service.formatMeasureNumber(2.3)).toBe('2,3');
+  });
+
+  it('non aggiunge decimali superflui per i numeri interi', () => {
+    expect(service.formatMeasureNumber(3)).toBe('3');
+    expect(service.formatMeasureNumber(-2)).toBe('-2');
+  });
+});

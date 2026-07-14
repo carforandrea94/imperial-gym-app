@@ -16,6 +16,7 @@ interface FieldRow {
   field: MeasureField;
   value: string | null;
   delta: number | null;
+  deltaText: string | null;
 }
 
 @Component({
@@ -84,11 +85,14 @@ export class MisureStoricoDetailComponent implements OnInit {
     return fields.map(field => {
       const value = entry[field.key];
       let delta: number | null = null;
-      if (value && prev?.[field.key]) {
-        const diff = parseFloat(value) - parseFloat(prev[field.key] as string);
-        if (!isNaN(diff)) delta = Math.round(diff * 10) / 10;
+      let deltaText: string | null = null;
+      const cur = this.data.parseMeasureValue(value);
+      const prevVal = this.data.parseMeasureValue(prev?.[field.key]);
+      if (cur !== null && prevVal !== null) {
+        delta = Math.round((cur - prevVal) * 10) / 10;
+        deltaText = (delta > 0 ? '+' : '') + this.data.formatMeasureNumber(delta);
       }
-      return { field, value, delta };
+      return { field, value, delta, deltaText };
     });
   }
 
