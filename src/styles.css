@@ -24,9 +24,9 @@
   --on: var(--imp-red);
   --on-dim: var(--imp-red-dim);
   --state-success: var(--imp-red);
-  --state-success-rgb: 109,180,88;
-  --state-success-deep: #3C6330;
-  --state-success-deep-rgb: 60,99,48;
+  --state-success-rgb: 164,194,246;
+  --state-success-deep: #5A6A87;
+  --state-success-deep-rgb: 90,106,135;
   --state-danger: #5C2B39;
   --state-danger-rgb: 92,43,57;
   --state-danger-deep: #33181F;
