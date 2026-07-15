@@ -14,6 +14,8 @@
   [showSettings]="showSettings"
   [showSaveEdit]="historyEditState.editMode()"
   [saveEditSaving]="historyEditState.saving()"
+  [showProtocolSave]="showProtocolSave"
+  [protocolSaving]="protocolBuilderState.saving()"
   (backClick)="onBack()"
   (historyClick)="onHistory()"
   (infoClick)="onInfo()"
@@ -22,7 +24,9 @@
   (viewModeChange)="onViewModeChange($event)"
   (saveWorkoutClick)="onSaveWorkoutClick()"
   (settingsClick)="onSettingsClick()"
-  (saveEditClick)="historyEditState.requestSave()">
+  (saveEditClick)="historyEditState.requestSave()"
+  (saveDraftClick)="protocolBuilderState.requestSaveDraft()"
+  (saveActivateClick)="protocolBuilderState.requestSaveActivate()">
 </app-navbar>
 
 <div class="content" [class.no-chrome]="!showChrome">

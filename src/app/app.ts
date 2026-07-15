@@ -15,6 +15,7 @@ import { DietStateService } from './services/diet-state.service';
 import { AuthService } from './core/services/auth.service';
 import { CATEGORY_LABELS, MeasureCategory } from './models/measurement.model';
 import { HistoryEditStateService } from './services/history-edit-state.service';
+import { ProtocolBuilderStateService } from './services/protocol-builder-state.service';
 
 @Component({
   selector: 'app-root',
@@ -37,6 +38,10 @@ export class App implements OnInit, OnDestroy {
   showSettings = false;
   showChrome = false;
 
+  get showProtocolSave(): boolean {
+    return this.showSettings && !this.protocolBuilderState.editingSubform();
+  }
+
   private routeSub: Subscription | null = null;
 
   constructor(
@@ -46,7 +51,8 @@ export class App implements OnInit, OnDestroy {
     public dietState: DietStateService,
     public auth: AuthService,
     private swUpdate: SwUpdate,
-    public historyEditState: HistoryEditStateService
+    public historyEditState: HistoryEditStateService,
+    public protocolBuilderState: ProtocolBuilderStateService
   ) {}
 
   ngOnInit(): void {
