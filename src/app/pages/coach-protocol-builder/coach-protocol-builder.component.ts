@@ -8,6 +8,8 @@ import { WorkoutDataService } from '../../services/workout-data.service';
 import { Protocol } from '../../models/protocol.model';
 import { Day, Exercise } from '../../models/workout.model';
 import { FoodItem, DietPlan, NamedMeal, MealCombination, newDietPlan, newNamedMeal, newCombination, FoodCategory, FOOD_CATEGORIES, FOOD_CATEGORY_LABELS } from '../../models/diet.model';
+import { ProtocolBuilderStateService } from '../../services/protocol-builder-state.service';
+import { ToastService } from '../../services/toast.service';
 
 type Tab = 'scheda' | 'dieta' | 'info';
 
@@ -29,8 +31,23 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
 
   tab: Tab = 'scheda';
   editingPlan: DietPlan | null = null;
-  editingMeal: NamedMeal | null = null;
-  editingExercise: { day: Day; ex: Exercise; isNew: boolean } | null = null;
+  private _editingMeal: NamedMeal | null = null;
+  get editingMeal(): NamedMeal | null { return this._editingMeal; }
+  set editingMeal(val: NamedMeal | null) {
+    this._editingMeal = val;
+    this.syncEditingSubform();
+  }
+
+  private _editingExercise: { day: Day; ex: Exercise; isNew: boolean } | null = null;
+  get editingExercise(): { day: Day; ex: Exercise; isNew: boolean } | null { return this._editingExercise; }
+  set editingExercise(val: { day: Day; ex: Exercise; isNew: boolean } | null) {
+    this._editingExercise = val;
+    this.syncEditingSubform();
+  }
+
+  private syncEditingSubform(): void {
+    this.protocolBuilderState.editingSubform.set(!!this._editingExercise || !!this._editingMeal);
+  }
 
   readonly muscles = ['Petto', 'Spalle', 'Tricipiti', 'Dorso', 'Bicipiti', 'Gambe', 'Core'];
   readonly foodCategories = FOOD_CATEGORIES;
@@ -41,10 +58,13 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
     private router: Router,
     private protocolSvc: ProtocolService,
     public workoutData: WorkoutDataService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private protocolBuilderState: ProtocolBuilderStateService,
+    private toast: ToastService
   ) {}
 
   ngOnInit(): void {
+    this.protocolBuilderState.registerHandlers(() => this.save(false), () => this.save(true));
     this.paramSub = this.route.paramMap.subscribe(params => {
       this.clientId = params.get('clientId') ?? '';
       this.protocolId = params.get('protocolId') ?? '';
@@ -54,6 +74,8 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.paramSub?.unsubscribe();
+    this.protocolBuilderState.registerHandlers(null, null);
+    this.protocolBuilderState.editingSubform.set(false);
   }
 
   private async load(): Promise<void> {
@@ -364,6 +386,7 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
     if (!this.protocol) return;
     this.saving = true;
     this.saveMsg = '';
+    this.protocolBuilderState.saving.set(true);
     try {
       const toSave = {
         name: this.protocol.name,
@@ -379,6 +402,7 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
       const mismatch = this.findMismatch(toSave, reread);
       if (mismatch) {
         this.saveMsg = `Attenzione: il salvataggio sembra incompleto (${mismatch}). Riprova prima di attivare.`;
+        this.toast.error('Salvataggio incompleto, riprova.');
         this.saving = false;
         return;
       }
@@ -386,12 +410,15 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
       if (activateAfter) {
         await this.protocolSvc.activate(this.clientId, this.protocolId);
       }
+      this.toast.success(activateAfter ? 'Protocollo attivato ✓' : 'Bozza salvata ✓');
       this.router.navigate(['/coach/clienti', this.clientId]);
     } catch (e: any) {
       console.error('Errore salvataggio protocollo:', e);
       this.saveMsg = e?.message || 'Errore durante il salvataggio.';
+      this.toast.error('Errore durante il salvataggio. Riprova.');
     } finally {
       this.saving = false;
+      this.protocolBuilderState.saving.set(false);
     }
   }
 

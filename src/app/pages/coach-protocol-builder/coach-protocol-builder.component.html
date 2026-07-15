@@ -406,13 +406,4 @@
 
   <p class="autherror" *ngIf="saveMsg && !editingExercise && !editingMeal">{{ saveMsg }}</p>
 
-  <div class="savebar builder-savebar" *ngIf="!editingExercise && !editingMeal">
-    <button class="confirmbtn cancel" style="flex:1" [disabled]="saving" (click)="save(false)">
-      {{ saving ? '…' : 'Salva bozza' }}
-    </button>
-    <button class="savebtn" style="flex:1.4" [disabled]="saving" (click)="save(true)">
-      {{ saving ? '…' : 'Salva e attiva' }}
-    </button>
-  </div>
-
 </ng-container>

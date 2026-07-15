@@ -12,6 +12,10 @@
   [showSaveWorkout]="showSaveWorkout"
   [saveStatus]="workoutState.saveStatus()"
   [showSettings]="showSettings"
+  [showSaveEdit]="historyEditState.editMode()"
+  [saveEditSaving]="historyEditState.saving()"
+  [showProtocolSave]="showProtocolSave"
+  [protocolSaving]="protocolBuilderState.saving()"
   (backClick)="onBack()"
   (historyClick)="onHistory()"
   (infoClick)="onInfo()"
@@ -19,7 +23,10 @@
   (shoppingListClick)="onShoppingList()"
   (viewModeChange)="onViewModeChange($event)"
   (saveWorkoutClick)="onSaveWorkoutClick()"
-  (settingsClick)="onSettingsClick()">
+  (settingsClick)="onSettingsClick()"
+  (saveEditClick)="historyEditState.requestSave()"
+  (saveDraftClick)="protocolBuilderState.requestSaveDraft()"
+  (saveActivateClick)="protocolBuilderState.requestSaveActivate()">
 </app-navbar>
 
 <div class="content" [class.no-chrome]="!showChrome">
@@ -30,4 +37,5 @@
 
 <app-rest-timer *ngIf="showChrome && auth.authReady()"></app-rest-timer>
 <app-confirm-dialog></app-confirm-dialog>
+<app-toast></app-toast>
 <app-tabbar *ngIf="showChrome && auth.authReady()"></app-tabbar>

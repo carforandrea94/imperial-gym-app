@@ -11,6 +11,7 @@ import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { Day, Exercise, WorkoutSession, ExInsight } from '../../models/workout.model';
 import { todayLocalISO } from '../../core/utils/date.util';
 import { findClosestSlideIndex, scrollToSlide } from '../../core/utils/horizontal-slider.util';
+import { ToastService } from '../../services/toast.service';
 
 interface SerieRow {
   reps: string;
@@ -62,7 +63,8 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
     private sessions: WorkoutSessionsService,
     private confirm: ConfirmDialogService,
     private sanitizer: DomSanitizer,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private toast: ToastService
   ) {
     // Il toggle vive nella navbar (fuori da questa pagina): quando si passa
     // a "slider" da un'altra vista/pagina, riparte sempre dalla prima card.
@@ -366,12 +368,15 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
       if (ok) {
         await this.appState.deleteFieldPath(`workoutDrafts.${this.day.id}`);
         this.state.saveStatus.set('saved');
+        this.toast.success('Allenamento salvato ✓');
       } else {
         this.state.saveStatus.set('err');
+        this.toast.error('Errore durante il salvataggio. Riprova.');
       }
     } catch (e: any) {
       console.error('Errore salvataggio allenamento:', e);
       this.state.saveStatus.set('err');
+      this.toast.error('Errore durante il salvataggio. Riprova.');
     } finally {
       setTimeout(() => this.state.saveStatus.set('idle'), 2000);
     }

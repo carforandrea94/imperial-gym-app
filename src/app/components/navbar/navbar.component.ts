@@ -20,6 +20,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
   @Input() showSaveWorkout = false;
   @Input() saveStatus: 'idle' | 'saving' | 'saved' | 'err' = 'idle';
   @Input() showSettings = false;
+  @Input() showSaveEdit = false;
+  @Input() saveEditSaving = false;
+  @Input() showProtocolSave = false;
+  @Input() protocolSaving = false;
 
   @Output() backClick = new EventEmitter<void>();
   @Output() historyClick = new EventEmitter<void>();
@@ -29,6 +33,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
   @Output() viewModeChange = new EventEmitter<'list' | 'slider'>();
   @Output() saveWorkoutClick = new EventEmitter<void>();
   @Output() settingsClick = new EventEmitter<void>();
+  @Output() saveEditClick = new EventEmitter<void>();
+  @Output() saveDraftClick = new EventEmitter<void>();
+  @Output() saveActivateClick = new EventEmitter<void>();
 
   ngOnInit(): void {
     window.addEventListener('scroll', this.onScroll, { passive: true });

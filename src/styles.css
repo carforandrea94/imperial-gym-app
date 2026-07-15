@@ -106,6 +106,8 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .backbtn .chev{font-size:20px;line-height:1;color:#fff;}
 .navactions{display:flex;gap:8px;flex-shrink:0;}
 .navicon{width:38px;height:38px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,0.07);color:var(--label);backdrop-filter:blur(9px) saturate(115%);-webkit-backdrop-filter:blur(9px) saturate(115%);box-shadow:inset 0 1px 0 rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.navicon:disabled{opacity:.5;cursor:not-allowed;}
+.protocolsave{display:flex;gap:8px;}
 .navactions.hide{display:none;}
 .saveworkout-icon{background:var(--imp-red);border-color:rgba(255,255,255,.14);color:#04140D;box-shadow:inset 0 1px 0 rgba(255,255,255,.3);transition:filter .2s ease,background .2s ease;}
 .saveworkout-icon:active{filter:brightness(0.92);}
@@ -620,3 +622,6 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
     backdrop-filter: none; -webkit-backdrop-filter: none;
   }
 }
+
+.apptoast{position:fixed;left:50%;bottom:calc(var(--tabbar-h) + var(--safe-b) + 12px);transform:translateX(-50%);z-index:65;padding:10px 20px;border-radius:20px;background:rgba(48,209,88,0.92);color:#04220f;font-weight:600;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.3);backdrop-filter:blur(12px) saturate(125%);-webkit-backdrop-filter:blur(12px) saturate(125%);animation:fade .2s ease;white-space:nowrap;max-width:calc(100vw - 32px);text-overflow:ellipsis;overflow:hidden;}
+.apptoast.error{background:rgba(255,69,58,0.92);color:#fff;}
