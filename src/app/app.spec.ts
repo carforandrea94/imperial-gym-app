@@ -16,10 +16,12 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
+  // whenStable() aspetta il vero onAuthStateChanged di Firebase (nessun mock in
+  // questo test): con accesso di rete reale (CI) puo' superare il timeout di default di 5s.
   it('should render the router outlet', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('router-outlet')).toBeTruthy();
-  });
+  }, 15000);
 });
