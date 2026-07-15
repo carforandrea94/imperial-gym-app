@@ -136,12 +136,12 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .tabbar .pill{position:absolute;top:5px;left:5px;height:calc(100% - 10px);width:calc(50% - 5px);background:var(--bg-card-2);border:1px solid rgba(255,255,255,.12);border-radius:22px;z-index:0;transition:transform .4s var(--spring);box-shadow:inset 0 1px 0 rgba(255,255,255,.05);}
 .tabbar .pill.p1{transform:translateX(100%);}
 .tabbar-3 .pill{width:calc(33.333% - 3.33px);}
-.tabbar-3 .pill.p1{transform:translateX(100%);}
-.tabbar-3 .pill.p2{transform:translateX(200%);}
+.tabbar-3 .pill.p1{transform:translateX(calc(100% + 3.33px));}
+.tabbar-3 .pill.p2{transform:translateX(calc(200% + 6.66px));}
 .tabbar-4 .pill{width:calc(25% - 3.75px);}
-.tabbar-4 .pill.p1{transform:translateX(100%);}
-.tabbar-4 .pill.p2{transform:translateX(200%);}
-.tabbar-4 .pill.p3{transform:translateX(300%);}
+.tabbar-4 .pill.p1{transform:translateX(calc(100% + 3.75px));}
+.tabbar-4 .pill.p2{transform:translateX(calc(200% + 7.5px));}
+.tabbar-4 .pill.p3{transform:translateX(calc(300% + 11.25px));}
 .tabbar .tabbtn span{position:relative;z-index:1;}
 
 /* ===== SCHEDA ===== */
