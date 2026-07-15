@@ -9,11 +9,13 @@
   --label:#FFFFFF;
   --label-2:rgba(255,255,255,0.92);
   --label-3:rgba(255,255,255,0.80);
-  /* ===== Imperial Gym — palette lime/arancione ===== */
-  --imp-red:#6DB458;                     /* verde lime — accento primario */
-  --imp-red-dim:rgba(109,180,88,0.16);
-  --imp-amber:#E7B56F;                   /* arancione — nuovo accento secondario */
-  --imp-amber-dim:rgba(231,181,111,0.18);
+  /* ===== Imperial Gym — palette blu/verde ===== */
+  --imp-red:#A4C2F6;                     /* blu — accento primario */
+  --imp-red-dim:rgba(164,194,246,0.16);
+  --imp-amber:#80D09A;                   /* verde — accento secondario */
+  --imp-amber-dim:rgba(128,208,154,0.18);
+  --macro-carb:#E8C468;                  /* ambra — etichetta "Carboidrati" */
+  --macro-protein:#E8918A;               /* corallo — etichetta "Proteine" */
   --sys-cyan:#64D2FF;
   --sys-cyan-dim:rgba(100,210,255,0.18);
   --sys-red:var(--state-danger);
@@ -69,27 +71,13 @@ body::before {
   animation: bgDrift 26s var(--spring-soft) infinite alternate;
 }
 
-body::after {
-  content: '';
-  position: fixed;
-  inset: -20%;
-  pointer-events: none;
-  z-index: 0;
-  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='240'%20height='240'%20viewBox='0%200%20240%20240'%3E%3Cpath%20d='M0,40%20C30,20%2060,60%20120,40%20C180,20%20210,60%20240,40'%20stroke='white'%20stroke-width='1.2'%20fill='none'%20stroke-linecap='round'/%3E%3Cpath%20d='M0,120%20C30,100%2060,140%20120,120%20C180,100%20210,140%20240,120'%20stroke='white'%20stroke-width='1.2'%20fill='none'%20stroke-linecap='round'/%3E%3Cpath%20d='M0,200%20C30,180%2060,220%20120,200%20C180,180%20210,220%20240,200'%20stroke='white'%20stroke-width='1.2'%20fill='none'%20stroke-linecap='round'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-size: 240px 240px;
-  opacity: 0.06;
-  mix-blend-mode: soft-light;
-  animation: bgDrift 26s var(--spring-soft) infinite alternate;
-}
-
 @keyframes bgDrift {
   0%   { transform: translate3d(-3%, -2%, 0) scale(1.05) rotate(0deg); }
   50%  { transform: translate3d(3%, 2%, 0)  scale(1.12) rotate(4deg); }
   100% { transform: translate3d(-2%, 3%, 0) scale(1.06) rotate(-3deg); }
 }
 @media (prefers-reduced-motion: reduce) {
-  body::before, body::after { animation: none; }
+  body::before { animation: none; }
 }
 
 input, button, textarea, select {
@@ -132,7 +120,7 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .tabbar{position:fixed;left:16px;right:16px;bottom:calc(var(--safe-b) + 2px);z-index:60;height:var(--tabbar-h);background:var(--glass-bg);backdrop-filter:blur(22px) saturate(140%);-webkit-backdrop-filter:blur(22px) saturate(140%);border:1px solid rgba(255,255,255,0.14);border-radius:27px;box-shadow:inset 0 1px 4px rgba(255,255,255,.35),inset 0 -1px 5px rgba(0,0,0,.28),inset 1px 0 3px rgba(255,255,255,.06),inset -1px 0 3px rgba(255,255,255,.06),0 10px 30px rgba(0,0,0,.5);display:flex;align-items:center;padding:5px;max-width:608px;margin:0 auto;}
 .tabbar .tabbtn{flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:transparent;color:var(--label-3);cursor:pointer;border-radius:22px;position:relative;-webkit-user-select:none;user-select:none;transition:color .18s ease;}
 .tabbar .tabbtn .ic{display:block;color:currentColor;}
-.tabbar .tabbtn.active{color:var(--label);}
+.tabbar .tabbtn.active{color:var(--accent);}
 .tabbar .pill{position:absolute;top:5px;left:5px;height:calc(100% - 10px);width:calc(50% - 5px);background:var(--bg-card-2);border:1px solid rgba(255,255,255,.12);border-radius:22px;z-index:0;transition:transform .4s var(--spring);box-shadow:inset 0 1px 0 rgba(255,255,255,.05);}
 .tabbar .pill.p1{transform:translateX(100%);}
 .tabbar-3 .pill{width:calc((100% - 10px) / 3);}
@@ -398,6 +386,8 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .fooditem{padding:11px 0;border-bottom:1px solid var(--separator);}
 .fooditem-category{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--label-3);margin:14px 0 4px;}
 .fooditem-category.fat{color:var(--imp-amber);}
+.fooditem-category.carb{color:var(--macro-carb);}
+.fooditem-category.protein{color:var(--macro-protein);}
 .fooditem:last-child{border-bottom:none;}
 .fooditem .row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
 .fooditem .fname{font-size:14.5px;line-height:1.3;}
