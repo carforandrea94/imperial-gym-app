@@ -8,6 +8,7 @@ import { NavbarComponent } from './components/navbar/navbar.component';
 import { TabbarComponent } from './components/tabbar/tabbar.component';
 import { RestTimerComponent } from './components/rest-timer/rest-timer.component';
 import { ConfirmDialogComponent } from './components/confirm-dialog/confirm-dialog.component';
+import { ToastComponent } from './components/toast/toast.component';
 import { WorkoutDataService } from './services/workout-data.service';
 import { WorkoutStateService } from './services/workout-state.service';
 import { DietStateService } from './services/diet-state.service';
@@ -17,7 +18,7 @@ import { CATEGORY_LABELS, MeasureCategory } from './models/measurement.model';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, NavbarComponent, TabbarComponent, RestTimerComponent, ConfirmDialogComponent],
+  imports: [CommonModule, RouterOutlet, NavbarComponent, TabbarComponent, RestTimerComponent, ConfirmDialogComponent, ToastComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
