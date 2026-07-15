@@ -2,33 +2,25 @@
 :root {
   --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --spring-soft: cubic-bezier(0.22, 1, 0.36, 1);
-  --bg:#181624;
+  --bg:#0C0D14;
   --bg-card:#171B24;
   --bg-card-2:#232834;
   --separator:rgba(84,84,88,0.65);
   --label:#FFFFFF;
   --label-2:rgba(255,255,255,0.92);
   --label-3:rgba(255,255,255,0.80);
-  /* ===== Imperial Gym — palette lime/teal/navy ===== */
+  /* ===== Imperial Gym — palette lime/arancione ===== */
   --imp-red:#6DB458;                     /* verde lime — accento primario */
   --imp-red-dim:rgba(109,180,88,0.16);
-  --imp-crimson:#438582;                 /* teal — accento secondario */
-  --imp-crimson-dim:rgba(67,133,130,0.18);
-  --imp-ember:#32566F;                   /* blu-teal — accento terziario */
-  --imp-ember-dim:rgba(50,86,111,0.16);
+  --imp-amber:#E7B56F;                   /* arancione — nuovo accento secondario */
+  --imp-amber-dim:rgba(231,181,111,0.18);
   --sys-cyan:#64D2FF;
   --sys-cyan-dim:rgba(100,210,255,0.18);
-  --sys-blue:#5B9DF5;
-  --sys-blue-dim:var(--imp-ember-dim);
-  --sys-teal:#F5A623;
-  --sys-teal-dim:var(--imp-crimson-dim);
   --sys-red:var(--state-danger);
   --accent: var(--imp-red);
   --accent-dim: var(--imp-red-dim);
   --on: var(--imp-red);
   --on-dim: var(--imp-red-dim);
-  --off: var(--imp-crimson);
-  --off-dim: var(--imp-crimson-dim);
   --state-success: var(--imp-red);
   --state-success-rgb: 109,180,88;
   --state-success-deep: #3C6330;
@@ -69,12 +61,10 @@ body::before {
   pointer-events: none;
   z-index: 0;
   background: linear-gradient(200deg,
-    #6DB458 0%,
-    #58AD86 20%,
-    #438582 42%,
-    #32566F 64%,
-    #272B47 84%,
-    #181624 100%);
+    #1C2A22 0%,
+    #16202A 40%,
+    #10131C 75%,
+    #0C0D14 100%);
   filter: blur(16px) saturate(108%);
   animation: bgDrift 26s var(--spring-soft) infinite alternate;
 }
@@ -408,6 +398,7 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .variant-tabs button.active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
 .fooditem{padding:11px 0;border-bottom:1px solid var(--separator);}
 .fooditem-category{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);margin:14px 0 4px;}
+.fooditem-category.fat{color:var(--imp-amber);}
 .fooditem:last-child{border-bottom:none;}
 .fooditem .row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
 .fooditem .fname{font-size:14.5px;line-height:1.3;}
