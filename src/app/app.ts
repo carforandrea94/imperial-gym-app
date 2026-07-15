@@ -16,6 +16,7 @@ import { AuthService } from './core/services/auth.service';
 import { CATEGORY_LABELS, MeasureCategory } from './models/measurement.model';
 import { HistoryEditStateService } from './services/history-edit-state.service';
 import { ProtocolBuilderStateService } from './services/protocol-builder-state.service';
+import { MeasureCategoryStateService } from './services/measure-category-state.service';
 
 @Component({
   selector: 'app-root',
@@ -36,6 +37,7 @@ export class App implements OnInit, OnDestroy {
   viewToggleTarget: 'scheda' | 'dieta' = 'scheda';
   showSaveWorkout = false;
   showSettings = false;
+  showSaveMeasure = false;
   showChrome = false;
 
   get showProtocolSave(): boolean {
@@ -52,7 +54,8 @@ export class App implements OnInit, OnDestroy {
     public auth: AuthService,
     private swUpdate: SwUpdate,
     public historyEditState: HistoryEditStateService,
-    public protocolBuilderState: ProtocolBuilderStateService
+    public protocolBuilderState: ProtocolBuilderStateService,
+    public measureState: MeasureCategoryStateService
   ) {}
 
   ngOnInit(): void {
@@ -112,6 +115,7 @@ export class App implements OnInit, OnDestroy {
     this.showViewToggle = false;
     this.showSaveWorkout = false;
     this.showSettings = false;
+    this.showSaveMeasure = false;
 
     if (u === '/account') {
       this.navTitle = 'Account';
@@ -256,6 +260,7 @@ export class App implements OnInit, OnDestroy {
       this.showHistory = false;
       this.showInfo = false;
       this.showAnalytics = false;
+      this.showSaveMeasure = true;
       return;
     }
 

@@ -16,6 +16,8 @@
   [saveEditSaving]="historyEditState.saving()"
   [showProtocolSave]="showProtocolSave"
   [protocolSaving]="protocolBuilderState.saving()"
+  [showSaveMeasure]="showSaveMeasure"
+  [measureSaving]="measureState.saving()"
   (backClick)="onBack()"
   (historyClick)="onHistory()"
   (infoClick)="onInfo()"
@@ -26,7 +28,8 @@
   (settingsClick)="onSettingsClick()"
   (saveEditClick)="historyEditState.requestSave()"
   (saveDraftClick)="protocolBuilderState.requestSaveDraft()"
-  (saveActivateClick)="protocolBuilderState.requestSaveActivate()">
+  (saveActivateClick)="protocolBuilderState.requestSaveActivate()"
+  (saveMeasureClick)="measureState.requestSave()">
 </app-navbar>
 
 <div class="content" [class.no-chrome]="!showChrome">
