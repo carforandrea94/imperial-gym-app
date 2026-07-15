@@ -9,6 +9,8 @@ import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { WorkoutSession } from '../../models/workout.model';
 import { WorkoutDataService } from '../../services/workout-data.service';
 import { todayLocalISO } from '../../core/utils/date.util';
+import { HistoryEditStateService } from '../../services/history-edit-state.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-history-detail',
@@ -25,7 +27,9 @@ export class HistoryDetailComponent implements OnInit, OnDestroy {
   loading = true;
   errorMsg = '';
 
-  editMode = false;
+  get editMode(): boolean {
+    return this.historyEditState.editMode();
+  }
   editSession: WorkoutSession | null = null;
   editDate = '';
   maxDate = todayLocalISO();
@@ -39,7 +43,9 @@ export class HistoryDetailComponent implements OnInit, OnDestroy {
     private confirm: ConfirmDialogService,
     public workoutData: WorkoutDataService,
     private sanitizer: DomSanitizer,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private historyEditState: HistoryEditStateService,
+    private toast: ToastService
   ) {}
 
   getMuscleIcon(name: string): SafeHtml {
@@ -50,10 +56,11 @@ export class HistoryDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.historyEditState.registerSaveHandler(() => this.saveEdit());
     this.paramSub = this.route.paramMap.subscribe(params => {
       const rawKey = params.get('key') ?? '';
       this.key = decodeURIComponent(rawKey);
-      this.editMode = false;
+      this.historyEditState.editMode.set(false);
       this.editSession = null;
       this.load();
     });
@@ -61,6 +68,8 @@ export class HistoryDetailComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.paramSub?.unsubscribe();
+    this.historyEditState.registerSaveHandler(null);
+    this.historyEditState.editMode.set(false);
   }
 
   async load(): Promise<void> {
@@ -132,12 +141,12 @@ export class HistoryDetailComponent implements OnInit, OnDestroy {
     this.editSession = structuredClone(this.session);
     this.editDate = this.session.date;
     this.errorMsg = '';
-    this.editMode = true;
+    this.historyEditState.editMode.set(true);
   }
 
   cancelEdit(): void {
     this.editSession = null;
-    this.editMode = false;
+    this.historyEditState.editMode.set(false);
     this.errorMsg = '';
   }
 
@@ -158,26 +167,32 @@ export class HistoryDetailComponent implements OnInit, OnDestroy {
       return;
     }
     this.errorMsg = '';
+    this.historyEditState.saving.set(true);
 
     const result = await this.sessionsSvc.moveSession(this.editSession, this.key, this.editDate);
+    this.historyEditState.saving.set(false);
 
     if (result === 'ok') {
       const newId = this.sessionsSvc.sessionId(this.editSession.dayId, this.editDate);
       if (newId !== this.key) {
+        this.toast.success('Seduta aggiornata ✓');
         this.router.navigate(['/scheda/storico', encodeURIComponent(newId)]);
         return;
       }
       this.session = this.editSession;
       this.setDisplayDate(this.session.date);
       this.editSession = null;
-      this.editMode = false;
+      this.historyEditState.editMode.set(false);
       this.cdr.detectChanges();
+      this.toast.success('Seduta aggiornata ✓');
     } else if (result === 'collision') {
       this.errorMsg = 'Esiste gia\' una seduta per questo giorno di allenamento in questa data.';
       this.cdr.detectChanges();
+      this.toast.error('Esiste gia\' una seduta in questa data.');
     } else {
       this.errorMsg = 'Errore durante il salvataggio. Riprova.';
       this.cdr.detectChanges();
+      this.toast.error('Errore durante il salvataggio. Riprova.');
     }
   }
 }
