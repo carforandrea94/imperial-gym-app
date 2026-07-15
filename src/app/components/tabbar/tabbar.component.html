@@ -2,7 +2,7 @@
 <nav class="tabbar tabbar-4" *ngIf="!isCoach && auth.authReady()">
   <div class="pill" [class.p1]="activeTab === 'dieta'" [class.p2]="activeTab === 'misure'" [class.p3]="activeTab === 'account'"></div>
 
-  <button class="tabbtn" [class.active]="activeTab === 'scheda'" (click)="navigate('scheda')">
+  <button class="tabbtn" [class.active]="activeTab === 'scheda'" (click)="navigate('scheda')" aria-label="Scheda">
     <span class="ic">
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="3" y="3" width="18" height="18" rx="3"/>
@@ -11,37 +11,33 @@
         <line x1="9" y1="15" x2="13" y2="15"/>
       </svg>
     </span>
-    <span class="tl">Scheda</span>
   </button>
 
-  <button class="tabbtn" [class.active]="activeTab === 'dieta'" (click)="navigate('dieta')">
+  <button class="tabbtn" [class.active]="activeTab === 'dieta'" (click)="navigate('dieta')" aria-label="Dieta">
     <span class="ic">
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12c0-2.76 1.12-5.26 2.93-7.07"/>
         <path d="M8 12h8M12 8v8"/>
       </svg>
     </span>
-    <span class="tl">Dieta</span>
   </button>
 
-  <button class="tabbtn" [class.active]="activeTab === 'misure'" (click)="navigate('misure')">
+  <button class="tabbtn" [class.active]="activeTab === 'misure'" (click)="navigate('misure')" aria-label="Misure">
     <span class="ic">
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4"/>
         <line x1="4" y1="12" x2="20" y2="12"/>
       </svg>
     </span>
-    <span class="tl">Misure</span>
   </button>
 
-  <button class="tabbtn" [class.active]="activeTab === 'account'" (click)="navigate('account')">
+  <button class="tabbtn" [class.active]="activeTab === 'account'" (click)="navigate('account')" aria-label="Account">
     <span class="ic">
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="8" r="4"/>
         <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
       </svg>
     </span>
-    <span class="tl">Account</span>
   </button>
 </nav>
 
@@ -49,7 +45,7 @@
 <nav class="tabbar tabbar-3" *ngIf="isCoach && auth.authReady()">
   <div class="pill" [class.p1]="activeCoachTab === 'clienti'" [class.p2]="activeCoachTab === 'account'"></div>
 
-  <button class="tabbtn" [class.active]="activeCoachTab === 'bacheca'" (click)="navigateCoach('bacheca')">
+  <button class="tabbtn" [class.active]="activeCoachTab === 'bacheca'" (click)="navigateCoach('bacheca')" aria-label="Bacheca">
     <span class="ic">
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="4" y="4" width="16" height="16" rx="2"/>
@@ -57,10 +53,9 @@
         <circle cx="17" cy="16" r="1.4" fill="currentColor" stroke="none"/>
       </svg>
     </span>
-    <span class="tl">Bacheca</span>
   </button>
 
-  <button class="tabbtn" [class.active]="activeCoachTab === 'clienti'" (click)="navigateCoach('clienti')">
+  <button class="tabbtn" [class.active]="activeCoachTab === 'clienti'" (click)="navigateCoach('clienti')" aria-label="Clienti">
     <span class="ic">
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="9" cy="8" r="3.2"/>
@@ -68,16 +63,14 @@
         <path d="M16 8.2a3 3 0 0 1 0 5.8M19.5 20c0-3-1.9-5.2-4-5.8"/>
       </svg>
     </span>
-    <span class="tl">Clienti</span>
   </button>
 
-  <button class="tabbtn" [class.active]="activeCoachTab === 'account'" (click)="navigateCoach('account')">
+  <button class="tabbtn" [class.active]="activeCoachTab === 'account'" (click)="navigateCoach('account')" aria-label="Account">
     <span class="ic">
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="8" r="4"/>
         <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
       </svg>
     </span>
-    <span class="tl">Account</span>
   </button>
 </nav>

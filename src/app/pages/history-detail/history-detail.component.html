@@ -1,17 +1,28 @@
 <div *ngIf="loading" class="history-empty">Caricamento…</div>
 
-<div *ngIf="!loading && errorMsg" class="history-empty">
+<div *ngIf="!loading && errorMsg && !session" class="history-empty">
   {{ errorMsg }}<br>
-  <button class="savebtn" style="margin-top:12px" (click)="ngOnInit()">Riprova</button>
+  <button class="savebtn" style="margin-top:12px" (click)="load()">Riprova</button>
 </div>
 
 <div *ngIf="!loading && !errorMsg && !session" class="history-empty">Seduta non trovata.</div>
 
 <ng-container *ngIf="!loading && session">
+  <div class="infocard" *ngIf="editMode">
+    <div class="measure-field">
+      <label>Data</label>
+      <div class="measure-input-wrap">
+        <input type="date" [(ngModel)]="editDate" [max]="maxDate" />
+      </div>
+    </div>
+  </div>
+
   <div class="daymeta">
     <span>{{ session.dayLabel }}</span>
     <span class="rec">{{ displayDate }}</span>
   </div>
+
+  <p class="autherror" *ngIf="errorMsg && session">{{ errorMsg }}</p>
 
   <div class="exlist">
     <div class="ex readonly" *ngFor="let ex of session.exercises; let i = index"
@@ -46,17 +57,34 @@
         </div>
         <div class="settable-row" *ngFor="let s of ex.sets; let j = index">
           <div class="serie-badge">{{ j + 1 }}</div>
-          <div class="ro-value">{{ s.reps ?? '—' }}</div>
-          <div class="ro-value">{{ s.load ? s.load + ' kg' : '—' }}</div>
-          <div class="set-check" [class.done]="s.done">✓</div>
+
+          <ng-container *ngIf="!editMode">
+            <div class="ro-value">{{ s.reps ?? '—' }}</div>
+            <div class="ro-value">{{ s.load ? s.load + ' kg' : '—' }}</div>
+            <div class="set-check" [class.done]="s.done">✓</div>
+          </ng-container>
+
+          <ng-container *ngIf="editMode">
+            <input class="rip-input" type="text" inputmode="decimal"
+              [(ngModel)]="getEditSet(i, j).reps" />
+            <input class="load-input" type="text" inputmode="decimal"
+              [(ngModel)]="getEditSet(i, j).load" />
+            <div class="set-check" [class.done]="getEditSet(i, j).done"
+              (click)="toggleSetDone(i, j)">✓</div>
+          </ng-container>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="savebar">
-    <button class="savebtn delete-session-btn" (click)="deleteSession()">
-      Elimina questa seduta
-    </button>
+  <div class="savebar dual">
+    <ng-container *ngIf="!editMode">
+      <button class="savebtn cancel" (click)="enterEditMode()">Modifica</button>
+      <button class="savebtn delete-session-btn" (click)="deleteSession()">Elimina questa seduta</button>
+    </ng-container>
+    <ng-container *ngIf="editMode">
+      <button class="savebtn cancel" (click)="cancelEdit()">Annulla</button>
+      <button class="savebtn" (click)="saveEdit()">Salva</button>
+    </ng-container>
   </div>
 </ng-container>
