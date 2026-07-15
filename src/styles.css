@@ -106,6 +106,7 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .backbtn .chev{font-size:20px;line-height:1;color:#fff;}
 .navactions{display:flex;gap:8px;flex-shrink:0;}
 .navicon{width:38px;height:38px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,0.07);color:var(--label);backdrop-filter:blur(9px) saturate(115%);-webkit-backdrop-filter:blur(9px) saturate(115%);box-shadow:inset 0 1px 0 rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.navicon:disabled{opacity:.5;cursor:not-allowed;}
 .navactions.hide{display:none;}
 .saveworkout-icon{background:var(--imp-red);border-color:rgba(255,255,255,.14);color:#04140D;box-shadow:inset 0 1px 0 rgba(255,255,255,.3);transition:filter .2s ease,background .2s ease;}
 .saveworkout-icon:active{filter:brightness(0.92);}

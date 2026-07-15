@@ -14,6 +14,7 @@ import { WorkoutStateService } from './services/workout-state.service';
 import { DietStateService } from './services/diet-state.service';
 import { AuthService } from './core/services/auth.service';
 import { CATEGORY_LABELS, MeasureCategory } from './models/measurement.model';
+import { HistoryEditStateService } from './services/history-edit-state.service';
 
 @Component({
   selector: 'app-root',
@@ -44,7 +45,8 @@ export class App implements OnInit, OnDestroy {
     public workoutState: WorkoutStateService,
     public dietState: DietStateService,
     public auth: AuthService,
-    private swUpdate: SwUpdate
+    private swUpdate: SwUpdate,
+    public historyEditState: HistoryEditStateService
   ) {}
 
   ngOnInit(): void {

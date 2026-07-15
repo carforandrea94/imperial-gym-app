@@ -12,6 +12,8 @@
   [showSaveWorkout]="showSaveWorkout"
   [saveStatus]="workoutState.saveStatus()"
   [showSettings]="showSettings"
+  [showSaveEdit]="historyEditState.editMode()"
+  [saveEditSaving]="historyEditState.saving()"
   (backClick)="onBack()"
   (historyClick)="onHistory()"
   (infoClick)="onInfo()"
@@ -19,7 +21,8 @@
   (shoppingListClick)="onShoppingList()"
   (viewModeChange)="onViewModeChange($event)"
   (saveWorkoutClick)="onSaveWorkoutClick()"
-  (settingsClick)="onSettingsClick()">
+  (settingsClick)="onSettingsClick()"
+  (saveEditClick)="historyEditState.requestSave()">
 </app-navbar>
 
 <div class="content" [class.no-chrome]="!showChrome">
