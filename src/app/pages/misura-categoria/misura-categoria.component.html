@@ -28,10 +28,4 @@
   </div>
 
   <p class="autherror" *ngIf="errorMsg">{{ errorMsg }}</p>
-
-  <div class="savebar">
-    <button [class]="getSaveBtnClass()" (click)="save()">
-      {{ getSaveBtnText() }}
-    </button>
-  </div>
 </ng-container>
