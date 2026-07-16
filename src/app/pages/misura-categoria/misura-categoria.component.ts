@@ -6,6 +6,8 @@ import { Subscription } from 'rxjs';
 import { MeasurementDataService } from '../../services/measurement-data.service';
 import { todayLocalISO } from '../../core/utils/date.util';
 import { MeasureCategory, MeasureField, CATEGORY_FIELDS, CATEGORY_LABELS } from '../../models/measurement.model';
+import { MeasureCategoryStateService } from '../../services/measure-category-state.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-misura-categoria',
@@ -27,7 +29,6 @@ export class MisuraCategoriaComponent implements OnInit, OnDestroy {
   values: Record<string, string | null> = {};
   placeholders: Partial<Record<string, string>> = {};
 
-  saveStatus: 'idle' | 'err' = 'idle';
   errorMsg = '';
   loading = true;
 
@@ -38,10 +39,13 @@ export class MisuraCategoriaComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private data: MeasurementDataService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private measureState: MeasureCategoryStateService,
+    private toast: ToastService
   ) {}
 
   ngOnInit(): void {
+    this.measureState.registerSaveHandler(() => this.save());
     this.paramSub = this.route.paramMap.subscribe(params => {
       this.category = params.get('categoria') as MeasureCategory;
       if (!CATEGORY_FIELDS[this.category]) {
@@ -57,6 +61,7 @@ export class MisuraCategoriaComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.paramSub?.unsubscribe();
     if (this.draftTimer) clearTimeout(this.draftTimer);
+    this.measureState.registerSaveHandler(null);
   }
 
   private emptyValues(): Record<string, string | null> {
@@ -104,14 +109,6 @@ export class MisuraCategoriaComponent implements OnInit, OnDestroy {
     return this.fields.some(f => !!this.values[f.key]);
   }
 
-  getSaveBtnClass(): string {
-    return this.saveStatus === 'err' ? 'savebtn err' : 'savebtn';
-  }
-
-  getSaveBtnText(): string {
-    return this.saveStatus === 'err' ? '✕ Errore salvataggio' : 'Salva';
-  }
-
   async save(): Promise<void> {
     if (!this.hasAnyValue()) return;
     if (this.dateValue > this.maxDate) {
@@ -121,30 +118,32 @@ export class MisuraCategoriaComponent implements OnInit, OnDestroy {
     }
     if (this.draftTimer) { clearTimeout(this.draftTimer); this.draftTimer = null; }
     this.errorMsg = '';
+    this.measureState.saving.set(true);
 
     if (!this.isEdit) {
       const ok = await this.data.saveCategoryToday(this.category, this.values);
+      this.measureState.saving.set(false);
       if (ok) {
         await this.data.clearDraft(this.category);
+        this.toast.success('Misurazione salvata ✓');
         this.router.navigate(['/misure']);
       } else {
-        this.saveStatus = 'err';
-        this.cdr.detectChanges();
-        setTimeout(() => { this.saveStatus = 'idle'; this.cdr.detectChanges(); }, 2000);
+        this.toast.error('Errore durante il salvataggio. Riprova.');
       }
       return;
     }
 
     const result = await this.data.moveCategoryEntry(this.category, this.originalDate, this.dateValue, this.values);
+    this.measureState.saving.set(false);
     if (result === 'ok') {
+      this.toast.success('Misurazione aggiornata ✓');
       this.router.navigate(['/misure/storico', this.dateValue]);
     } else if (result === 'collision') {
       this.errorMsg = 'Esiste gia\' una misurazione di questo tipo in questa data.';
       this.cdr.detectChanges();
+      this.toast.error('Esiste gia\' una misurazione di questo tipo in questa data.');
     } else {
-      this.saveStatus = 'err';
-      this.cdr.detectChanges();
-      setTimeout(() => { this.saveStatus = 'idle'; this.cdr.detectChanges(); }, 2000);
+      this.toast.error('Errore durante il salvataggio. Riprova.');
     }
   }
 }

@@ -24,6 +24,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
   @Input() saveEditSaving = false;
   @Input() showProtocolSave = false;
   @Input() protocolSaving = false;
+  @Input() showSaveMeasure = false;
+  @Input() measureSaving = false;
 
   @Output() backClick = new EventEmitter<void>();
   @Output() historyClick = new EventEmitter<void>();
@@ -36,6 +38,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   @Output() saveEditClick = new EventEmitter<void>();
   @Output() saveDraftClick = new EventEmitter<void>();
   @Output() saveActivateClick = new EventEmitter<void>();
+  @Output() saveMeasureClick = new EventEmitter<void>();
 
   ngOnInit(): void {
     window.addEventListener('scroll', this.onScroll, { passive: true });
