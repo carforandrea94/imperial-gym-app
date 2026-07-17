@@ -236,11 +236,17 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
 
       if (vm.isFirst && maxLoads.length > 0) {
         const lastMax = maxLoads[maxLoads.length - 1];
-        const round5 = (kg: number) => Math.round(kg / 5) * 5;
-        const w1 = round5(lastMax * 0.4);
-        const w2 = round5(lastMax * 0.5);
-        const w3 = round5(lastMax * 0.6);
-        vm.warmup = `Riscaldamento: <b>${w1} kg</b> x8, <b>${w2} kg</b> x5, <b>${w3} kg</b> x3`;
+        const baseReps = parseInt(vm.rows[0]?.ripPlaceholder ?? '', 10);
+        if (!isNaN(baseReps)) {
+          const round5 = (kg: number) => Math.round(kg / 5) * 5;
+          const w1 = round5(lastMax * 0.4);
+          const w2 = round5(lastMax * 0.6);
+          const w3 = round5(lastMax * 0.8);
+          const r1 = Math.round(baseReps * 0.4);
+          const r2 = Math.round(baseReps * 0.6);
+          const r3 = Math.round(baseReps * 0.8);
+          vm.warmup = `Riscaldamento: <b>${w1} kg</b> x${r1}, <b>${w2} kg</b> x${r2}, <b>${w3} kg</b> x${r3}`;
+        }
       }
     });
   }
