@@ -84,7 +84,11 @@
 
 <!-- Vista slider (card scorrevoli, una per volta) -->
 <div class="exslider-wrap" *ngIf="plan && state.viewMode() === 'slider'">
-  <div class="exslider-counter">Pasto {{ sliderIndex + 1 }} di {{ meals.length }}</div>
+  <div class="exslider-dashes" *ngIf="meals.length > 1">
+    <span *ngFor="let vm of meals; let i = index"
+      class="exslider-dash" [class.active]="i === sliderIndex"
+      (click)="scrollToIndex(i)"></span>
+  </div>
 
   <div class="exslider" #sliderEl (scroll)="onSliderScroll()">
     <div class="meal mealslide exslide" *ngFor="let vm of meals">
@@ -96,11 +100,5 @@
         <ng-container *ngTemplateOutlet="mealDetail; context: { vm: vm }"></ng-container>
       </div>
     </div>
-  </div>
-
-  <div class="exslider-dots" *ngIf="meals.length > 1">
-    <span *ngFor="let vm of meals; let i = index"
-      class="exslider-dot" [class.active]="i === sliderIndex"
-      (click)="scrollToIndex(i)"></span>
   </div>
 </div>
