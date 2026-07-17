@@ -28,6 +28,8 @@ interface ExerciseVM {
   insightVisible: boolean;
   insight: ExInsight | null;
   restSeconds: number;
+  isFirst: boolean;
+  warmup: string | null;
 }
 
 @Component({
@@ -124,7 +126,7 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
   private buildExercises(restOverrides: Record<string, number>): void {
     const week = this.state.currentWeek;
     const protocolDefault = this.parseRecSeconds(this.day.rec);
-    this.exercises = this.day.ex.map(ex => {
+    this.exercises = this.day.ex.map((ex, exIdx) => {
       const { sets, reps } = this.workoutData.getExSetsReps(ex, week);
       const rows: SerieRow[] = Array.from({ length: sets }, (_, i) => ({
         reps: String(reps[i] ?? ''),
@@ -135,7 +137,7 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
       }));
       const override = restOverrides[this.restKey(ex.name)];
       const restSeconds = override && override > 0 ? override : protocolDefault;
-      return { ex, rows, open: true, insightVisible: false, insight: null, restSeconds };
+      return { ex, rows, open: true, insightVisible: false, insight: null, restSeconds, isFirst: exIdx === 0, warmup: null };
     });
   }
 
@@ -230,6 +232,15 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
       if (lastText || sparkSvg || suggestion) {
         vm.insight = { lastText, sparkSvg, delta, deltaClass, suggestion };
         vm.insightVisible = true;
+      }
+
+      if (vm.isFirst && maxLoads.length > 0) {
+        const lastMax = maxLoads[maxLoads.length - 1];
+        const round5 = (kg: number) => Math.round(kg / 5) * 5;
+        const w1 = round5(lastMax * 0.4);
+        const w2 = round5(lastMax * 0.5);
+        const w3 = round5(lastMax * 0.6);
+        vm.warmup = `Riscaldamento: <b>${w1} kg</b> x8, <b>${w2} kg</b> x5, <b>${w3} kg</b> x3`;
       }
     });
   }
