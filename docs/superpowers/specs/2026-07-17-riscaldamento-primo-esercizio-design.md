@@ -10,11 +10,13 @@ RISPETTO ALL SETT.1 SCORSA"), mostrata oggi in cima alla card
 dell'esercizio (`scheda-detail.component.html:9`,
 `<p class="note" *ngIf="vm.ex.note">`).
 
-L'utente ha segnalato (screenshot) che sul primo esercizio di ogni
-giorno questa nota va tolta e sostituita da un'indicazione di quale
-carico usare per il riscaldamento, calcolata sul peso massimo usato
-per quell'esercizio nella sessione precedente. Per tutti gli altri
-esercizi del giorno la nota resta invariata.
+L'utente ha segnalato (screenshot) che vuole, per il primo esercizio
+di ogni giorno, un'indicazione di quale carico usare per il
+riscaldamento, calcolata sul peso massimo usato per quell'esercizio
+nella sessione precedente. La nota in cima alla card resta invariata
+per tutti gli esercizi, incluso il primo — il riscaldamento va
+aggiunto in fondo alla card, sotto il blocco "Progressione" (`ex-insights`),
+solo sulla prima card.
 
 ## Dato gia' disponibile (riusato, nessun nuovo accesso allo storico)
 
@@ -58,31 +60,36 @@ Riscaldamento: <b>{{w1}} kg</b> x8, <b>{{w2}} kg</b> x5, <b>{{w3}} kg</b> x3
 
 ## 3. Template
 
-In `scheda-detail.component.html:9`, la nota attuale:
+La nota in cima alla card (`scheda-detail.component.html:9`) resta
+**invariata per tutti gli esercizi, incluso il primo**:
 
 ```html
 <p class="note" *ngIf="vm.ex.note">{{ vm.ex.note }}</p>
 ```
 
-diventa 2 righe: la nota per tutti gli esercizi tranne il primo, e il
-box di riscaldamento (se presente) solo per il primo:
+Il riscaldamento va aggiunto in fondo alla card, dentro il blocco
+`ex-insights`, subito dopo `.suggestion-chip` (ultimo elemento prima
+della chiusura di `<ng-container *ngIf="vm.insight">`):
 
 ```html
-<p class="note" *ngIf="!vm.isFirst && vm.ex.note">{{ vm.ex.note }}</p>
-<p class="note" *ngIf="vm.isFirst && vm.warmup" [innerHTML]="vm.warmup"></p>
+<div class="suggestion-chip" *ngIf="vm.isFirst && vm.warmup" [innerHTML]="vm.warmup"></div>
 ```
 
-Nessuna nuova classe CSS: il box di riscaldamento riusa `.note` per
-restare visivamente identico a quello che sostituisce.
+Riusa la classe `.suggestion-chip` gia' esistente (stesso linguaggio
+visivo del suggerimento di progressione) — nessuna nuova classe CSS.
+Poiche' `warmup` e' valorizzato solo quando `maxLoads.length > 0`, e in
+quel caso `sparkSvg` e' sempre valorizzato anch'esso (stessa
+condizione), `vm.insight` e' garantito non-null ogni volta che
+`vm.warmup` lo e' — il nuovo elemento non finisce mai nascosto per
+colpa del wrapper `*ngIf="vm.insight"`.
 
 ## Cosa NON cambia
 
-- Il blocco "Ultimo (data): X kg" / sparkline "Progressione" / "Prova X
-  kg" sotto la tabella serie (`ex-insights`, righe 32-44) resta
-  identico — questa modifica riguarda solo la nota in cima alla card,
-  non quel blocco.
-- Per gli esercizi diversi dal primo, nessun cambiamento: la nota
-  (`vm.ex.note`) continua a comparire come oggi.
+- La nota in cima alla card (`vm.ex.note`) non cambia per NESSUN
+  esercizio, incluso il primo — resta esattamente come oggi.
+- Il resto del blocco "Ultimo (data): X kg" / sparkline "Progressione"
+  / "Prova X kg" (`ex-insights`) resta identico — il riscaldamento si
+  aggiunge in fondo, non sostituisce nulla.
 - Nessuna modifica al modello dati `Exercise`/`ExInsight`
   (`workout.model.ts`) — `isFirst`/`warmup` sono campi locali di
   `ExerciseVM`, presentazionali, non persistiti.
@@ -94,7 +101,9 @@ gia' seguita per questo componente in questo progetto — nessun
 `.spec.ts` esistente per `SchedaDetailComponent`), ma verifica tramite
 `npx tsc --noEmit -p tsconfig.app.json`, `npx ng test --watch=false`
 (conteggio invariato), `npx ng build`, e verifica manuale: aprire un
-giorno con storico sul primo esercizio mostra "Riscaldamento: ..."
-al posto della nota; gli altri esercizi del giorno mostrano ancora la
-loro nota se presente; un giorno il cui primo esercizio non ha mai
-storico non mostra ne' nota ne' riscaldamento.
+giorno con storico sul primo esercizio mostra, in fondo alla card dopo
+"Progressione"/"Prova X kg", il chip "Riscaldamento: ..."; la nota in
+cima (se presente) resta visibile come sempre; gli altri esercizi del
+giorno non mostrano nessun chip di riscaldamento; un giorno il cui
+primo esercizio non ha mai storico non mostra il chip (ma la nota in
+cima, se presente, resta visibile).

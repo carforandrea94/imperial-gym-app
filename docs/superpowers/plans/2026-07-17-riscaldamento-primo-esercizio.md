@@ -166,17 +166,31 @@ aggiungi il calcolo del riscaldamento, cosi' (unico blocco nuovo: le righe fra `
 
 - [ ] **Step 4: Aggiorna il template**
 
-In `src/app/pages/scheda-detail/scheda-detail.component.html:9`, attuale:
+(Revisione post-implementazione: l'utente ha chiesto di lasciare la
+nota in cima invariata per tutti gli esercizi, e di aggiungere il
+riscaldamento in fondo alla card invece di sostituire la nota — vedi
+spec aggiornata.)
+
+La nota in cima (`scheda-detail.component.html:9`) **non cambia**:
 
 ```html
   <p class="note" *ngIf="vm.ex.note">{{ vm.ex.note }}</p>
 ```
 
+Il riscaldamento va aggiunto dentro `ex-insights`, subito dopo il
+`.suggestion-chip` esistente. Attuale:
+
+```html
+      <div class="suggestion-chip" *ngIf="vm.insight.suggestion" [innerHTML]="vm.insight.suggestion"></div>
+    </ng-container>
+```
+
 diventa:
 
 ```html
-  <p class="note" *ngIf="!vm.isFirst && vm.ex.note">{{ vm.ex.note }}</p>
-  <p class="note" *ngIf="vm.isFirst && vm.warmup" [innerHTML]="vm.warmup"></p>
+      <div class="suggestion-chip" *ngIf="vm.insight.suggestion" [innerHTML]="vm.insight.suggestion"></div>
+      <div class="suggestion-chip" *ngIf="vm.isFirst && vm.warmup" [innerHTML]="vm.warmup"></div>
+    </ng-container>
 ```
 
 - [ ] **Step 5: Verifica compilazione e test invariati**
