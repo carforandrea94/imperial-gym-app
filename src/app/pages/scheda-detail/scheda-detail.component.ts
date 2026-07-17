@@ -329,6 +329,7 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
     this.restModalVm.restSeconds = this.restModalValue;
     await this.appState.patchField(`restOverrides.${this.restKey(this.restModalVm.ex.name)}`, this.restModalValue);
     this.closeRestModal();
+    this.cdr.detectChanges();
   }
 
   /** Wrapper pubblico per il template: default del protocollo per il giorno corrente. */
