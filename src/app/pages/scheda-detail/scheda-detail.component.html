@@ -6,7 +6,8 @@
 </div>
 
 <ng-template #exDetail let-vm="vm">
-  <p class="note" *ngIf="vm.ex.note">{{ vm.ex.note }}</p>
+  <p class="note" *ngIf="!vm.isFirst && vm.ex.note">{{ vm.ex.note }}</p>
+  <p class="note" *ngIf="vm.isFirst && vm.warmup" [innerHTML]="vm.warmup"></p>
 
   <div class="settable-head">
     <span>Serie</span>
