@@ -128,10 +128,11 @@
   </div>
 </div>
 
-<div class="confirmoverlay" [class.show]="restModalOpen" (click)="onRestOverlayClick($event)">
-  <div class="confirmbox restbox" *ngIf="restModalVm">
+<div class="resttimer-sheet-overlay" *ngIf="day" [class.show]="restModalOpen" (click)="onRestOverlayClick($event)">
+  <div class="resttimer-sheet" [class.show]="restModalOpen">
+    <div class="grabber"></div>
     <p class="confirmtext restmodal-title">
-      Recupero — {{ restModalVm.ex.name }}
+      Recupero — {{ restModalVm?.ex?.name }}
     </p>
     <div class="rest-stepper">
       <button class="rest-stepbtn" (click)="adjustRestModalValue(-15)">–15</button>
