@@ -323,11 +323,10 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
 
   closeRestModal(): void {
     this.restModalOpen = false;
-    this.restModalVm = null;
   }
 
   onRestOverlayClick(event: MouseEvent): void {
-    if ((event.target as HTMLElement).classList.contains('confirmoverlay')) {
+    if ((event.target as HTMLElement).classList.contains('resttimer-sheet-overlay')) {
       this.closeRestModal();
     }
   }
