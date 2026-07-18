@@ -53,12 +53,13 @@ niente chiavi di giorni passati che si accumulano.
 
 Nella card della vista slider (`dieta-detail.component.html`, blocco
 `.meal-summary.noclick` righe 95-97), accanto al nome del pasto, viene
-aggiunta una checkbox rotonda che riusa lo stile già esistente `.set-check`
-(cerchio 28px, bordo neutro quando vuota, sfondo `--accent` + spunta nera
-quando completata) — lo stesso pattern visivo già usato per il completamento
-delle serie in allenamento. Nessuna nuova classe CSS da inventare, solo
-applicazione della classe esistente in un nuovo contesto (header della card,
-allineata a destra via flexbox).
+aggiunta una checkbox rotonda in una nuova classe dedicata `.meal-check`,
+variante più piccola (18px invece di 28px) dello stile già esistente
+`.set-check` (bordo neutro quando vuota, sfondo `--accent` + spunta nera
+quando completata) — stesso linguaggio visivo del completamento delle serie
+in allenamento, dimensione adattata al contesto (header della card, accanto
+al nome, allineata a destra via flexbox). Confermata via mockup
+(18px, font-size 9px per la spunta, bordo 2px invariato).
 
 La vista lista (accordion) non viene toccata.
 
@@ -118,7 +119,9 @@ subito su Firestore) su `DietaDetailComponent`:
 ## Cosa NON cambia
 
 - Vista lista (accordion): nessuna modifica.
-- Nessuna nuova classe CSS: si riusa `.set-check`.
+- `.set-check` (usata in scheda-detail per le serie) non viene toccata: la
+  nuova `.meal-check` è una classe dedicata separata, solo ispirata allo
+  stesso stile.
 - Nessun impatto su `scheda-detail`, `WorkoutStateService`, o qualunque
   altro stato in `AppState` già esistente (il nuovo campo è additivo).
 
@@ -131,6 +134,8 @@ subito su Firestore) su `DietaDetailComponent`:
   `toggleMealCompleted`, rimozione import/uso di `findCurrentMealIndex`.
 - `src/app/pages/dieta-detail/dieta-detail.component.html` — checkbox nella
   card slider (righe 95-97).
+- `src/styles.css` — nuova classe `.meal-check` (18px, variante dedicata di
+  `.set-check`, non ne modifica la regola esistente).
 - `src/app/core/utils/meal-time.util.ts` e
   `src/app/core/utils/meal-time.util.spec.ts` — **eliminati** (logica
   sostituita, nessun altro consumer).
