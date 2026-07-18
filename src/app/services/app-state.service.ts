@@ -18,10 +18,11 @@ export interface AppState {
   shoppingChecked: Record<string, boolean>;
   workoutViewMode: 'list' | 'slider';
   dietViewMode: 'list' | 'slider';
+  mealsCompletion: { date: string; done: Record<string, boolean> } | null;
 }
 
 function emptyState(): AppState {
-  return { workoutDrafts: {}, restOverrides: {}, measureDraft: null, shoppingChecked: {}, workoutViewMode: 'list', dietViewMode: 'list' };
+  return { workoutDrafts: {}, restOverrides: {}, measureDraft: null, shoppingChecked: {}, workoutViewMode: 'list', dietViewMode: 'list', mealsCompletion: null };
 }
 
 /**
