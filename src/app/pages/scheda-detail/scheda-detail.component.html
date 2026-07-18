@@ -128,7 +128,7 @@
   </div>
 </div>
 
-<div class="resttimer-sheet-overlay" *ngIf="day" [class.show]="restModalOpen" (click)="onRestOverlayClick($event)">
+<div class="resttimer-sheet-overlay" #restSheetOverlay *ngIf="day" [class.show]="restModalOpen" (click)="onRestOverlayClick($event)">
   <div class="resttimer-sheet" [class.show]="restModalOpen">
     <div class="grabber"></div>
     <p class="confirmtext restmodal-title">

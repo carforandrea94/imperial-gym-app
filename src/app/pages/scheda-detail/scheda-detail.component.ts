@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef, ElementRef, ViewChild, effect } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectorRef, ElementRef, Renderer2, ViewChild, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
@@ -39,7 +39,7 @@ interface ExerciseVM {
   templateUrl: './scheda-detail.component.html',
   styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
 })
-export class SchedaDetailComponent implements OnInit, OnDestroy {
+export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   day!: Day;
   dayIndex = 0;
   exercises: ExerciseVM[] = [];
@@ -55,6 +55,7 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
   private scrollTicking = false;
 
   @ViewChild('sliderEl') sliderEl?: ElementRef<HTMLDivElement>;
+  @ViewChild('restSheetOverlay') restSheetOverlayEl?: ElementRef<HTMLDivElement>;
 
   constructor(
     private route: ActivatedRoute,
@@ -66,7 +67,8 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
     private confirm: ConfirmDialogService,
     private sanitizer: DomSanitizer,
     private cdr: ChangeDetectorRef,
-    private toast: ToastService
+    private toast: ToastService,
+    private renderer: Renderer2
   ) {
     // Il toggle vive nella navbar (fuori da questa pagina): quando si passa
     // a "slider" da un'altra vista/pagina, riparte sempre dalla prima card.
@@ -118,9 +120,24 @@ export class SchedaDetailComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Sposta il bottom sheet del recupero fuori da `.wrap` (che crea un proprio
+   * stacking context via position:relative + z-index) direttamente in
+   * document.body, altrimenti resta sempre sotto la tabbar indipendentemente
+   * dal suo z-index interno.
+   */
+  ngAfterViewInit(): void {
+    if (this.restSheetOverlayEl) {
+      this.renderer.appendChild(document.body, this.restSheetOverlayEl.nativeElement);
+    }
+  }
+
   ngOnDestroy(): void {
     if (this.draftTimer) clearTimeout(this.draftTimer);
     this.state.registerSaveHandler(null);
+    if (this.restSheetOverlayEl?.nativeElement.parentNode === document.body) {
+      this.renderer.removeChild(document.body, this.restSheetOverlayEl.nativeElement);
+    }
   }
 
   private buildExercises(restOverrides: Record<string, number>): void {
