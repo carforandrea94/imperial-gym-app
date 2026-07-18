@@ -3,14 +3,17 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DietDataService } from '../../services/diet-data.service';
 import { DietStateService } from '../../services/diet-state.service';
+import { AppStateService } from '../../services/app-state.service';
 import { findClosestSlideIndex, scrollToSlide } from '../../core/utils/horizontal-slider.util';
-import { findCurrentMealIndex } from '../../core/utils/meal-time.util';
+import { firstUncompletedIndex } from '../../core/utils/meal-completion.util';
+import { todayLocalISO } from '../../core/utils/date.util';
 import { DietPlan, NamedMeal, MealCombination, FoodItem, FoodCategory, FOOD_CATEGORIES, FOOD_CATEGORY_LABELS } from '../../models/diet.model';
 
 interface MealVM {
   meal: NamedMeal;
   open: boolean;
   selectedComboId: string;
+  completed: boolean;
 }
 
 @Component({
@@ -37,20 +40,22 @@ export class DietaDetailComponent implements OnInit {
     private router: Router,
     public dietData: DietDataService,
     public state: DietStateService,
+    private appState: AppStateService,
     private cdr: ChangeDetectorRef
   ) {
     // Il toggle vive nella navbar (fuori da questa pagina): quando si passa
-    // a "slider" da un'altra vista/pagina, parte dal pasto della fascia
-    // oraria corrente (findCurrentMealIndex), non sempre dalla prima card.
+    // a "slider" da un'altra vista/pagina, riparte dal primo pasto non
+    // ancora completato oggi (firstUncompletedIndex), non sempre dalla
+    // prima card e non piu' in base alla fascia oraria corrente.
     effect(() => {
       if (this.state.viewMode() === 'slider') {
-        this.sliderIndex = findCurrentMealIndex(this.plan?.meals ?? []);
+        this.sliderIndex = firstUncompletedIndex(this.meals);
         setTimeout(() => this.scrollToIndex(this.sliderIndex), 0);
       }
     });
   }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     const id = this.route.snapshot.paramMap.get('mode') ?? ''; // param storico 'mode', ora contiene l'id del piano
     this.plan = this.dietData.getPlan(id);
     if (!this.plan) { this.router.navigate(['/dieta']); return; }
@@ -58,8 +63,19 @@ export class DietaDetailComponent implements OnInit {
     this.meals = this.plan.meals.map(meal => ({
       meal,
       open: true,
-      selectedComboId: meal.combinations[0]?.id ?? ''
+      selectedComboId: meal.combinations[0]?.id ?? '',
+      completed: false
     }));
+
+    const appState = await this.appState.load();
+    const completion = appState.mealsCompletion;
+    if (completion && completion.date === todayLocalISO()) {
+      this.meals.forEach(vm => { vm.completed = !!completion.done[vm.meal.id]; });
+    }
+
+    this.sliderIndex = firstUncompletedIndex(this.meals);
+    this.scrollToIndex(this.sliderIndex);
+    this.cdr.detectChanges();
   }
 
   toggleMeal(vm: MealVM): void {
@@ -136,5 +152,12 @@ export class DietaDetailComponent implements OnInit {
 
   scrollToIndex(idx: number): void {
     scrollToSlide(this.sliderEl?.nativeElement, idx);
+  }
+
+  toggleMealCompleted(vm: MealVM): void {
+    vm.completed = !vm.completed;
+    const done: Record<string, boolean> = {};
+    this.meals.forEach(m => { done[m.meal.id] = m.completed; });
+    this.appState.patchField('mealsCompletion', { date: todayLocalISO(), done });
   }
 }

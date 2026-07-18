@@ -94,6 +94,7 @@
     <div class="meal mealslide exslide" *ngFor="let vm of meals">
       <div class="meal-summary noclick">
         <span>{{ vm.meal.name }}</span>
+        <div class="meal-check" [class.done]="vm.completed" (click)="toggleMealCompleted(vm)"></div>
       </div>
 
       <div class="content-inner">
