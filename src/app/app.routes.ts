@@ -69,6 +69,11 @@ export const routes: Routes = [
     canActivate: [authGuard, coachGuard],
     loadComponent: () => import('./pages/progressi-list/progressi-list.component').then(m => m.ProgressiListComponent)
   },
+  {
+    path: 'coach/clienti/:clientId/progressi/confronto/:data1/:data2',
+    canActivate: [authGuard, coachGuard],
+    loadComponent: () => import('./pages/progressi-confronto/progressi-confronto.component').then(m => m.ProgressiConfrontoComponent)
+  },
 
   {
     path: 'scheda',
@@ -134,6 +139,11 @@ export const routes: Routes = [
     path: 'misure/progressi/nuovo',
     canActivate: [authGuard, clientGuard],
     loadComponent: () => import('./pages/progressi-upload/progressi-upload.component').then(m => m.ProgressiUploadComponent)
+  },
+  {
+    path: 'misure/progressi/confronto/:data1/:data2',
+    canActivate: [authGuard, clientGuard],
+    loadComponent: () => import('./pages/progressi-confronto/progressi-confronto.component').then(m => m.ProgressiConfrontoComponent)
   },
   {
     path: 'misure/:categoria',

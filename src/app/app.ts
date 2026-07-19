@@ -271,8 +271,28 @@ export class App implements OnInit, OnDestroy {
       return;
     }
 
+    if (/^\/misure\/progressi\/confronto\/[^/]+\/[^/]+$/.test(u)) {
+      this.navTitle = 'Confronto';
+      this.navSubtitle = '';
+      this.showBack = true;
+      this.showHistory = false;
+      this.showInfo = false;
+      this.showAnalytics = false;
+      return;
+    }
+
     if (/^\/coach\/clienti\/[^/]+\/progressi$/.test(u)) {
       this.navTitle = 'Progressi';
+      this.navSubtitle = '';
+      this.showBack = true;
+      this.showHistory = false;
+      this.showInfo = false;
+      this.showAnalytics = false;
+      return;
+    }
+
+    if (/^\/coach\/clienti\/[^/]+\/progressi\/confronto\/[^/]+\/[^/]+$/.test(u)) {
+      this.navTitle = 'Confronto';
       this.navSubtitle = '';
       this.showBack = true;
       this.showHistory = false;
@@ -371,6 +391,8 @@ export class App implements OnInit, OnDestroy {
       this.router.navigate(['/misure']);
     } else if (u === '/misure/progressi/nuovo') {
       this.router.navigate(['/misure/progressi']);
+    } else if (/^\/misure\/progressi\/confronto\/[^/]+\/[^/]+$/.test(u)) {
+      this.router.navigate(['/misure/progressi']);
     } else if (/^\/misure\/(peso|centimetri|pliche)$/.test(u)) {
       this.router.navigate(this.router.url.includes('date=') ? ['/misure/storico'] : ['/misure']);
     } else if (/^\/coach\/clienti\/[^/]+\/builder\/[^/]+$/.test(u)) {
@@ -385,6 +407,9 @@ export class App implements OnInit, OnDestroy {
     } else if (/^\/coach\/clienti\/[^/]+\/nuovo$/.test(u)) {
       const clientId = u.split('/')[3];
       this.router.navigate(['/coach/clienti', clientId]);
+    } else if (/^\/coach\/clienti\/[^/]+\/progressi\/confronto\/[^/]+\/[^/]+$/.test(u)) {
+      const clientId = u.split('/')[3];
+      this.router.navigate(['/coach/clienti', clientId, 'progressi']);
     } else if (/^\/coach\/clienti\/[^/]+\/progressi$/.test(u)) {
       const clientId = u.split('/')[3];
       this.router.navigate(['/coach/clienti', clientId]);

@@ -1,0 +1,28 @@
+<p class="sectiontitle">Confronto</p>
+
+<div *ngIf="loading" class="history-empty">Caricamento…</div>
+
+<div *ngIf="!loading && errorMsg" class="history-empty">{{ errorMsg }}</div>
+
+<ng-container *ngIf="!loading && !errorMsg">
+  <div class="variant-tabs">
+    <button *ngFor="let type of types" [class.active]="activeType === type" (click)="selectType(type)">
+      {{ labels[type] }}
+    </button>
+  </div>
+
+  <div class="exslider-dashes">
+    <span *ngFor="let type of types" class="exslider-dash" [class.active]="activeType === type" (click)="selectType(type)"></span>
+  </div>
+
+  <div class="progressi-compare-pair">
+    <div class="progressi-compare-col">
+      <img class="progressi-compare-photo" [src]="photoUrl(record1, activeType)" alt="">
+      <div class="progressi-compare-date">{{ displayDate1 }}</div>
+    </div>
+    <div class="progressi-compare-col">
+      <img class="progressi-compare-photo" [src]="photoUrl(record2, activeType)" alt="">
+      <div class="progressi-compare-date">{{ displayDate2 }}</div>
+    </div>
+  </div>
+</ng-container>
