@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { initializeApp, FirebaseApp } from 'firebase/app';
 import { initializeFirestore, Firestore } from 'firebase/firestore';
 import { getAuth, Auth } from 'firebase/auth';
-import { getStorage, FirebaseStorage } from 'firebase/storage';
 import { Analytics, getAnalytics, isSupported } from 'firebase/analytics';
 import { environment } from '../../../environments/environment';
 
@@ -17,7 +16,6 @@ export class FirebaseService {
   readonly app: FirebaseApp;
   readonly db: Firestore;
   readonly auth: Auth;
-  readonly storage: FirebaseStorage;
   analytics: Analytics | null = null;
 
   constructor() {
@@ -31,7 +29,6 @@ export class FirebaseService {
       experimentalAutoDetectLongPolling: true
     });
     this.auth = getAuth(this.app);
-    this.storage = getStorage(this.app);
 
     isSupported()
       .then(ok => {
