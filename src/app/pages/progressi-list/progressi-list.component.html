@@ -1,0 +1,35 @@
+<p class="sectiontitle">Progressi</p>
+
+<div *ngIf="loading" class="history-empty">Caricamento…</div>
+
+<div *ngIf="!loading && errorMsg" class="history-empty">
+  {{ errorMsg }}<br>
+  <button class="savebtn" style="margin-top:12px" (click)="load()">Riprova</button>
+</div>
+
+<div *ngIf="!loading && !errorMsg && !readonly" class="savebar" style="margin-top:0;margin-bottom:16px">
+  <button class="savebtn" (click)="newProgressi()">+ Nuovo progresso</button>
+</div>
+
+<div *ngIf="!loading && !errorMsg && selected.length === 2" class="savebar" style="margin-top:0;margin-bottom:16px">
+  <button class="savebtn" (click)="compare()">Confronta</button>
+</div>
+
+<div *ngIf="!loading && !errorMsg && rows.length === 0" class="history-empty">
+  Nessun progresso salvato.<ng-container *ngIf="!readonly"><br>Carica le prime 3 foto per iniziare.</ng-container>
+</div>
+
+<div *ngIf="!loading && !errorMsg && rows.length > 0" class="grouplist">
+  <div class="daycard press-fx" *ngFor="let r of rows" (click)="toggleRow(r.record.date)">
+    <div class="badge" style="font-size:12px">{{ r.record.date.slice(8,10) }}/{{ r.record.date.slice(5,7) }}</div>
+    <div class="info">
+      <div class="lbl">{{ r.displayDate }}</div>
+    </div>
+    <button class="delete-btn" *ngIf="!readonly" (click)="deleteEntry(r.record.date, $event)" title="Elimina">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
+      </svg>
+    </button>
+    <div class="progressi-check" [class.selected]="isSelected(r.record.date)"></div>
+  </div>
+</div>

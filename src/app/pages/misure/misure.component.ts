@@ -28,4 +28,8 @@ export class MisureComponent {
   goTo(id: MeasureCategory): void {
     this.router.navigate(['/misure', id]);
   }
+
+  goToProgressi(): void {
+    this.router.navigate(['/misure/progressi']);
+  }
 }

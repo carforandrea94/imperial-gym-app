@@ -64,6 +64,11 @@ export const routes: Routes = [
     canActivate: [authGuard, coachGuard],
     loadComponent: () => import('./pages/coach-protocol-builder/coach-protocol-builder.component').then(m => m.CoachProtocolBuilderComponent)
   },
+  {
+    path: 'coach/clienti/:clientId/progressi',
+    canActivate: [authGuard, coachGuard],
+    loadComponent: () => import('./pages/progressi-list/progressi-list.component').then(m => m.ProgressiListComponent)
+  },
 
   {
     path: 'scheda',
@@ -119,6 +124,11 @@ export const routes: Routes = [
     path: 'misure/analytics',
     canActivate: [authGuard, clientGuard],
     loadComponent: () => import('./pages/misure-analytics/misure-analytics.component').then(m => m.MisureAnalyticsComponent)
+  },
+  {
+    path: 'misure/progressi',
+    canActivate: [authGuard, clientGuard],
+    loadComponent: () => import('./pages/progressi-list/progressi-list.component').then(m => m.ProgressiListComponent)
   },
   {
     path: 'misure/:categoria',
