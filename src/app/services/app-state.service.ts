@@ -16,13 +16,14 @@ export interface AppState {
   restOverrides: Record<string, number>;
   measureDraft: Record<string, Record<string, string | null>> | null;
   shoppingChecked: Record<string, boolean>;
+  shoppingCustomItems: { id: string; name: string; checked: boolean }[];
   workoutViewMode: 'list' | 'slider';
   dietViewMode: 'list' | 'slider';
   mealsCompletion: { date: string; done: Record<string, boolean> } | null;
 }
 
 function emptyState(): AppState {
-  return { workoutDrafts: {}, restOverrides: {}, measureDraft: null, shoppingChecked: {}, workoutViewMode: 'list', dietViewMode: 'list', mealsCompletion: null };
+  return { workoutDrafts: {}, restOverrides: {}, measureDraft: null, shoppingChecked: {}, shoppingCustomItems: [], workoutViewMode: 'list', dietViewMode: 'list', mealsCompletion: null };
 }
 
 /**
