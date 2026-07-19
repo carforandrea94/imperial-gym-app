@@ -261,6 +261,16 @@ export class App implements OnInit, OnDestroy {
       return;
     }
 
+    if (u === '/misure/progressi/nuovo') {
+      this.navTitle = 'Nuovo progresso';
+      this.navSubtitle = '';
+      this.showBack = true;
+      this.showHistory = false;
+      this.showInfo = false;
+      this.showAnalytics = false;
+      return;
+    }
+
     if (/^\/coach\/clienti\/[^/]+\/progressi$/.test(u)) {
       this.navTitle = 'Progressi';
       this.navSubtitle = '';
@@ -359,6 +369,8 @@ export class App implements OnInit, OnDestroy {
       this.router.navigate(['/misure/storico']);
     } else if (u === '/misure/storico' || u === '/misure/analytics' || u === '/misure/progressi') {
       this.router.navigate(['/misure']);
+    } else if (u === '/misure/progressi/nuovo') {
+      this.router.navigate(['/misure/progressi']);
     } else if (/^\/misure\/(peso|centimetri|pliche)$/.test(u)) {
       this.router.navigate(this.router.url.includes('date=') ? ['/misure/storico'] : ['/misure']);
     } else if (/^\/coach\/clienti\/[^/]+\/builder\/[^/]+$/.test(u)) {

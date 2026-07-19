@@ -131,6 +131,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/progressi-list/progressi-list.component').then(m => m.ProgressiListComponent)
   },
   {
+    path: 'misure/progressi/nuovo',
+    canActivate: [authGuard, clientGuard],
+    loadComponent: () => import('./pages/progressi-upload/progressi-upload.component').then(m => m.ProgressiUploadComponent)
+  },
+  {
     path: 'misure/:categoria',
     canActivate: [authGuard, clientGuard],
     loadComponent: () => import('./pages/misura-categoria/misura-categoria.component').then(m => m.MisuraCategoriaComponent)
