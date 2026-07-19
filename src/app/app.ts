@@ -149,17 +149,7 @@ export class App implements OnInit, OnDestroy {
 
     if (/^\/coach\/clienti\/[^/]+$/.test(u)) {
       this.navTitle = 'Cliente';
-      this.navSubtitle = '';
-      this.showBack = true;
-      this.showHistory = false;
-      this.showInfo = false;
-      this.showAnalytics = false;
-      return;
-    }
-
-    if (/^\/coach\/clienti\/[^/]+\/protocolli$/.test(u)) {
-      this.navTitle = 'Protocolli';
-      this.navSubtitle = '';
+      this.navSubtitle = 'Protocolli';
       this.showBack = true;
       this.showHistory = false;
       this.showInfo = false;
@@ -261,56 +251,6 @@ export class App implements OnInit, OnDestroy {
       return;
     }
 
-    if (u === '/misure/progressi') {
-      this.navTitle = 'Progressi';
-      this.navSubtitle = 'Foto salvate';
-      this.showBack = true;
-      this.showHistory = false;
-      this.showInfo = false;
-      this.showAnalytics = false;
-      return;
-    }
-
-    if (u === '/misure/progressi/nuovo') {
-      this.navTitle = 'Nuovo progresso';
-      this.navSubtitle = '';
-      this.showBack = true;
-      this.showHistory = false;
-      this.showInfo = false;
-      this.showAnalytics = false;
-      return;
-    }
-
-    if (/^\/misure\/progressi\/confronto\/[^/]+\/[^/]+$/.test(u)) {
-      this.navTitle = 'Confronto';
-      this.navSubtitle = '';
-      this.showBack = true;
-      this.showHistory = false;
-      this.showInfo = false;
-      this.showAnalytics = false;
-      return;
-    }
-
-    if (/^\/coach\/clienti\/[^/]+\/progressi$/.test(u)) {
-      this.navTitle = 'Progressi';
-      this.navSubtitle = '';
-      this.showBack = true;
-      this.showHistory = false;
-      this.showInfo = false;
-      this.showAnalytics = false;
-      return;
-    }
-
-    if (/^\/coach\/clienti\/[^/]+\/progressi\/confronto\/[^/]+\/[^/]+$/.test(u)) {
-      this.navTitle = 'Confronto';
-      this.navSubtitle = '';
-      this.showBack = true;
-      this.showHistory = false;
-      this.showInfo = false;
-      this.showAnalytics = false;
-      return;
-    }
-
     const categoriaMatch = u.match(/^\/misure\/(peso|centimetri|pliche)$/);
     if (categoriaMatch) {
       const isEdit = /[?&]date=/.test(url);
@@ -397,12 +337,8 @@ export class App implements OnInit, OnDestroy {
       this.router.navigate(['/scheda/storico']);
     } else if (u.match(/^\/misure\/storico\/.+$/)) {
       this.router.navigate(['/misure/storico']);
-    } else if (u === '/misure/storico' || u === '/misure/analytics' || u === '/misure/progressi') {
+    } else if (u === '/misure/storico' || u === '/misure/analytics') {
       this.router.navigate(['/misure']);
-    } else if (u === '/misure/progressi/nuovo') {
-      this.router.navigate(['/misure/progressi']);
-    } else if (/^\/misure\/progressi\/confronto\/[^/]+\/[^/]+$/.test(u)) {
-      this.router.navigate(['/misure/progressi']);
     } else if (/^\/misure\/(peso|centimetri|pliche)$/.test(u)) {
       this.router.navigate(this.router.url.includes('date=') ? ['/misure/storico'] : ['/misure']);
     } else if (/^\/coach\/clienti\/[^/]+\/builder\/[^/]+$/.test(u)) {
@@ -415,15 +351,6 @@ export class App implements OnInit, OnDestroy {
       const clientId = u.split('/')[3];
       this.router.navigate(['/coach/clienti', clientId, 'nuovo']);
     } else if (/^\/coach\/clienti\/[^/]+\/nuovo$/.test(u)) {
-      const clientId = u.split('/')[3];
-      this.router.navigate(['/coach/clienti', clientId]);
-    } else if (/^\/coach\/clienti\/[^/]+\/protocolli$/.test(u)) {
-      const clientId = u.split('/')[3];
-      this.router.navigate(['/coach/clienti', clientId]);
-    } else if (/^\/coach\/clienti\/[^/]+\/progressi\/confronto\/[^/]+\/[^/]+$/.test(u)) {
-      const clientId = u.split('/')[3];
-      this.router.navigate(['/coach/clienti', clientId, 'progressi']);
-    } else if (/^\/coach\/clienti\/[^/]+\/progressi$/.test(u)) {
       const clientId = u.split('/')[3];
       this.router.navigate(['/coach/clienti', clientId]);
     } else if (/^\/coach\/clienti\/[^/]+$/.test(u)) {

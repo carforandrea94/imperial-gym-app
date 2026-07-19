@@ -62,18 +62,6 @@ service cloud.firestore {
         allow write: if isSignedIn() &&
           get(/databases/$(database)/documents/users/$(uid)).data.coachId == request.auth.uid;
       }
-
-      // Foto progressi caricate dal cliente. A differenza di "protocols"
-      // (dove scrive il coach), qui scrive solo il proprietario; il coach
-      // puo' solo leggere (prima condivisione di un dato "personale" del
-      // cliente in questa direzione — misurazioni/sessioni restano private).
-      match /progressi/{id} {
-        allow read: if isSignedIn() && (
-          request.auth.uid == uid ||
-          get(/databases/$(database)/documents/users/$(uid)).data.coachId == request.auth.uid
-        );
-        allow write: if isSignedIn() && request.auth.uid == uid;
-      }
     }
 
     match /announcements/{id} {
