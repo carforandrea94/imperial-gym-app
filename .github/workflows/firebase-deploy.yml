@@ -58,9 +58,9 @@ jobs:
           channelId: live
           projectId: imperial-gym-app
 
-      - name: Deploy Firestore rules
+      - name: Deploy Firestore and Storage rules
         run: |
           echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_IMPERIAL_GYM_APP }}' > /tmp/gcp-key.json
           export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
-          npx firebase-tools deploy --only firestore:rules,firestore:indexes --project imperial-gym-app --non-interactive
+          npx firebase-tools deploy --only firestore:rules,firestore:indexes,storage:rules --project imperial-gym-app --non-interactive
           rm -f /tmp/gcp-key.json

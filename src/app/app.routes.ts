@@ -45,6 +45,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/coach-client-detail/coach-client-detail.component').then(m => m.CoachClientDetailComponent)
   },
   {
+    path: 'coach/clienti/:clientId/protocolli',
+    canActivate: [authGuard, coachGuard],
+    loadComponent: () => import('./pages/coach-client-protocolli/coach-client-protocolli.component').then(m => m.CoachClientProtocolliComponent)
+  },
+  {
     path: 'coach/clienti/:clientId/nuovo',
     canActivate: [authGuard, coachGuard],
     loadComponent: () => import('./pages/coach-protocol-new/coach-protocol-new.component').then(m => m.CoachProtocolNewComponent)
@@ -63,6 +68,16 @@ export const routes: Routes = [
     path: 'coach/clienti/:clientId/builder/:protocolId',
     canActivate: [authGuard, coachGuard],
     loadComponent: () => import('./pages/coach-protocol-builder/coach-protocol-builder.component').then(m => m.CoachProtocolBuilderComponent)
+  },
+  {
+    path: 'coach/clienti/:clientId/progressi',
+    canActivate: [authGuard, coachGuard],
+    loadComponent: () => import('./pages/progressi-list/progressi-list.component').then(m => m.ProgressiListComponent)
+  },
+  {
+    path: 'coach/clienti/:clientId/progressi/confronto/:data1/:data2',
+    canActivate: [authGuard, coachGuard],
+    loadComponent: () => import('./pages/progressi-confronto/progressi-confronto.component').then(m => m.ProgressiConfrontoComponent)
   },
 
   {
@@ -119,6 +134,21 @@ export const routes: Routes = [
     path: 'misure/analytics',
     canActivate: [authGuard, clientGuard],
     loadComponent: () => import('./pages/misure-analytics/misure-analytics.component').then(m => m.MisureAnalyticsComponent)
+  },
+  {
+    path: 'misure/progressi',
+    canActivate: [authGuard, clientGuard],
+    loadComponent: () => import('./pages/progressi-list/progressi-list.component').then(m => m.ProgressiListComponent)
+  },
+  {
+    path: 'misure/progressi/nuovo',
+    canActivate: [authGuard, clientGuard],
+    loadComponent: () => import('./pages/progressi-upload/progressi-upload.component').then(m => m.ProgressiUploadComponent)
+  },
+  {
+    path: 'misure/progressi/confronto/:data1/:data2',
+    canActivate: [authGuard, clientGuard],
+    loadComponent: () => import('./pages/progressi-confronto/progressi-confronto.component').then(m => m.ProgressiConfrontoComponent)
   },
   {
     path: 'misure/:categoria',
