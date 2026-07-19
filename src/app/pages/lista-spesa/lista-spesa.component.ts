@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DietDataService } from '../../services/diet-data.service';
 import { AppStateService } from '../../services/app-state.service';
+import { FoodItem } from '../../models/diet.model';
 
 interface ShoppingItem {
   key: string;
@@ -60,7 +61,7 @@ export class ListaSpesaComponent implements OnInit {
   private buildItems(checked: Record<string, boolean>): void {
     const map = new Map<string, ShoppingItem>();
 
-    const addFood = (food: { name: string; qty: string } | null, plan: string, source: string) => {
+    const addFood = (food: FoodItem | null, plan: string, source: string) => {
       if (!food || !food.name) return;
       const key = food.name.trim().toLowerCase();
       if (!map.has(key)) {
@@ -69,6 +70,12 @@ export class ListaSpesaComponent implements OnInit {
       const entry = map.get(key)!;
       if (food.qty && !entry.qtys.includes(food.qty)) entry.qtys.push(food.qty);
       if (!entry.sources.includes(source)) entry.sources.push(source);
+
+      // Alternative annidate del singolo alimento (item.alt, es. "Farina d'avena" ->
+      // "Farina di riso"), popolate dal coach builder e dall'import PDF: senza questo
+      // giro mancavano dalla lista tutte le alternative-per-alimento, distinte dalle
+      // alternative-per-macro del pasto (meal.alternatives) gia' incluse sopra.
+      (food.alt ?? []).forEach(alt => addFood(alt as FoodItem, plan, `${source} (alternativa)`));
     };
 
     for (const plan of this.dietData.diet) {
