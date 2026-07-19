@@ -149,7 +149,17 @@ export class App implements OnInit, OnDestroy {
 
     if (/^\/coach\/clienti\/[^/]+$/.test(u)) {
       this.navTitle = 'Cliente';
-      this.navSubtitle = 'Protocolli';
+      this.navSubtitle = '';
+      this.showBack = true;
+      this.showHistory = false;
+      this.showInfo = false;
+      this.showAnalytics = false;
+      return;
+    }
+
+    if (/^\/coach\/clienti\/[^/]+\/protocolli$/.test(u)) {
+      this.navTitle = 'Protocolli';
+      this.navSubtitle = '';
       this.showBack = true;
       this.showHistory = false;
       this.showInfo = false;
@@ -405,6 +415,9 @@ export class App implements OnInit, OnDestroy {
       const clientId = u.split('/')[3];
       this.router.navigate(['/coach/clienti', clientId, 'nuovo']);
     } else if (/^\/coach\/clienti\/[^/]+\/nuovo$/.test(u)) {
+      const clientId = u.split('/')[3];
+      this.router.navigate(['/coach/clienti', clientId]);
+    } else if (/^\/coach\/clienti\/[^/]+\/protocolli$/.test(u)) {
       const clientId = u.split('/')[3];
       this.router.navigate(['/coach/clienti', clientId]);
     } else if (/^\/coach\/clienti\/[^/]+\/progressi\/confronto\/[^/]+\/[^/]+$/.test(u)) {

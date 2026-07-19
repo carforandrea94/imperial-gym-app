@@ -45,6 +45,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/coach-client-detail/coach-client-detail.component').then(m => m.CoachClientDetailComponent)
   },
   {
+    path: 'coach/clienti/:clientId/protocolli',
+    canActivate: [authGuard, coachGuard],
+    loadComponent: () => import('./pages/coach-client-protocolli/coach-client-protocolli.component').then(m => m.CoachClientProtocolliComponent)
+  },
+  {
     path: 'coach/clienti/:clientId/nuovo',
     canActivate: [authGuard, coachGuard],
     loadComponent: () => import('./pages/coach-protocol-new/coach-protocol-new.component').then(m => m.CoachProtocolNewComponent)
