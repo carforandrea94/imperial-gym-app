@@ -32,7 +32,7 @@
 
 <div class="savebar">
   <button class="savebtn" [disabled]="!canProcess" (click)="process()">
-    {{ processing ? 'Elaborazione in corso…' : (isUpdateMode ? 'Aggiorna protocollo' : 'Elabora e crea bozza') }}
+    {{ processing ? 'Elaborazione in corso…' : (loadingExisting ? 'Caricamento protocollo…' : (isUpdateMode ? 'Aggiorna protocollo' : 'Elabora e crea bozza')) }}
   </button>
 </div>
 
