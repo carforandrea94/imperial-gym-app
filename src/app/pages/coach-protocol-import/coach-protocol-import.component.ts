@@ -63,6 +63,14 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
   /** Vuoto in modalita' creazione; valorizzato in modalita' aggiornamento (route con :protocolId). */
   protocolId = '';
   private existingProtocol: Protocol | null = null;
+  /** true dal momento in cui sappiamo che siamo in modalita' aggiornamento (c'e' un
+   *  protocolId) fino a quando il protocollo esistente e' stato letto da Firestore
+   *  (con successo o meno). Finche' e' true, "Aggiorna protocollo" resta disabilitato:
+   *  senza questa guardia era possibile scegliere un file e cliccare il bottone PRIMA
+   *  che la lettura fosse completata, con existingProtocol ancora null - processUpdate()
+   *  crashava leggendo un campo su null non appena tentava di consultare il protocollo
+   *  esistente (mai un problema del PDF o della logica di estrazione). */
+  loadingExisting = false;
   private paramSub: Subscription | null = null;
 
   schedaFile: File | null = null;
@@ -94,7 +102,10 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
     this.paramSub = this.route.paramMap.subscribe(params => {
       this.clientId = params.get('clientId') ?? '';
       this.protocolId = params.get('protocolId') ?? '';
-      if (this.protocolId) this.loadExisting();
+      if (this.protocolId) {
+        this.loadingExisting = true;
+        this.loadExisting();
+      }
     });
   }
 
@@ -103,10 +114,17 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
   }
 
   private async loadExisting(): Promise<void> {
-    const p = await this.protocolSvc.get(this.clientId, this.protocolId);
-    if (!p) { this.router.navigate(['/coach/clienti', this.clientId]); return; }
-    this.existingProtocol = p;
-    this.cdr.detectChanges();
+    try {
+      const p = await this.protocolSvc.get(this.clientId, this.protocolId);
+      if (!p) { this.router.navigate(['/coach/clienti', this.clientId]); return; }
+      this.existingProtocol = p;
+    } catch (e: any) {
+      console.error('Errore caricamento protocollo esistente:', e);
+      this.errorMsg = 'Errore nel caricamento del protocollo esistente. Ricarica la pagina e riprova.';
+    } finally {
+      this.loadingExisting = false;
+      this.cdr.detectChanges();
+    }
   }
 
   onFile(event: Event, which: 'scheda' | 'dieta' | 'integrazione'): void {
@@ -119,7 +137,10 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
 
   get canProcess(): boolean {
     if (this.processing) return false;
-    if (this.isUpdateMode) return !!(this.schedaFile || this.dietaFile || this.integrazioneFile);
+    if (this.isUpdateMode) {
+      if (this.loadingExisting) return false;
+      return !!(this.schedaFile || this.dietaFile || this.integrazioneFile);
+    }
     return !!this.schedaFile && !!this.dietaFile;
   }
 
