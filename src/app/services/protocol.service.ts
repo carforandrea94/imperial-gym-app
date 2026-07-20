@@ -43,7 +43,7 @@ function normalizeMeal(meal: any): any {
   const alreadyCurrent = Array.isArray(meal.combinations) &&
     meal.combinations.every((c: any) => !Array.isArray(c.items));
   if (alreadyCurrent) {
-    return { id: meal.id, name: meal.name, combinations: meal.combinations, alternatives };
+    return { id: meal.id, name: meal.name, combinations: meal.combinations, alternatives, supplements: meal.supplements };
   }
 
   console.warn(`Pasto "${meal.name}" in formato legacy, normalizzato al nuovo modello (1 alimento per macro + alternative).`);
@@ -71,7 +71,7 @@ function normalizeMeal(meal: any): any {
     fat: [...alternatives.fat, ...byCat.fat.slice(1)]
   };
 
-  return { id: meal.id, name: meal.name, combinations: [base], alternatives: mergedAlt };
+  return { id: meal.id, name: meal.name, combinations: [base], alternatives: mergedAlt, supplements: meal.supplements };
 }
 
 /**
