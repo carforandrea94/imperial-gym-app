@@ -151,20 +151,48 @@ function buildReps(sets: number, repsRaw: string): string[] {
 @Injectable({ providedIn: 'root' })
 export class PdfImportService {
 
+  // NB temporanea: il messaggio d'errore che arriva all'utente su Safari/iOS
+  // ("undefined is not a function (near '...i of t...')") non basta a capire
+  // QUALE chiamata fallisce - ogni fase qui sotto e' avvolta separatamente e
+  // rilancia con un prefisso identificativo, cosi' il prossimo errore mostrato
+  // in UI dice esattamente dove si e' fermato invece di un generico crash.
   async extractText(file: File): Promise<string> {
     const buf = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+
+    let pdf: Awaited<ReturnType<typeof pdfjsLib.getDocument>['promise']>;
+    try {
+      pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    } catch (e: any) {
+      throw new Error(`[extractText:getDocument] ${e?.message ?? e}`);
+    }
+
     const pages: string[] = [];
     for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
+      let page: Awaited<ReturnType<typeof pdf.getPage>>;
+      try {
+        page = await pdf.getPage(i);
+      } catch (e: any) {
+        throw new Error(`[extractText:getPage:${i}] ${e?.message ?? e}`);
+      }
+
+      let content: Awaited<ReturnType<typeof page.getTextContent>>;
+      try {
+        content = await page.getTextContent();
+      } catch (e: any) {
+        throw new Error(`[extractText:getTextContent:${i}] ${e?.message ?? e}`);
+      }
+
       // Ogni TextItem segnala se chiude una riga (hasEOL): senza questo, unire tutto
       // con uno spazio appiattirebbe l'intera pagina su un'unica riga, rendendo
       // impossibile qualunque parsing riga-per-riga (intestazioni, alimenti, ecc.).
       let pageText = '';
-      for (const it of content.items as any[]) {
-        pageText += it.str;
-        pageText += it.hasEOL ? '\n' : ' ';
+      try {
+        for (const it of content.items as any[]) {
+          pageText += it.str;
+          pageText += it.hasEOL ? '\n' : ' ';
+        }
+      } catch (e: any) {
+        throw new Error(`[extractText:items:${i}] ${e?.message ?? e}`);
       }
       pages.push(pageText);
     }

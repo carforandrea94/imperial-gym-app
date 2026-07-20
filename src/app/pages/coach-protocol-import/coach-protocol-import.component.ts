@@ -296,7 +296,11 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
     }
 
     this.setStage('Salvataggio protocollo…', 90);
-    await this.withTimeout(this.protocolSvc.update(this.clientId, this.protocolId, patch), 'Salvataggio protocollo');
+    try {
+      await this.withTimeout(this.protocolSvc.update(this.clientId, this.protocolId, patch), 'Salvataggio protocollo');
+    } catch (e: any) {
+      throw new Error(`[processUpdate:protocolSvc.update] ${e?.message ?? e}`);
+    }
 
     this.setStage('Completato', 100);
     this.router.navigate(['/coach/clienti', this.clientId, 'builder', this.protocolId]);
