@@ -31,14 +31,23 @@ export interface MacroAlternatives {
   fat: FoodItem[];
 }
 
+export interface SupplementItem {
+  name: string;
+  qty: string;
+}
+
 /** Un pasto con nome libero (Colazione, Spuntino, ma anche "Pre-workout", ecc.).
  *  Ha sempre almeno una combinazione (Base); se ce n'e' piu' di una vengono
- *  mostrate come tab. Le alternative per macro sono separate, sotto i tab. */
+ *  mostrate come tab. Le alternative per macro sono separate, sotto i tab.
+ *  "supplements" e' una lista piatta indipendente dalle combinazioni: piu'
+ *  integratori valgono insieme per lo stesso pasto, non sono alternative
+ *  intercambiabili tra loro. */
 export interface NamedMeal {
   id: string;
   name: string;
   combinations: MealCombination[];
   alternatives: MacroAlternatives;
+  supplements?: SupplementItem[];
 }
 
 /** Un piano dieta con nome libero (es. "Giorno ON", "Giorno OFF", "Rifeed", "Vacanza"...). */

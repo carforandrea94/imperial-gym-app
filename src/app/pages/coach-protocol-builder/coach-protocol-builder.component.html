@@ -387,6 +387,20 @@
         </ng-container>
       </div>
 
+      <p class="sectiontitle" style="margin-top:24px">Integrazione</p>
+      <div class="infocard" style="margin-bottom:10px">
+        <div class="builder-item" *ngFor="let s of em.supplements ?? []">
+          <div class="measure-input-wrap">
+            <input type="text" [(ngModel)]="s.name" placeholder="Nome (es. Creatina)" />
+          </div>
+          <div class="measure-input-wrap builder-qty">
+            <input type="text" [(ngModel)]="s.qty" placeholder="Dose (es. 5 g)" />
+          </div>
+          <button class="delete-btn" (click)="removeSupplement(em, s)">✕</button>
+        </div>
+        <button class="confirmbtn cancel" style="width:100%;margin-top:6px" (click)="addSupplement(em)">+ Aggiungi integratore</button>
+      </div>
+
       <div class="savebar builder-savebar">
         <button class="confirmbtn cancel" style="flex:1" (click)="removeMealFromEditor()">Rimuovi pasto</button>
         <button class="savebtn" style="flex:1.4" (click)="closeMeal()">Fatto</button>

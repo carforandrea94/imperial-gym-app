@@ -42,6 +42,17 @@
     </ng-container>
   </ng-container>
 
+  <!-- Integrazione: lista piatta per pasto, non legata alla combinazione selezionata -->
+  <ng-container *ngIf="vm.meal.supplements as supplements">
+    <p class="fooditem-category integration" *ngIf="supplements.length > 0">Integrazione</p>
+    <div class="fooditem" *ngFor="let s of supplements">
+      <div class="row">
+        <span class="fname">{{ s.name }}</span>
+        <span class="fqty">{{ s.qty }}</span>
+      </div>
+    </div>
+  </ng-container>
+
   <!-- Alternative per macro, un unico accordion -->
   <ng-container *ngIf="totalAlternatives(vm) > 0">
     <div class="altwrap-header" (click)="toggleMacroAltExpanded(vm)" style="margin-top:14px">
