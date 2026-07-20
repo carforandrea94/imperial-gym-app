@@ -396,6 +396,7 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .fooditem-category.fat{color:var(--imp-amber);}
 .fooditem-category.carb{color:var(--macro-carb);}
 .fooditem-category.protein{color:var(--macro-protein);}
+.fooditem-category.integration{color:var(--sys-cyan);}
 .fooditem:last-child{border-bottom:none;}
 .fooditem .row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
 .fooditem .fname{font-size:14.5px;line-height:1.3;}
