@@ -1,5 +1,13 @@
 import { Injectable } from '@angular/core';
-import * as pdfjsLib from 'pdfjs-dist';
+// Build "legacy" (non quella di default 'pdfjs-dist'): il README della libreria
+// e' esplicito, "for usage with older browsers/environments, without native
+// support for the latest JavaScript features, please see the legacy/ folder".
+// La build di default assume feature JS molto recenti; su Safari/iOS non
+// aggiornatissimi questo causava un crash a runtime nel worker durante
+// l'estrazione testo ("undefined is not a function"), non un problema del PDF
+// ne' della logica di parsing (verificato: lo stesso identico file estrae il
+// testo senza errori con questa stessa libreria).
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { Day, Exercise, WeekPlan } from '../models/workout.model';
 import {
   Diet, DietPlan, NamedMeal, MealCombination, FoodItem, FoodCategory,
@@ -10,7 +18,8 @@ import {
 // cross-origin e su Safari/iOS spesso fallisce in silenzio (nessun errore, nessuna
 // risposta), lasciando l'estrazione bloccata a tempo indeterminato senza alcun feedback.
 // NB: il file public/pdf.worker.min.mjs va tenuto allineato alla versione di pdfjs-dist
-// installata (copiato da node_modules/pdfjs-dist/build/pdf.worker.min.mjs).
+// installata (copiato da node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs -
+// build "legacy" corrispondente all'import sopra, NON node_modules/pdfjs-dist/build/).
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
 const MEAL_KEYWORDS: Record<string, string> = {

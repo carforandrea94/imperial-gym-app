@@ -620,6 +620,8 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .confirmbtn.danger { background: linear-gradient(180deg, rgba(var(--state-danger-rgb),0.60), rgba(var(--state-danger-deep-rgb),0.48)); color: #fff; }
 /* Il salvataggio del timer di recupero non e' un'azione distruttiva: deve vincere sul rosso di .danger nonostante condivida il bottone. */
 .confirmbtn.restsave { background: var(--accent); color: #000; }
+/* Conferme non distruttive (es. "Continua" per l'import/aggiornamento da PDF): stesso accento di .restsave, mai applicata insieme a .danger. */
+.confirmbtn.confirm { background: var(--accent); color: #000; }
 
 /* Le due varianti "elimina" con tinta rossa translucida */
 .delete-btn,

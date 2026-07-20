@@ -160,7 +160,7 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
     if (!this.canProcess) return;
 
     if (this.isUpdateMode) {
-      const ok = await this.confirm.confirm(this.buildConfirmMessage());
+      const ok = await this.confirm.confirm(this.buildConfirmMessage(), { confirmLabel: 'Continua', dangerous: false });
       if (!ok) return;
     }
 
