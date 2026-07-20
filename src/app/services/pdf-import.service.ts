@@ -102,7 +102,13 @@ const WAVE_MARKER_RE = /riprendi|aumentando|ricomincia|ripeti\s+dal\s+ciclo|torn
 /** "4X10+ ULTIMA IN STRIP..." / "3X12/15 con fermo in basso di 2”": sets + descrittore reps + nota libera. */
 const SINGLE_SCHEME_RE = /^(\d+)\s*[xX×]\s*(\S+)(?:\s+(.*))?$/;
 
+/** Intestazione di blocco integrazione legato all'allenamento: "pre-workout: 30 minuti
+ *  prima", "intra-workout", "post-workout:" - il testo dopo l'eventuale ":" e' ignorato,
+ *  serve solo a riconoscere l'inizio del blocco. */
 const SUPPLEMENT_SECTION_RE = /^(pre-workout|intra-workout|post-workout)\b/i;
+/** Riga che continua la precedente (il PDF va a capo a meta' frase, non per una nuova
+ *  voce): inizia con una congiunzione breve ("e", "ed", "o", "ma") o un'elisione
+ *  ("d'acqua", "l'allenamento", ...). */
 const SUPPLEMENT_CONTINUATION_RE = /^((e|ed|o|ma)\b|[a-z]')/i;
 const SUPPLEMENT_MEAL_KEYWORDS: [string, RegExp][] = [
   ['Colazione', /colazione/i],
@@ -162,11 +168,13 @@ function buildReps(sets: number, repsRaw: string): string[] {
   return Array.from({ length: sets }, () => repsRaw);
 }
 
-
 function supplementMealsInText(text: string): string[] {
   return SUPPLEMENT_MEAL_KEYWORDS.filter(([, re]) => re.test(text)).map(([name]) => name);
 }
 
+/** Righe fuori sezione: "NOME: descrizione" (il pasto si trova cercando le parole
+ *  chiave nella descrizione), oppure senza ":" "NOME resto-descrizione" (es.
+ *  "magnesio 400mg da assumere dopo cena", "bromelina assumere la dose consigliata a pranzo e cena"). */
 function extractSupplementOutsideSection(blob: string): { name: string; qty: string } | null {
   const colonMatch = blob.match(/^([^:]{1,40}):\s*(.+)$/);
   if (colonMatch) return { name: colonMatch[1].trim(), qty: colonMatch[2].trim() };
@@ -175,6 +183,10 @@ function extractSupplementOutsideSection(blob: string): { name: string; qty: str
   return null;
 }
 
+/** Righe dentro una sezione pre/post-workout: prova "QUANTITA' di NOME [da assumere...]"
+ *  (es. "5 gr di creatina da assumere nel pasto"), poi "NOME QUANTITA'" (es. "arginina 3g"),
+ *  poi il fallback generico "prima parola nome, resto quantita'" (es. "termogenico
+ *  dosaggio consigliato"). */
 function extractSupplementInSection(line: string): { name: string; qty: string } | null {
   const qtyFirst = line.match(/^(\d+[\d.,]*\s*\S{0,4})\s+di\s+(.+?)(?:\s+da\s+assumere\b.*)?$/i);
   if (qtyFirst) return { name: qtyFirst[2].trim(), qty: qtyFirst[1].trim() };
@@ -241,6 +253,11 @@ export class PdfImportService {
     return pages.join('\n');
   }
 
+  /** Parser best-effort per il PDF di integrazione: ogni riga viene assegnata al/ai
+   *  pasto/i che indica, con la quantita' scritta li' - nessun tentativo di dedurre se
+   *  lo stesso integratore citato altrove sia "la stessa dose" (deciso col coach: la
+   *  creatina di colazione e quella post-workout sono due dosi indipendenti). Una riga
+   *  che non permette di individuare pasto+quantita' viene scartata silenziosamente. */
   parseSupplementText(text: string): ParsedSupplements {
     const lines = text.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
     const always: Record<string, SupplementItem[]> = {};
