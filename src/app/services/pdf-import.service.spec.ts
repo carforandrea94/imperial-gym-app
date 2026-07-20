@@ -543,7 +543,7 @@ EX.1/SPINTE MANUBRI PANCA PIANA
 
   // Bug #19: un descrittore reps di piu' parole ("AL CEDIMENTO") veniva troncato alla prima
   // parola (reps="AL") e il resto finiva nella nota (nota="CEDIMENTO").
-  it('cattura un descrittore reps di piu\' parole (“AL CEDIMENTO”) senza spezzarlo nella nota', () => {
+  it('cattura un descrittore reps di piu\' parole ("AL CEDIMENTO") senza spezzarlo nella nota', () => {
     const text = `
 DURATA 8 SETTIMANE
 DAY 1 : PETTO REC TRA 60-90”
