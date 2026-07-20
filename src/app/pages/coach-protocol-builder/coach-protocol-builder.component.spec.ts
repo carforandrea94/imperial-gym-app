@@ -65,15 +65,12 @@ describe('CoachProtocolBuilderComponent', () => {
   }
 
   it("save() ricalcola workout.weekPlan dai dati per-esercizio invece di salvare l'aggregato non aggiornato", async () => {
+    const updateCalls: any[][] = [];
     const protocolSvc: any = {
-      update: () => Promise.resolve(),
+      update: (...args: any[]) => { updateCalls.push(args); return Promise.resolve(); },
       get: () => Promise.resolve(buildProtocol()),
       activate: () => Promise.resolve()
     };
-    (protocolSvc.update as any).calls = [];
-    const originalUpdate = protocolSvc.update;
-    protocolSvc.update = (...args: any[]) => { protocolSvc.update.calls.push(args); return originalUpdate(); };
-    protocolSvc.update.calls = [];
 
     const router: any = { navigate: () => {} };
     const cdr: any = { detectChanges: () => {} };
@@ -95,13 +92,92 @@ describe('CoachProtocolBuilderComponent', () => {
 
     await component.save(false);
 
-    expect(protocolSvc.update.calls.length).toBe(1);
-    const savedPatch = protocolSvc.update.calls[0][2];
+    expect(updateCalls.length).toBe(1);
+    const savedPatch = updateCalls[0][2];
     expect(savedPatch.workout.weekPlan).toEqual([
       { sets: 4, reps: 10 },
       { sets: 4, reps: 10 },
       { sets: 4, reps: 8 },
       { sets: 4, reps: 8 }
+    ]);
+  });
+
+  it("save() usa totalWeeks quando non ci sono esercizi wave", async () => {
+    // Protocollo senza esercizi wave (tutti 'plain'): attiva il fallback
+    const protocolNoWave: Protocol = {
+      id: 'proto2',
+      clientId: 'client2',
+      coachId: 'coach1',
+      name: 'Protocollo no-wave',
+      status: 'draft',
+      source: 'pdf',
+      workout: {
+        programStart: '2026-01-01',
+        // weekPlan stale con lunghezza 4 (deliberatamente != 8, per catturare regressioni)
+        weekPlan: [
+          { sets: 4, reps: 10 },
+          { sets: 4, reps: 10 },
+          { sets: 4, reps: 10 },
+          { sets: 4, reps: 10 }
+        ],
+        days: [{
+          id: 'day1',
+          label: 'Gambe',
+          rec: '60-90"',
+          ex: [{
+            name: 'Leg Press',
+            scheme: 'plain',  // NON wave
+            sets: 4,
+            muscle: 'Gambe',
+            reps: ['10']
+            // Nessun weekPlan per-esercizio: non avremo wave weekPlans
+          }]
+        }]
+      },
+      diet: [],
+      infoNote: '',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z'
+    };
+
+    const updateCalls: any[][] = [];
+    const protocolSvc: any = {
+      update: (...args: any[]) => { updateCalls.push(args); return Promise.resolve(); },
+      get: () => Promise.resolve(protocolNoWave),
+      activate: () => Promise.resolve()
+    };
+
+    const router: any = { navigate: () => {} };
+    const cdr: any = { detectChanges: () => {} };
+
+    const component = new CoachProtocolBuilderComponent(
+      {} as any,
+      router,
+      protocolSvc,
+      new PdfImportService(),
+      new WorkoutDataService(),
+      cdr,
+      new ProtocolBuilderStateService(),
+      new ToastService()
+    );
+
+    component.clientId = 'client2';
+    component.protocolId = 'proto2';
+    component.protocol = protocolNoWave;
+
+    await component.save(false);
+
+    expect(updateCalls.length).toBe(1);
+    const savedPatch = updateCalls[0][2];
+
+    // Il fallback usa totalWeeks (= length del weekPlan stale = 4) e genera
+    // un array di 4 elementi, ognuno { sets: 4, reps: 10 }
+    expect(savedPatch.workout.weekPlan.length).toBe(4);
+    expect(savedPatch.workout.weekPlan).toEqual([
+      { sets: 4, reps: 10 },
+      { sets: 4, reps: 10 },
+      { sets: 4, reps: 10 },
+      { sets: 4, reps: 10 }
     ]);
   });
 });
