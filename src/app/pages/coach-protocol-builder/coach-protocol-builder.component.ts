@@ -7,7 +7,7 @@ import { ProtocolService } from '../../services/protocol.service';
 import { WorkoutDataService } from '../../services/workout-data.service';
 import { Protocol } from '../../models/protocol.model';
 import { Day, Exercise } from '../../models/workout.model';
-import { FoodItem, DietPlan, NamedMeal, MealCombination, newDietPlan, newNamedMeal, newCombination, FoodCategory, FOOD_CATEGORIES, FOOD_CATEGORY_LABELS } from '../../models/diet.model';
+import { FoodItem, DietPlan, NamedMeal, MealCombination, SupplementItem, newDietPlan, newNamedMeal, newCombination, FoodCategory, FOOD_CATEGORIES, FOOD_CATEGORY_LABELS } from '../../models/diet.model';
 import { ProtocolBuilderStateService } from '../../services/protocol-builder-state.service';
 import { ToastService } from '../../services/toast.service';
 import { PdfImportService } from '../../services/pdf-import.service';
@@ -330,6 +330,17 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
     const arr = meal.alternatives[cat];
     const idx = arr.indexOf(item);
     if (idx >= 0) arr.splice(idx, 1);
+  }
+
+  addSupplement(meal: NamedMeal): void {
+    if (!meal.supplements) meal.supplements = [];
+    meal.supplements.push({ name: '', qty: '' });
+  }
+
+  removeSupplement(meal: NamedMeal, item: SupplementItem): void {
+    if (!meal.supplements) return;
+    const idx = meal.supplements.indexOf(item);
+    if (idx >= 0) meal.supplements.splice(idx, 1);
   }
 
   isAltExpanded(meal: NamedMeal): boolean {
