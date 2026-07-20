@@ -8,6 +8,8 @@ import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { AuthService } from '../../core/services/auth.service';
 import { todayLocalISO } from '../../core/utils/date.util';
 import { Protocol } from '../../models/protocol.model';
+import { Diet, NamedMeal, newNamedMeal } from '../../models/diet.model';
+import { ParsedSupplements } from '../../services/pdf-import.service';
 
 /** Tempo massimo per ciascuna fase prima di rinunciare e segnalare un errore
  *  invece di restare bloccati a tempo indeterminato senza alcun feedback
@@ -205,6 +207,32 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** Applica le voci Integrazione riconosciute dal parser ai pasti giusti di ogni piano
+   *  dieta: "always" su tutti i piani, "onlyOn" solo sui piani il cui nome contiene "on"
+   *  (case-insensitive) - per Cena si AGGIUNGONO a quelle gia' scritte da "always", non
+   *  le sostituiscono. Crea il pasto "Intra-Workout" se manca in un piano "on"; nessun
+   *  altro pasto mancante viene creato (solo i nomi pasto standard esistono di norma). */
+  private applyParsedSupplements(diet: Diet, parsed: ParsedSupplements): void {
+    for (const plan of diet) {
+      for (const [mealName, items] of Object.entries(parsed.always)) {
+        const meal = plan.meals.find(m => m.name.toLowerCase() === mealName.toLowerCase());
+        if (meal) meal.supplements = items;
+      }
+
+      if (/\bon\b/i.test(plan.name)) {
+        for (const [mealName, items] of Object.entries(parsed.onlyOn)) {
+          let meal: NamedMeal | undefined = plan.meals.find(m => m.name.toLowerCase() === mealName.toLowerCase());
+          if (!meal) {
+            if (mealName !== 'Intra-Workout') continue;
+            meal = newNamedMeal(mealName);
+            plan.meals.push(meal);
+          }
+          meal.supplements = [...(meal.supplements ?? []), ...items];
+        }
+      }
+    }
+  }
+
   private async processCreate(): Promise<void> {
     this.setStage('Creazione bozza protocollo…', 5);
     const coach = this.auth.currentUser()!;
@@ -228,6 +256,7 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
       this.setStage('Lettura integrazione…', 75);
       const integrazioneText = await this.withTimeout(this.pdfSvc.extractText(this.integrazioneFile), 'Lettura integrazione');
       supplementNotesSource = integrazioneText.trim();
+      this.applyParsedSupplements(diet, this.pdfSvc.parseSupplementText(integrazioneText));
     }
     const infoNote = [dietNotesSource, supplementNotesSource].filter(Boolean).join('\n\n');
 
@@ -283,6 +312,9 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
       this.setStage('Lettura integrazione…', percent);
       const integrazioneText = await this.withTimeout(this.pdfSvc.extractText(this.integrazioneFile), 'Lettura integrazione');
       supplementNotesSource = integrazioneText.trim();
+      const dietToPatch = patch.diet ?? existing.diet;
+      this.applyParsedSupplements(dietToPatch, this.pdfSvc.parseSupplementText(integrazioneText));
+      patch.diet = dietToPatch;
     }
 
     if (this.dietaFile || this.integrazioneFile) {
