@@ -10,7 +10,7 @@ import { Injectable } from '@angular/core';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { Day, Exercise, WeekPlan } from '../models/workout.model';
 import {
-  Diet, DietPlan, NamedMeal, MealCombination, FoodItem, FoodCategory,
+  Diet, DietPlan, NamedMeal, MealCombination, FoodItem, FoodCategory, SupplementItem,
   DEFAULT_MEAL_NAMES, newDietPlan, newNamedMeal, newCombination
 } from '../models/diet.model';
 // Worker servito dallo stesso dominio dell'app (file in public/, copiato in root
@@ -102,6 +102,20 @@ const WAVE_MARKER_RE = /riprendi|aumentando|ricomincia|ripeti\s+dal\s+ciclo|torn
 /** "4X10+ ULTIMA IN STRIP..." / "3X12/15 con fermo in basso di 2”": sets + descrittore reps + nota libera. */
 const SINGLE_SCHEME_RE = /^(\d+)\s*[xX×]\s*(\S+)(?:\s+(.*))?$/;
 
+const SUPPLEMENT_SECTION_RE = /^(pre-workout|intra-workout|post-workout)\b/i;
+const SUPPLEMENT_CONTINUATION_RE = /^((e|ed|o|ma)\b|[a-z]')/i;
+const SUPPLEMENT_MEAL_KEYWORDS: [string, RegExp][] = [
+  ['Colazione', /colazione/i],
+  ['Pranzo', /pranzo/i],
+  ['Cena', /cena/i],
+  ['Merenda', /merenda/i]
+];
+const SUPPLEMENT_SECTION_MEAL: Record<'pre' | 'intra' | 'post', string> = {
+  pre: 'Merenda',
+  intra: 'Intra-Workout',
+  post: 'Cena'
+};
+
 /** Ordine di priorita' per assegnare il gruppo muscolare da nome esercizio: le parole chiave
  *  piu' specifiche (Core, Gambe, Bicipiti) vanno prima di quelle che si sovrappongono a nomi
  *  di macchinari/esercizi di altri gruppi (es. "LAT MACHINE" usata anche per esercizi di core). */
@@ -146,6 +160,34 @@ function buildReps(sets: number, repsRaw: string): string[] {
   const parts = repsRaw.split('-').map(s => s.trim()).filter(Boolean);
   if (parts.length === sets) return parts;
   return Array.from({ length: sets }, () => repsRaw);
+}
+
+
+function supplementMealsInText(text: string): string[] {
+  return SUPPLEMENT_MEAL_KEYWORDS.filter(([, re]) => re.test(text)).map(([name]) => name);
+}
+
+function extractSupplementOutsideSection(blob: string): { name: string; qty: string } | null {
+  const colonMatch = blob.match(/^([^:]{1,40}):\s*(.+)$/);
+  if (colonMatch) return { name: colonMatch[1].trim(), qty: colonMatch[2].trim() };
+  const fallback = blob.match(/^(\S+)\s+(.+)$/);
+  if (fallback) return { name: fallback[1].trim(), qty: fallback[2].trim() };
+  return null;
+}
+
+function extractSupplementInSection(line: string): { name: string; qty: string } | null {
+  const qtyFirst = line.match(/^(\d+[\d.,]*\s*\S{0,4})\s+di\s+(.+?)(?:\s+da\s+assumere\b.*)?$/i);
+  if (qtyFirst) return { name: qtyFirst[2].trim(), qty: qtyFirst[1].trim() };
+  const nameFirst = line.match(/^(.+?)\s+(\d+[\d.,]*\s*\S{0,4})$/);
+  if (nameFirst) return { name: nameFirst[1].trim(), qty: nameFirst[2].trim() };
+  const generic = line.match(/^(\S+)\s+(.+)$/);
+  if (generic) return { name: generic[1].trim(), qty: generic[2].trim() };
+  return null;
+}
+
+export interface ParsedSupplements {
+  always: Record<string, SupplementItem[]>;
+  onlyOn: Record<string, SupplementItem[]>;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -197,6 +239,68 @@ export class PdfImportService {
       pages.push(pageText);
     }
     return pages.join('\n');
+  }
+
+  parseSupplementText(text: string): ParsedSupplements {
+    const lines = text.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
+    const always: Record<string, SupplementItem[]> = {};
+    const onlyOn: Record<string, SupplementItem[]> = {};
+    const push = (map: Record<string, SupplementItem[]>, meal: string, item: SupplementItem) => {
+      if (!map[meal]) map[meal] = [];
+      map[meal].push(item);
+    };
+
+    let section: 'pre' | 'intra' | 'post' | null = null;
+    let i = 0;
+    while (i < lines.length) {
+      const line = lines[i];
+
+      const sectionMatch = line.match(SUPPLEMENT_SECTION_RE);
+      if (sectionMatch) {
+        const kind = sectionMatch[1].toLowerCase();
+        section = kind.startsWith('pre') ? 'pre' : kind.startsWith('intra') ? 'intra' : 'post';
+        i++;
+        continue;
+      }
+
+      if (section === 'intra') {
+        let blob = line;
+        i++;
+        while (i < lines.length && SUPPLEMENT_CONTINUATION_RE.test(lines[i])) {
+          blob += ' ' + lines[i];
+          i++;
+        }
+        push(onlyOn, 'Intra-Workout', { name: 'Intra-workout', qty: blob });
+        section = null;
+        continue;
+      }
+
+      if (section === 'pre' || section === 'post') {
+        if (supplementMealsInText(line).length > 0) {
+          section = null;
+        } else {
+          const extracted = extractSupplementInSection(line);
+          if (extracted) push(onlyOn, SUPPLEMENT_SECTION_MEAL[section], extracted);
+          i++;
+          continue;
+        }
+      }
+
+      let blob = line;
+      i++;
+      while (i < lines.length && SUPPLEMENT_CONTINUATION_RE.test(lines[i])) {
+        blob += ' ' + lines[i];
+        i++;
+      }
+      const extracted = extractSupplementOutsideSection(blob);
+      if (extracted) {
+        for (const meal of supplementMealsInText(extracted.qty)) {
+          push(always, meal, { name: extracted.name, qty: extracted.qty });
+        }
+      }
+    }
+
+    return { always, onlyOn };
   }
 
   /**

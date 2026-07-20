@@ -543,7 +543,7 @@ EX.1/SPINTE MANUBRI PANCA PIANA
 
   // Bug #19: un descrittore reps di piu' parole ("AL CEDIMENTO") veniva troncato alla prima
   // parola (reps="AL") e il resto finiva nella nota (nota="CEDIMENTO").
-  it('cattura un descrittore reps di piu\' parole ("AL CEDIMENTO") senza spezzarlo nella nota', () => {
+  it('cattura un descrittore reps di piu\' parole (“AL CEDIMENTO”) senza spezzarlo nella nota', () => {
     const text = `
 DURATA 8 SETTIMANE
 DAY 1 : PETTO REC TRA 60-90”
@@ -555,5 +555,68 @@ EX.1/CROCI AI CAVI
     expect(ex1.sets).toBe(3);
     expect(ex1.reps).toEqual(['AL CEDIMENTO', 'AL CEDIMENTO', 'AL CEDIMENTO']);
     expect(ex1.note).toBeUndefined();
+  });
+});
+
+describe('PdfImportService - parseSupplementText', () => {
+  let service: PdfImportService;
+
+  beforeEach(() => {
+    service = new PdfImportService();
+  });
+
+  const INTEGRAZIONE_TEXT = `INTEGRAZIONE
+vitamina C+B: una dose a colazione
+creatina: 5gr a colazione
+Omega 3,6,9: dose giornaliera prevista da dividere tra pranzo
+e cena
+pre-workout: 30 minuti prima
+arginina 3g
+carnitina 2g
+termogenico dosaggio consigliato
+intra-workout
+10gr durante l'allenamento da sorseggiare in 500/700ml
+d'acqua
+post-workout:
+5 gr di creatina da assumere nel pasto
+magnesio 400mg da assumere dopo cena
+bromelina assumere la dose consigliata a pranzo e cena`;
+
+  it('assegna le righe semplici (fuori sezione) ai pasti “always”, fondendo le righe spezzate a meta\' frase', () => {
+    const result = service.parseSupplementText(INTEGRAZIONE_TEXT);
+
+    expect(result.always['Colazione']).toEqual([
+      { name: 'vitamina C+B', qty: 'una dose a colazione' },
+      { name: 'creatina', qty: '5gr a colazione' }
+    ]);
+    // Omega finisce sia in Pranzo sia in Cena: la riga “...tra pranzo” + “e cena”
+    // (spezzata dal PDF) deve essere fusa PRIMA di cercare le parole chiave.
+    expect(result.always['Pranzo']).toEqual([
+      { name: 'Omega 3,6,9', qty: 'dose giornaliera prevista da dividere tra pranzo e cena' },
+      { name: 'bromelina', qty: 'assumere la dose consigliata a pranzo e cena' }
+    ]);
+    expect(result.always['Cena']).toEqual([
+      { name: 'Omega 3,6,9', qty: 'dose giornaliera prevista da dividere tra pranzo e cena' },
+      { name: 'magnesio', qty: '400mg da assumere dopo cena' },
+      { name: 'bromelina', qty: 'assumere la dose consigliata a pranzo e cena' }
+    ]);
+  });
+
+  it('assegna i blocchi pre/intra/post-workout a “onlyOn”, fondendo il blocco intra-workout spezzato su piu\' righe', () => {
+    const result = service.parseSupplementText(INTEGRAZIONE_TEXT);
+
+    expect(result.onlyOn['Merenda']).toEqual([
+      { name: 'arginina', qty: '3g' },
+      { name: 'carnitina', qty: '2g' },
+      { name: 'termogenico', qty: 'dosaggio consigliato' }
+    ]);
+    expect(result.onlyOn['Intra-Workout']).toEqual([
+      { name: 'Intra-workout', qty: '10gr durante l\'allenamento da sorseggiare in 500/700ml d\'acqua' }
+    ]);
+    // Creatina post-workout: voce INDIPENDENTE da quella di Colazione (always),
+    // nessuna fusione/deduplicazione per nome.
+    expect(result.onlyOn['Cena']).toEqual([
+      { name: 'creatina', qty: '5 gr' }
+    ]);
   });
 });
