@@ -13,7 +13,7 @@ import { ConfirmDialogService, ConfirmRequest } from '../../services/confirm-dia
         <p class="confirmtext">{{ message }}</p>
         <div class="confirmbtns">
           <button class="confirmbtn cancel" (click)="answer(false)">Annulla</button>
-          <button class="confirmbtn danger" (click)="answer(true)">Elimina</button>
+          <button class="confirmbtn" [class.danger]="dangerous" [class.confirm]="!dangerous" (click)="answer(true)">{{ confirmLabel }}</button>
         </div>
       </div>
     </div>
@@ -22,6 +22,8 @@ import { ConfirmDialogService, ConfirmRequest } from '../../services/confirm-dia
 export class ConfirmDialogComponent implements OnInit, OnDestroy {
   visible = false;
   message = '';
+  confirmLabel = 'Elimina';
+  dangerous = true;
   private currentResolve: ((v: boolean) => void) | null = null;
   private queue: ConfirmRequest[] = [];
   private sub: Subscription | null = null;
@@ -44,6 +46,8 @@ export class ConfirmDialogComponent implements OnInit, OnDestroy {
 
   private show(req: ConfirmRequest): void {
     this.message = req.message;
+    this.confirmLabel = req.confirmLabel;
+    this.dangerous = req.dangerous;
     this.currentResolve = req.resolve;
     this.visible = true;
   }
