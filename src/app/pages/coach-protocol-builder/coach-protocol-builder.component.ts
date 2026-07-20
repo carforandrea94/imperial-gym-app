@@ -10,6 +10,7 @@ import { Day, Exercise } from '../../models/workout.model';
 import { FoodItem, DietPlan, NamedMeal, MealCombination, newDietPlan, newNamedMeal, newCombination, FoodCategory, FOOD_CATEGORIES, FOOD_CATEGORY_LABELS } from '../../models/diet.model';
 import { ProtocolBuilderStateService } from '../../services/protocol-builder-state.service';
 import { ToastService } from '../../services/toast.service';
+import { PdfImportService } from '../../services/pdf-import.service';
 
 type Tab = 'scheda' | 'dieta' | 'info';
 
@@ -57,6 +58,7 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private protocolSvc: ProtocolService,
+    private pdfSvc: PdfImportService,
     public workoutData: WorkoutDataService,
     private cdr: ChangeDetectorRef,
     private protocolBuilderState: ProtocolBuilderStateService,
@@ -388,6 +390,16 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
     this.saveMsg = '';
     this.protocolBuilderState.saving.set(true);
     try {
+      // L'aggregato di progressione (usato da Info/riepilogo settimane) va
+      // ricalcolato ad ogni salvataggio: se il coach ha modificato a mano la
+      // progressione di un esercizio wave, questo lo tiene sincronizzato
+      // invece di lasciarlo congelato al valore calcolato al momento
+      // dell'import PDF.
+      this.protocol.workout.weekPlan = this.pdfSvc.detectProtocolWeekPlan(
+        this.protocol.workout.days,
+        this.protocol.workout.weekPlan.length
+      );
+
       const toSave = {
         name: this.protocol.name,
         workout: this.protocol.workout,
