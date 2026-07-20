@@ -2,14 +2,13 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { PdfImportService } from '../../services/pdf-import.service';
+import { PdfImportService, ParsedSupplements } from '../../services/pdf-import.service';
 import { ProtocolService } from '../../services/protocol.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { AuthService } from '../../core/services/auth.service';
 import { todayLocalISO } from '../../core/utils/date.util';
 import { Protocol } from '../../models/protocol.model';
-import { Diet, NamedMeal, newNamedMeal } from '../../models/diet.model';
-import { ParsedSupplements } from '../../services/pdf-import.service';
+import { Diet, NamedMeal, newNamedMeal, SupplementItem } from '../../models/diet.model';
 
 /** Tempo massimo per ciascuna fase prima di rinunciare e segnalare un errore
  *  invece di restare bloccati a tempo indeterminato senza alcun feedback
@@ -211,12 +210,27 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
    *  dieta: "always" su tutti i piani, "onlyOn" solo sui piani il cui nome contiene "on"
    *  (case-insensitive) - per Cena si AGGIUNGONO a quelle gia' scritte da "always", non
    *  le sostituiscono. Crea il pasto "Intra-Workout" se manca in un piano "on"; nessun
-   *  altro pasto mancante viene creato (solo i nomi pasto standard esistono di norma). */
+   *  altro pasto mancante viene creato (solo i nomi pasto standard esistono di norma).
+   *  Il primo scrittura su un pasto in QUESTA chiamata sostituisce sempre il contenuto
+   *  precedente (cosi' un ricaricamento dello stesso PDF non duplica le voci nei pasti
+   *  che ricevono solo scritture "onlyOn", es. Merenda e Intra-Workout); una seconda
+   *  scrittura sullo stesso pasto nella STESSA chiamata (solo Cena, che riceve sia
+   *  "always" sia "onlyOn" per questo PDF) si aggiunge invece di sostituire. */
   private applyParsedSupplements(diet: Diet, parsed: ParsedSupplements): void {
     for (const plan of diet) {
+      const touchedThisPlan = new Set<NamedMeal>();
+      const write = (meal: NamedMeal, items: SupplementItem[]) => {
+        if (touchedThisPlan.has(meal)) {
+          meal.supplements = [...(meal.supplements ?? []), ...items];
+        } else {
+          meal.supplements = [...items];
+          touchedThisPlan.add(meal);
+        }
+      };
+
       for (const [mealName, items] of Object.entries(parsed.always)) {
         const meal = plan.meals.find(m => m.name.toLowerCase() === mealName.toLowerCase());
-        if (meal) meal.supplements = items;
+        if (meal) write(meal, items);
       }
 
       if (/\bon\b/i.test(plan.name)) {
@@ -227,7 +241,7 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
             meal = newNamedMeal(mealName);
             plan.meals.push(meal);
           }
-          meal.supplements = [...(meal.supplements ?? []), ...items];
+          write(meal, items);
         }
       }
     }

@@ -85,4 +85,49 @@ describe('CoachProtocolImportComponent', () => {
       .toEqual([{ name: 'Magnesio', qty: '400 mg' }]);
     expect(offPlan.meals.find(m => m.name === 'Intra-Workout')).toBeUndefined();
   });
+
+  it('non duplica le voci "onlyOn" (Merenda e Intra-Workout) se il PDF integrazione viene ricaricato piu\' volte', () => {
+    const component = buildComponent();
+    const diet = buildDiet();
+    const parsed: ParsedSupplements = {
+      always: {
+        Colazione: [{ name: 'Vitamina C+B', qty: '1 dose' }],
+        Cena: [{ name: 'Magnesio', qty: '400 mg' }]
+      },
+      onlyOn: {
+        Merenda: [
+          { name: 'Arginina', qty: '2 g' },
+          { name: 'Carnitina', qty: '1 g' },
+          { name: 'Termogenico', qty: '1 dose' }
+        ],
+        Cena: [{ name: 'Creatina', qty: '5 g' }],
+        'Intra-Workout': [{ name: 'Intra-workout', qty: '10 g' }]
+      }
+    };
+    // Il piano ON di questo fixture non ha un pasto "Merenda" predefinito: lo aggiungiamo
+    // qui per poter verificare che una scrittura "onlyOn" su un pasto gia' esistente non
+    // venga duplicata al secondo ricaricamento (lo stesso identico bug che colpisce
+    // Merenda nel PDF integrazione reale).
+    const onPlan = diet.find(p => p.name === 'Giorno ON')!;
+    onPlan.meals.push({ id: 'm-merenda', name: 'Merenda', combinations: [], alternatives: emptyAlternatives() });
+
+    (component as any).applyParsedSupplements(diet, parsed);
+    (component as any).applyParsedSupplements(diet, parsed);
+
+    const merenda = onPlan.meals.find(m => m.name === 'Merenda')!;
+    expect(merenda.supplements).toEqual([
+      { name: 'Arginina', qty: '2 g' },
+      { name: 'Carnitina', qty: '1 g' },
+      { name: 'Termogenico', qty: '1 dose' }
+    ]);
+
+    const intraWorkout = onPlan.meals.filter(m => m.name === 'Intra-Workout');
+    expect(intraWorkout.length).toBe(1);
+    expect(intraWorkout[0].supplements).toEqual([{ name: 'Intra-workout', qty: '10 g' }]);
+
+    // Cena riceve sia "always" sia "onlyOn": deve comunque avere entrambe le voci una
+    // sola volta ciascuna (non quadruplicate dopo due chiamate).
+    expect(onPlan.meals.find(m => m.name === 'Cena')!.supplements)
+      .toEqual([{ name: 'Magnesio', qty: '400 mg' }, { name: 'Creatina', qty: '5 g' }]);
+  });
 });
