@@ -2,12 +2,13 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { PdfImportService } from '../../services/pdf-import.service';
+import { PdfImportService, ParsedSupplements } from '../../services/pdf-import.service';
 import { ProtocolService } from '../../services/protocol.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { AuthService } from '../../core/services/auth.service';
 import { todayLocalISO } from '../../core/utils/date.util';
 import { Protocol } from '../../models/protocol.model';
+import { Diet, NamedMeal, newNamedMeal, SupplementItem } from '../../models/diet.model';
 
 /** Tempo massimo per ciascuna fase prima di rinunciare e segnalare un errore
  *  invece di restare bloccati a tempo indeterminato senza alcun feedback
@@ -205,6 +206,47 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** Applica le voci Integrazione riconosciute dal parser ai pasti giusti di ogni piano
+   *  dieta: "always" su tutti i piani, "onlyOn" solo sui piani il cui nome contiene "on"
+   *  (case-insensitive) - per Cena si AGGIUNGONO a quelle gia' scritte da "always", non
+   *  le sostituiscono. Crea il pasto "Intra-Workout" se manca in un piano "on"; nessun
+   *  altro pasto mancante viene creato (solo i nomi pasto standard esistono di norma).
+   *  Il primo scrittura su un pasto in QUESTA chiamata sostituisce sempre il contenuto
+   *  precedente (cosi' un ricaricamento dello stesso PDF non duplica le voci nei pasti
+   *  che ricevono solo scritture "onlyOn", es. Merenda e Intra-Workout); una seconda
+   *  scrittura sullo stesso pasto nella STESSA chiamata (solo Cena, che riceve sia
+   *  "always" sia "onlyOn" per questo PDF) si aggiunge invece di sostituire. */
+  private applyParsedSupplements(diet: Diet, parsed: ParsedSupplements): void {
+    for (const plan of diet) {
+      const touchedThisPlan = new Set<NamedMeal>();
+      const write = (meal: NamedMeal, items: SupplementItem[]) => {
+        if (touchedThisPlan.has(meal)) {
+          meal.supplements = [...(meal.supplements ?? []), ...items];
+        } else {
+          meal.supplements = [...items];
+          touchedThisPlan.add(meal);
+        }
+      };
+
+      for (const [mealName, items] of Object.entries(parsed.always)) {
+        const meal = plan.meals.find(m => m.name.toLowerCase() === mealName.toLowerCase());
+        if (meal) write(meal, items);
+      }
+
+      if (/\bon\b/i.test(plan.name)) {
+        for (const [mealName, items] of Object.entries(parsed.onlyOn)) {
+          let meal: NamedMeal | undefined = plan.meals.find(m => m.name.toLowerCase() === mealName.toLowerCase());
+          if (!meal) {
+            if (mealName !== 'Intra-Workout') continue;
+            meal = newNamedMeal(mealName);
+            plan.meals.push(meal);
+          }
+          write(meal, items);
+        }
+      }
+    }
+  }
+
   private async processCreate(): Promise<void> {
     this.setStage('Creazione bozza protocollo…', 5);
     const coach = this.auth.currentUser()!;
@@ -228,6 +270,7 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
       this.setStage('Lettura integrazione…', 75);
       const integrazioneText = await this.withTimeout(this.pdfSvc.extractText(this.integrazioneFile), 'Lettura integrazione');
       supplementNotesSource = integrazioneText.trim();
+      this.applyParsedSupplements(diet, this.pdfSvc.parseSupplementText(integrazioneText));
     }
     const infoNote = [dietNotesSource, supplementNotesSource].filter(Boolean).join('\n\n');
 
@@ -283,6 +326,9 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
       this.setStage('Lettura integrazione…', percent);
       const integrazioneText = await this.withTimeout(this.pdfSvc.extractText(this.integrazioneFile), 'Lettura integrazione');
       supplementNotesSource = integrazioneText.trim();
+      const dietToPatch = patch.diet ?? existing.diet;
+      this.applyParsedSupplements(dietToPatch, this.pdfSvc.parseSupplementText(integrazioneText));
+      patch.diet = dietToPatch;
     }
 
     if (this.dietaFile || this.integrazioneFile) {
