@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
+import { ThemeService } from '../../services/theme.service';
 import { isIosSafariNotStandalone } from '../../core/utils/platform.util';
 
 @Component({
@@ -45,7 +46,7 @@ import { isIosSafariNotStandalone } from '../../core/utils/platform.util';
 export class AccountComponent implements OnInit {
   copied = false;
 
-  constructor(public auth: AuthService, private cdr: ChangeDetectorRef) {}
+  constructor(public auth: AuthService, private cdr: ChangeDetectorRef, public theme: ThemeService) {}
 
   ngOnInit(): void {
     if (this.auth.isCoach) {

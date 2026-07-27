@@ -8,6 +8,19 @@
   </div>
 </div>
 
+<p class="sectiontitle">Impostazioni</p>
+<div class="infocard">
+  <div class="account-row">
+    <span class="account-row-label">Tema</span>
+    <div class="viewtoggle theme-toggle">
+      <button class="viewtogglebtn" [class.active]="theme.mode() === 'dark'"
+              (click)="theme.setMode('dark')">Notte</button>
+      <button class="viewtogglebtn" [class.active]="theme.mode() === 'light'"
+              (click)="theme.setMode('light')">Giorno</button>
+    </div>
+  </div>
+</div>
+
 <div class="infocard" *ngIf="showIosNotificationHint" style="margin-bottom:12px">
   <p class="bacheca-text">
     📲 Su iPhone le notifiche (es. fine recupero) funzionano solo se l'app è installata sulla schermata Home:

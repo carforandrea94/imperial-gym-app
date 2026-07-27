@@ -11,6 +11,8 @@ export interface WorkoutDraftRow {
   done: boolean;
 }
 
+export type ThemeMode = 'dark' | 'light';
+
 export interface AppState {
   workoutDrafts: Record<string, { rows: WorkoutDraftRow[] }[]>;
   restOverrides: Record<string, number>;
@@ -20,10 +22,11 @@ export interface AppState {
   workoutViewMode: 'list' | 'slider';
   dietViewMode: 'list' | 'slider';
   mealsCompletion: { date: string; done: Record<string, boolean> } | null;
+  themeMode: ThemeMode | null;
 }
 
 function emptyState(): AppState {
-  return { workoutDrafts: {}, restOverrides: {}, measureDraft: null, shoppingChecked: {}, shoppingCustomItems: [], workoutViewMode: 'list', dietViewMode: 'list', mealsCompletion: null };
+  return { workoutDrafts: {}, restOverrides: {}, measureDraft: null, shoppingChecked: {}, shoppingCustomItems: [], workoutViewMode: 'list', dietViewMode: 'list', mealsCompletion: null, themeMode: null };
 }
 
 /**
