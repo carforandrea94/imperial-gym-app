@@ -203,6 +203,10 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .viewtoggle{display:flex;gap:3px;background:rgba(255,255,255,0.06);border:1px solid var(--content-glass-border);border-radius:12px;padding:3px;flex-shrink:0;}
 .viewtogglebtn{width:30px;height:26px;display:flex;align-items:center;justify-content:center;border:none;background:transparent;border-radius:9px;color:var(--label-3);cursor:pointer;transition:background .18s ease,color .18s ease;}
 .viewtogglebtn.active{background:var(--accent);color:var(--accent-contrast);}
+/* Variante del toggle lista/slider per l'impostazione Notte/Giorno in
+   Account: due etichette di testo invece di due icone strette, quindi
+   larghezza automatica con padding orizzontale al posto dei 30px fissi. */
+.theme-toggle .viewtogglebtn{width:auto;padding:6px 14px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;}
 .exlist{display:flex;flex-direction:column;gap:12px;}
 .exslider-wrap{display:flex;flex-direction:column;}
 .exslider{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px;}
