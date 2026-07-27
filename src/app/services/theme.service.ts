@@ -45,7 +45,6 @@ export class ThemeService {
    * "fissa" la preferenza sull'account.
    */
   setMode(mode: ThemeMode): void {
-    if (this.mode() === mode) return;
     this.mode.set(mode);
     localStorage.setItem(THEME_CACHE_KEY, mode);
     this.appState.patchField('themeMode', mode);

@@ -56,7 +56,7 @@ describe('ThemeService', () => {
     expect(calls).toEqual([['themeMode', 'light']]);
   });
 
-  it("setMode e' un no-op se il tema richiesto e' gia' quello attivo", () => {
+  it("setMode persiste sempre la scelta esplicita, anche se coincide col tema gia' attivo (es. conferma del default OS)", () => {
     stubMatchMedia(false);
     const calls: [string, unknown][] = [];
     const appStateStub = {
@@ -67,7 +67,8 @@ describe('ThemeService', () => {
 
     service.setMode('dark');
 
-    expect(calls).toEqual([]);
+    expect(localStorage.getItem('themePreference')).toBe('dark');
+    expect(calls).toEqual([['themeMode', 'dark']]);
   });
 
   it('applica data-theme sul document al costrutto e a ogni cambio', () => {
