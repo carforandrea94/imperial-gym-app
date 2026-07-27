@@ -17,6 +17,7 @@ import { CATEGORY_LABELS, MeasureCategory } from './models/measurement.model';
 import { HistoryEditStateService } from './services/history-edit-state.service';
 import { ProtocolBuilderStateService } from './services/protocol-builder-state.service';
 import { MeasureCategoryStateService } from './services/measure-category-state.service';
+import { ThemeService } from './services/theme.service';
 
 @Component({
   selector: 'app-root',
@@ -55,7 +56,8 @@ export class App implements OnInit, OnDestroy {
     private swUpdate: SwUpdate,
     public historyEditState: HistoryEditStateService,
     public protocolBuilderState: ProtocolBuilderStateService,
-    public measureState: MeasureCategoryStateService
+    public measureState: MeasureCategoryStateService,
+    private theme: ThemeService
   ) {}
 
   ngOnInit(): void {
