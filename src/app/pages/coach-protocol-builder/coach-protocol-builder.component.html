@@ -254,6 +254,17 @@
           </div>
         </ng-container>
 
+        <!-- Integrazione: come nella vista cliente, e' una lista piatta del pasto e non
+             dipende dalla combinazione selezionata. Qui in anteprima e' di sola lettura;
+             si modifica aprendo il pasto nell'editor. -->
+        <div class="meal-preview-cat" *ngIf="meal.supplements?.length">
+          <span class="meal-preview-catlabel integration">Integrazione</span>
+          <div class="meal-preview-item" *ngFor="let s of meal.supplements">
+            <span class="fname">{{ s.name }}</span>
+            <span class="fqty">{{ s.qty }}</span>
+          </div>
+        </div>
+
         <ng-container *ngIf="totalAlternatives(meal) > 0">
           <div class="altwrap-header" (click)="toggleAltExpanded(meal, $event)">
             <span>Alternative ({{ totalAlternatives(meal) }})</span>
