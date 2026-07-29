@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { WorkoutSessionStateService } from './workout-session-state.service';
 
@@ -166,6 +167,48 @@ describe('WorkoutSessionStateService', () => {
     await loadPromise;
 
     expect(service.activeSession()).toEqual({ dayId: 'day0', startedAt: '2026-07-28T10:00:00.000Z' });
+  });
+
+  it('dopo una mutazione locale conclusa, una sincronizzazione successiva dall\'account viene comunque adottata', async () => {
+    let loadCallCount = 0;
+    const firstLoad = Promise.resolve({ activeWorkoutSession: null } as any);
+    let resolveSecondLoad!: (v: any) => void;
+    const secondLoadPromise = new Promise<any>(res => { resolveSecondLoad = res; });
+
+    // currentUser deve essere un signal vero (non una funzione costante): solo
+    // cosi' un suo cambiamento fa ripartire l'effect, come accade nella app
+    // reale quando onAuthStateChanged riassegna il profilo dopo un refresh token.
+    const currentUser = signal<any>({ uid: 'u1' });
+    const appState = {
+      load: () => {
+        loadCallCount++;
+        return loadCallCount === 1 ? firstLoad : secondLoadPromise;
+      },
+      patchField: () => Promise.resolve(),
+      deleteFieldPath: () => Promise.resolve()
+    };
+    const auth = { authReady: () => true, currentUser } as any;
+
+    const service = TestBed.runInInjectionContext(
+      () => new WorkoutSessionStateService(appState as any, auth)
+    );
+    TestBed.flushEffects();
+    await firstLoad;
+
+    // Mutazioni locali concluse: avvio e chiusura di una sessione.
+    service.start('day0');
+    service.finish();
+
+    // Il token si aggiorna (es. refresh Firebase): currentUser cambia oggetto
+    // e l'effect riparte per rileggere lo stato sull'account.
+    currentUser.set({ uid: 'u1', refreshed: true });
+    TestBed.flushEffects();
+
+    // Nel frattempo, su un altro dispositivo, e' stata avviata una sessione.
+    resolveSecondLoad({ activeWorkoutSession: { dayId: 'day3', startedAt: '2026-07-28T09:00:00.000Z' } });
+    await secondLoadPromise;
+
+    expect(service.activeSession()).toEqual({ dayId: 'day3', startedAt: '2026-07-28T09:00:00.000Z' });
   });
 
   it('formatDuration mostra minuti:secondi sotto l\'ora e ore:minuti:secondi sopra', () => {

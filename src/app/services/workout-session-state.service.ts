@@ -28,11 +28,16 @@ export class WorkoutSessionStateService {
 
   private ticker: ReturnType<typeof setInterval> | null = null;
 
-  // true se start()/clear() (quindi anche cancel()/finish()) e' stato chiamato
-  // dopo l'avvio di una load() ancora in volo: in quel caso lo snapshot letto
-  // e' precedente alla mutazione locale e non deve sovrascriverla (altrimenti
-  // una sessione appena avviata sparirebbe pur esistendo su Firestore).
-  private locallyMutated = false;
+  // Incrementato da start()/clear() (quindi anche cancel()/finish()): serve a
+  // capire se una load() ancora in volo e' precedente a una mutazione locale
+  // e in tal caso non deve sovrascriverla (altrimenti una sessione appena
+  // avviata sparirebbe pur esistendo su Firestore). E' un contatore e non un
+  // semplice flag perche' la guardia deve valere solo per la singola load()
+  // che era in volo al momento della mutazione, non per tutte quelle future:
+  // l'effect puo' rieseguirsi piu' volte nella vita di questo singleton (es.
+  // refresh del token Firebase), e le sincronizzazioni successive (sessione
+  // avviata/chiusa su un altro dispositivo) devono continuare a funzionare.
+  private mutationCount = 0;
 
   constructor(private appState: AppStateService, private auth: AuthService) {
     this.refresh();
@@ -41,11 +46,14 @@ export class WorkoutSessionStateService {
     // altrimenti currentUser() e' ancora null (crash) all'avvio dell'app.
     effect(() => {
       if (!this.auth.authReady() || !this.auth.currentUser()) return;
+      const generation = this.mutationCount;
       this.appState.load().then(state => {
-        // Una mutazione locale (avvio/annullamento/chiusura) e' piu' recente di
-        // questo snapshot, letto prima che avvenisse: non va sovrascritta, altrimenti
-        // una sessione appena avviata sparirebbe mentre su Firestore esiste.
-        if (this.locallyMutated) return;
+        // Una mutazione locale (avvio/annullamento/chiusura) e' avvenuta dopo l'inizio
+        // di questa lettura: lo snapshot e' piu' vecchio della mutazione e non deve
+        // sovrascriverla. La guardia vale solo per QUESTA lettura, cosi' le
+        // sincronizzazioni successive (es. sessione chiusa su un altro dispositivo)
+        // continuano a funzionare.
+        if (generation !== this.mutationCount) return;
         const saved = state.activeWorkoutSession ?? null;
         if (!this.sameSession(saved, this.activeSession())) {
           this.activeSession.set(saved);
@@ -68,7 +76,7 @@ export class WorkoutSessionStateService {
   }
 
   start(dayId: string): void {
-    this.locallyMutated = true;
+    this.mutationCount++;
     const session: ActiveWorkoutSession = { dayId, startedAt: new Date().toISOString() };
     this.activeSession.set(session);
     this.writeCache(session);
@@ -97,7 +105,7 @@ export class WorkoutSessionStateService {
   }
 
   private clear(): void {
-    this.locallyMutated = true;
+    this.mutationCount++;
     this.activeSession.set(null);
     localStorage.removeItem(SESSION_CACHE_KEY);
     this.appState.deleteFieldPath(APP_STATE_FIELD);
