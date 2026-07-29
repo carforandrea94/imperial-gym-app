@@ -41,6 +41,9 @@ export interface WorkoutSession {
     name: string;
     sets: { load: string | null; reps: string | null; done: boolean }[];
   }[];
+  /** Durata della sessione in secondi. Assente nelle sedute salvate prima di
+   *  questa feature: dove manca, la durata semplicemente non viene mostrata. */
+  durationSec?: number;
 }
 
 export interface ExInsight {

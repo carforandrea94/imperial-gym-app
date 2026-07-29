@@ -11,6 +11,12 @@ export interface WorkoutDraftRow {
   done: boolean;
 }
 
+export interface ActiveWorkoutSession {
+  dayId: string;
+  /** Istante di avvio in ISO. Il tempo trascorso si ricalcola da qui, mai accumulato. */
+  startedAt: string;
+}
+
 export type ThemeMode = 'dark' | 'light';
 
 export interface AppState {
@@ -23,10 +29,11 @@ export interface AppState {
   dietViewMode: 'list' | 'slider';
   mealsCompletion: { date: string; done: Record<string, boolean> } | null;
   themeMode: ThemeMode | null;
+  activeWorkoutSession: ActiveWorkoutSession | null;
 }
 
 function emptyState(): AppState {
-  return { workoutDrafts: {}, restOverrides: {}, measureDraft: null, shoppingChecked: {}, shoppingCustomItems: [], workoutViewMode: 'list', dietViewMode: 'list', mealsCompletion: null, themeMode: null };
+  return { workoutDrafts: {}, restOverrides: {}, measureDraft: null, shoppingChecked: {}, shoppingCustomItems: [], workoutViewMode: 'list', dietViewMode: 'list', mealsCompletion: null, themeMode: null, activeWorkoutSession: null };
 }
 
 /**
