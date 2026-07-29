@@ -422,11 +422,14 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .savebtn.saved{background:var(--state-success);color:var(--accent-contrast);}
 .savebtn.err{background:var(--state-danger);color:#fff;}
 
-/* ===== Card sessione di allenamento (avvio / chiusura) ===== */
-.session-card{margin-bottom:14px;}
-/* Classe dedicata invece di :last-of-type, che guarda il tipo di elemento (div) e
-   non la classe: dopo le card c'e' l'overlay del recupero, anch'esso un div. */
-.session-card-end{margin-top:16px;margin-bottom:0;}
+/* ===== Card sessione di allenamento (avvio / chiusura) =====
+   I margini sono qualificati con .infocard (specificita' 0-2-0) perche' la
+   regola .infocard piu' sotto nel file imposta margin-bottom:12px: a pari
+   specificita' vincerebbe lei, essendo dichiarata dopo, e questi margini non
+   avrebbero alcun effetto. Classe dedicata per la card finale invece di
+   :last-of-type, che guarda il tipo di elemento (div) e non la classe. */
+.infocard.session-card{margin-bottom:14px;}
+.infocard.session-card-end{margin-top:16px;margin-bottom:0;}
 .session-label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--label-3);text-align:center;}
 .session-timer{font-family:'IBM Plex Mono',monospace;font-size:34px;font-weight:600;letter-spacing:.02em;color:var(--accent);text-align:center;margin-top:6px;font-variant-numeric:tabular-nums;}
 .session-hint{font-family:'Inter',sans-serif;font-size:12.5px;line-height:1.5;color:var(--label-3);text-align:center;margin-top:10px;}
