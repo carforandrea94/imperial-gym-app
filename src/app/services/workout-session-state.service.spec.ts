@@ -144,6 +144,30 @@ describe('WorkoutSessionStateService', () => {
     expect(service.elapsedSec()).toBe(600);
   });
 
+  it('start() locale durante una load() ancora pendente non viene sovrascritto dallo snapshot piu\' vecchio', async () => {
+    let resolveLoad!: (v: any) => void;
+    const loadPromise = new Promise<any>(res => { resolveLoad = res; });
+    const { service } = makeService({
+      appState: {
+        load: () => loadPromise,
+        patchField: () => Promise.resolve(),
+        deleteFieldPath: () => Promise.resolve()
+      },
+      authReady: true
+    });
+    TestBed.flushEffects();
+
+    // L'utente avvia una sessione mentre la load() e' ancora in volo.
+    service.start('day0');
+
+    // La load(), avviata prima dello start(), si risolve con lo snapshot
+    // precedente (nessuna sessione salvata all'epoca della lettura).
+    resolveLoad({ activeWorkoutSession: null });
+    await loadPromise;
+
+    expect(service.activeSession()).toEqual({ dayId: 'day0', startedAt: '2026-07-28T10:00:00.000Z' });
+  });
+
   it('formatDuration mostra minuti:secondi sotto l\'ora e ore:minuti:secondi sopra', () => {
     const { service } = makeService();
 

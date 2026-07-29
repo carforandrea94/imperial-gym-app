@@ -28,6 +28,12 @@ export class WorkoutSessionStateService {
 
   private ticker: ReturnType<typeof setInterval> | null = null;
 
+  // true se start()/clear() (quindi anche cancel()/finish()) e' stato chiamato
+  // dopo l'avvio di una load() ancora in volo: in quel caso lo snapshot letto
+  // e' precedente alla mutazione locale e non deve sovrascriverla (altrimenti
+  // una sessione appena avviata sparirebbe pur esistendo su Firestore).
+  private locallyMutated = false;
+
   constructor(private appState: AppStateService, private auth: AuthService) {
     this.refresh();
 
@@ -36,6 +42,10 @@ export class WorkoutSessionStateService {
     effect(() => {
       if (!this.auth.authReady() || !this.auth.currentUser()) return;
       this.appState.load().then(state => {
+        // Una mutazione locale (avvio/annullamento/chiusura) e' piu' recente di
+        // questo snapshot, letto prima che avvenisse: non va sovrascritta, altrimenti
+        // una sessione appena avviata sparirebbe mentre su Firestore esiste.
+        if (this.locallyMutated) return;
         const saved = state.activeWorkoutSession ?? null;
         if (!this.sameSession(saved, this.activeSession())) {
           this.activeSession.set(saved);
@@ -58,6 +68,7 @@ export class WorkoutSessionStateService {
   }
 
   start(dayId: string): void {
+    this.locallyMutated = true;
     const session: ActiveWorkoutSession = { dayId, startedAt: new Date().toISOString() };
     this.activeSession.set(session);
     this.writeCache(session);
@@ -86,6 +97,7 @@ export class WorkoutSessionStateService {
   }
 
   private clear(): void {
+    this.locallyMutated = true;
     this.activeSession.set(null);
     localStorage.removeItem(SESSION_CACHE_KEY);
     this.appState.deleteFieldPath(APP_STATE_FIELD);
