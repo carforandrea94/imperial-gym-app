@@ -7,6 +7,7 @@ import { WorkoutDataService } from '../../services/workout-data.service';
 import { WorkoutStateService } from '../../services/workout-state.service';
 import { AppStateService, WorkoutDraftRow } from '../../services/app-state.service';
 import { WorkoutSessionsService } from '../../services/workout-sessions.service';
+import { WorkoutSessionStateService } from '../../services/workout-session-state.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { Day, Exercise, WorkoutSession, ExInsight } from '../../models/workout.model';
 import { todayLocalISO } from '../../core/utils/date.util';
@@ -68,7 +69,8 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     private sanitizer: DomSanitizer,
     private cdr: ChangeDetectorRef,
     private toast: ToastService,
-    private renderer: Renderer2
+    private renderer: Renderer2,
+    public sessionState: WorkoutSessionStateService
   ) {
     // Il toggle vive nella navbar (fuori da questa pagina): quando si passa
     // a "slider" da un'altra vista/pagina, riparte sempre dalla prima card.
@@ -377,12 +379,62 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     return m > 0 ? `${m}:${s.toString().padStart(2, '0')}` : `${s}s`;
   }
 
+  /** true se esiste una sessione in corso, ma su un giorno diverso da questo. */
+  get hasOtherSession(): boolean {
+    const s = this.sessionState.activeSession();
+    return !!s && s.dayId !== this.day.id;
+  }
+
+  /** Indice del giorno su cui e' in corso la sessione, per il link "vai alla sessione".
+   *  null se la sessione e' su questo giorno, assente, oppure se il suo dayId non
+   *  esiste piu' nel protocollo attuale (protocollo cambiato dopo l'avvio). */
+  get otherSessionDayIndex(): number | null {
+    const s = this.sessionState.activeSession();
+    if (!s || s.dayId === this.day.id) return null;
+    const idx = this.workoutData.days.findIndex(d => d.id === s.dayId);
+    return idx >= 0 ? idx : null;
+  }
+
+  get endButtonLabel(): string {
+    switch (this.state.saveStatus()) {
+      case 'saving': return 'Salvataggio…';
+      case 'saved': return 'Salvato ✓';
+      case 'err': return 'Errore, riprova';
+      default: return 'Termina e salva';
+    }
+  }
+
+  startSession(): void {
+    this.sessionState.start(this.day.id);
+  }
+
+  goToOtherSession(): void {
+    const idx = this.otherSessionDayIndex;
+    if (idx === null) return;
+    this.router.navigate(['/scheda/day', idx]);
+  }
+
+  async cancelSession(): Promise<void> {
+    const ok = await this.confirm.confirm(
+      'Vuoi annullare la sessione in corso? Il tempo verra\' perso e l\'allenamento non verra\' salvato nello storico.',
+      { confirmLabel: 'Annulla sessione', dangerous: true }
+    );
+    if (!ok) return;
+    this.sessionState.cancel();
+    this.cdr.detectChanges();
+  }
+
   async saveWorkout(): Promise<void> {
     if (this.state.saveStatus() === 'saving') return; // evita doppio invio mentre e' gia' in corso
+    // Il salvataggio esiste solo come chiusura di una sessione avviata su questo giorno.
+    if (!this.sessionState.isActiveForDay(this.day.id)) return;
     this.state.saveStatus.set('saving');
     if (this.draftTimer) { clearTimeout(this.draftTimer); this.draftTimer = null; }
 
     const isoDate = todayLocalISO();
+    // Durata letta PRIMA del salvataggio: la sessione viene chiusa solo a
+    // salvataggio riuscito, cosi' un errore di rete non la distrugge.
+    const durationSec = this.sessionState.elapsedSec();
     const session: WorkoutSession = {
       dayId: this.day.id,
       dayLabel: this.day.label,
@@ -390,7 +442,8 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       exercises: this.exercises.map(vm => ({
         name: vm.ex.name,
         sets: vm.rows.map(r => ({ load: r.load || null, reps: r.reps || null, done: r.done }))
-      }))
+      })),
+      durationSec
     };
 
     const timeout = new Promise<never>((_, reject) =>
@@ -401,6 +454,7 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       const ok = await Promise.race([this.sessions.save(session), timeout]);
       if (ok) {
         await this.appState.deleteFieldPath(`workoutDrafts.${this.day.id}`);
+        this.sessionState.finish();
         this.state.saveStatus.set('saved');
         this.toast.success('Allenamento salvato ✓');
       } else {
