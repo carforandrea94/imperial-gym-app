@@ -153,11 +153,6 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .navicon:disabled{opacity:.5;cursor:not-allowed;}
 .protocolsave{display:flex;gap:8px;}
 .navactions.hide{display:none;}
-.saveworkout-icon{background:var(--imp-red);border-color:rgba(255,255,255,.14);color:var(--accent-contrast);box-shadow:inset 0 1px 0 rgba(255,255,255,.3);transition:filter .2s ease,background .2s ease;}
-.saveworkout-icon:active{filter:brightness(0.92);}
-.saveworkout-icon:disabled{opacity:.6;cursor:not-allowed;filter:none;}
-.saveworkout-icon.saved{background:var(--state-success);color:var(--accent-contrast);}
-.saveworkout-icon.err{background:var(--state-danger);color:#fff;}
 .content{padding-top:calc(var(--nav-h) + 22px);padding-bottom:calc(var(--tabbar-h) + var(--safe-b) + 28px);transition:padding-top .15s ease;}
 .content.no-chrome{padding-top:0;padding-bottom:0;}
 .wrap{position:relative;z-index:1;max-width:640px;margin:0 auto;padding:0 16px;}

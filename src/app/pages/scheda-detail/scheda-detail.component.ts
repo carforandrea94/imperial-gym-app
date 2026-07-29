@@ -88,7 +88,6 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.day = this.workoutData.days[n];
     if (!this.day) { this.router.navigate(['/scheda']); return; }
 
-    this.state.registerSaveHandler(() => this.saveWorkout());
     this.loadAll();
   }
 
@@ -136,7 +135,6 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.draftTimer) clearTimeout(this.draftTimer);
-    this.state.registerSaveHandler(null);
     if (this.restSheetOverlayEl?.nativeElement.parentNode === document.body) {
       this.renderer.removeChild(document.body, this.restSheetOverlayEl.nativeElement);
     }

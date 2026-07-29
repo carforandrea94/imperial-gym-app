@@ -36,20 +36,10 @@ export class WorkoutStateService {
   );
 
   /**
-   * Stato del salvataggio allenamento, mostrato dall'icona di conferma
-   * nell'header. Il bottone vive nella navbar (fuori dalla pagina scheda),
-   * quindi il click viene inoltrato alla pagina tramite registerSaveHandler.
+   * Stato del salvataggio allenamento, mostrato dalla card di chiusura
+   * sessione nella pagina allenamento.
    */
   saveStatus = signal<SaveWorkoutStatus>('idle');
-  private saveHandler: (() => void) | null = null;
-
-  registerSaveHandler(handler: (() => void) | null): void {
-    this.saveHandler = handler;
-  }
-
-  requestSave(): void {
-    this.saveHandler?.();
-  }
 
   private ticker: ReturnType<typeof setInterval> | null = null;
   private closeTimeout: ReturnType<typeof setTimeout> | null = null;

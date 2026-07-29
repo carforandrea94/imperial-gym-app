@@ -17,8 +17,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
   @Input() showShoppingList = false;
   @Input() showViewToggle = false;
   @Input() viewMode: 'list' | 'slider' = 'list';
-  @Input() showSaveWorkout = false;
-  @Input() saveStatus: 'idle' | 'saving' | 'saved' | 'err' = 'idle';
   @Input() showSettings = false;
   @Input() showSaveEdit = false;
   @Input() saveEditSaving = false;
@@ -33,7 +31,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
   @Output() analyticsClick = new EventEmitter<void>();
   @Output() shoppingListClick = new EventEmitter<void>();
   @Output() viewModeChange = new EventEmitter<'list' | 'slider'>();
-  @Output() saveWorkoutClick = new EventEmitter<void>();
   @Output() settingsClick = new EventEmitter<void>();
   @Output() saveEditClick = new EventEmitter<void>();
   @Output() saveDraftClick = new EventEmitter<void>();
