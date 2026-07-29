@@ -71,6 +71,12 @@ export class WorkoutSessionStateService {
     });
   }
 
+  /** Rimuove solo la cache locale (usato al logout): la sessione sull'account
+   *  resta, cosi' e' ancora ripristinabile su un altro dispositivo. */
+  clearLocalCache(): void {
+    localStorage.removeItem(SESSION_CACHE_KEY);
+  }
+
   isActiveForDay(dayId: string): boolean {
     return this.activeSession()?.dayId === dayId;
   }

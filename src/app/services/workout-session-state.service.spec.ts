@@ -211,6 +211,18 @@ describe('WorkoutSessionStateService', () => {
     expect(service.activeSession()).toEqual({ dayId: 'day3', startedAt: '2026-07-28T09:00:00.000Z' });
   });
 
+  it('clearLocalCache() rimuove solo la cache locale: signal e Firestore restano intatti', () => {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ dayId: 'day2', startedAt: '2026-07-28T09:40:00.000Z' }));
+    const { service, deleted } = makeService({ savedSession: { dayId: 'day2', startedAt: '2026-07-28T09:40:00.000Z' } });
+    const sessionBefore = service.activeSession();
+
+    service.clearLocalCache();
+
+    expect(localStorage.getItem(CACHE_KEY)).toBeNull();
+    expect(service.activeSession()).toEqual(sessionBefore);
+    expect(deleted).toEqual([]);
+  });
+
   it('formatDuration mostra minuti:secondi sotto l\'ora e ore:minuti:secondi sopra', () => {
     const { service } = makeService();
 

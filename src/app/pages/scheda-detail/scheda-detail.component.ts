@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { WorkoutDataService } from '../../services/workout-data.service';
 import { WorkoutStateService } from '../../services/workout-state.service';
 import { AppStateService, WorkoutDraftRow } from '../../services/app-state.service';
@@ -47,6 +48,7 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   loading = true;
   errorMsg = '';
   private draftTimer: ReturnType<typeof setTimeout> | null = null;
+  private paramSub: Subscription | null = null;
 
   restModalOpen = false;
   restModalVm: ExerciseVM | null = null;
@@ -83,12 +85,20 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    const n = parseInt(this.route.snapshot.paramMap.get('n') ?? '0', 10);
-    this.dayIndex = n;
-    this.day = this.workoutData.days[n];
-    if (!this.day) { this.router.navigate(['/scheda']); return; }
+    this.paramSub = this.route.paramMap.subscribe(params => {
+      const n = parseInt(params.get('n') ?? '0', 10);
+      // Una bozza in attesa appartiene al giorno che si sta lasciando: va
+      // annullata PRIMA di sostituire `this.day`, altrimenti scriverebbe
+      // sotto la chiave del giorno sbagliato.
+      if (this.draftTimer) { clearTimeout(this.draftTimer); this.draftTimer = null; }
 
-    this.loadAll();
+      this.dayIndex = n;
+      this.day = this.workoutData.days[n];
+      if (!this.day) { this.router.navigate(['/scheda']); return; }
+
+      this.sliderIndex = 0;
+      this.loadAll();
+    });
   }
 
   // Aspetta bozze/override/insight da Firestore prima di mostrare le card,
@@ -134,6 +144,7 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.paramSub?.unsubscribe();
     if (this.draftTimer) clearTimeout(this.draftTimer);
     if (this.restSheetOverlayEl?.nativeElement.parentNode === document.body) {
       this.renderer.removeChild(document.body, this.restSheetOverlayEl.nativeElement);
