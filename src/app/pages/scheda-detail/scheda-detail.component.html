@@ -104,11 +104,12 @@
       </div>
       <div class="ex-info">
         <div class="ex-name">{{ vm.ex.name }}</div>
-        <span class="ex-muscle" [style.background]="getMuscleInfo(vm.ex.muscle).color">
-          {{ vm.ex.muscle }}
-        </span>
-        <span class="ex-chip" *ngIf="vm.ex.text">{{ vm.ex.text }}</span>
-        <span class="ex-chip rest">⏱ {{ formatRest(vm.restSeconds) }}</span>
+        <div class="ex-tags">
+          <span class="ex-muscle" [style.background]="getMuscleInfo(vm.ex.muscle).color">
+            {{ vm.ex.muscle }}
+          </span>
+          <span class="ex-chip rest">⏱ {{ formatRest(vm.restSeconds) }}</span>
+        </div>
       </div>
       <div class="ex-meta">
         <ng-container *ngTemplateOutlet="exMeta; context: { vm: vm }"></ng-container>
@@ -117,6 +118,9 @@
         </span>
       </div>
     </div>
+
+    <!-- Fuori da .ex-summary: cosi' la ✕ del timer non fa aprire/chiudere l'accordion. -->
+    <app-rest-wave [exKey]="restKey(vm.ex.name)"></app-rest-wave>
 
     <div class="content-inner" *ngIf="vm.open">
       <ng-container *ngTemplateOutlet="exDetail; context: { vm: vm }"></ng-container>
@@ -143,16 +147,19 @@
         </div>
         <div class="ex-info">
           <div class="ex-name">{{ vm.ex.name }}</div>
-          <span class="ex-muscle" [style.background]="getMuscleInfo(vm.ex.muscle).color">
-            {{ vm.ex.muscle }}
-          </span>
-          <span class="ex-chip" *ngIf="vm.ex.text">{{ vm.ex.text }}</span>
-          <span class="ex-chip rest">⏱ {{ formatRest(vm.restSeconds) }}</span>
+          <div class="ex-tags">
+            <span class="ex-muscle" [style.background]="getMuscleInfo(vm.ex.muscle).color">
+              {{ vm.ex.muscle }}
+            </span>
+            <span class="ex-chip rest">⏱ {{ formatRest(vm.restSeconds) }}</span>
+          </div>
         </div>
         <div class="ex-meta">
           <ng-container *ngTemplateOutlet="exMeta; context: { vm: vm }"></ng-container>
         </div>
       </div>
+
+      <app-rest-wave [exKey]="restKey(vm.ex.name)"></app-rest-wave>
 
       <div class="content-inner">
         <ng-container *ngTemplateOutlet="exDetail; context: { vm: vm }"></ng-container>
