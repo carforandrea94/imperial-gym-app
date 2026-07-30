@@ -454,6 +454,15 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     return idx >= 0 ? idx : null;
   }
 
+  /** Ora di avvio della sessione in corso (HH:MM): il tempo trascorso lo mostra
+   *  la barra fissa in alto, la card di avvio dice solo da quando si e' partiti. */
+  get sessionStartedAtLabel(): string {
+    const session = this.sessionState.activeSession();
+    if (!session) return '';
+    const d = new Date(session.startedAt);
+    return `${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}`;
+  }
+
   get endButtonLabel(): string {
     switch (this.state.saveStatus()) {
       case 'saving': return 'Salvataggio…';

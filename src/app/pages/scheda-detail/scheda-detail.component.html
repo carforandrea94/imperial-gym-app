@@ -64,8 +64,12 @@
 <ng-template #sessionStartCard>
 <div class="infocard session-card">
   <ng-container *ngIf="sessionState.isActiveForDay(day.id)">
-    <p class="session-label">Sessione in corso</p>
-    <p class="session-timer">{{ sessionState.formatDuration(sessionState.elapsedSec()) }}</p>
+    <!-- Il cronometro non si ripete qui: vive nella barra fissa in alto. -->
+    <p class="session-label">Iniziata alle</p>
+    <p class="session-since">{{ sessionStartedAtLabel }}</p>
+    <button class="confirmbtn cancel" style="width:100%" (click)="cancelSession()">
+      Annulla sessione
+    </button>
   </ng-container>
 
   <ng-container *ngIf="!sessionState.isActiveForDay(day.id)">
@@ -106,17 +110,20 @@
     {{ endButtonLabel }}
   </button>
 
-  <button class="confirmbtn cancel" style="width:100%;margin-top:10px"
-    *ngIf="sessionState.isActiveForDay(day.id)"
-    (click)="cancelSession()">
-    Annulla sessione
-  </button>
-
   <p class="session-hint" *ngIf="!sessionState.isActiveForDay(day.id) && !hasOtherSession">
     Avvia la sessione per poter salvare l'allenamento nello storico.
   </p>
 </div>
 </ng-template>
+
+<!-- Cronometro della sessione: fisso in alto sopra i pallini, cosi' resta
+     visibile su qualunque slide e anche scorrendo dentro una card lunga.
+     Sta fuori dai blocchi lista/slider perche' vale per entrambe le viste. -->
+<div class="session-bar" *ngIf="day && !loading && !errorMsg && sessionState.isActiveForDay(day.id)">
+  <span class="session-bar-dot"></span>
+  <span class="session-bar-label">Sessione in corso</span>
+  <span class="session-bar-time">{{ sessionState.formatDuration(sessionState.elapsedSec()) }}</span>
+</div>
 
 <!-- Vista elenco (accordion): le card sessione stanno sopra e sotto l'elenco. -->
 <ng-container *ngIf="day && !loading && !errorMsg && state.viewMode() === 'list'">
