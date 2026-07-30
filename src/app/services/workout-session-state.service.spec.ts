@@ -49,9 +49,10 @@ describe('WorkoutSessionStateService', () => {
 
     service.start('day0');
 
-    expect(service.activeSession()).toEqual({ dayId: 'day0', startedAt: '2026-07-28T10:00:00.000Z' });
-    expect(JSON.parse(localStorage.getItem(CACHE_KEY)!)).toEqual({ dayId: 'day0', startedAt: '2026-07-28T10:00:00.000Z' });
-    expect(calls).toEqual([['activeWorkoutSession', { dayId: 'day0', startedAt: '2026-07-28T10:00:00.000Z' }]]);
+    const atteso = { dayId: 'day0', startedAt: '2026-07-28T10:00:00.000Z', pausedAt: null, pausedMs: 0 };
+    expect(service.activeSession()).toEqual(atteso);
+    expect(JSON.parse(localStorage.getItem(CACHE_KEY)!)).toEqual(atteso);
+    expect(calls).toEqual([['activeWorkoutSession', atteso]]);
   });
 
   it('elapsedSec avanza col passare del tempo mentre l\'app e\' aperta', () => {
@@ -79,7 +80,9 @@ describe('WorkoutSessionStateService', () => {
 
     const { service } = makeService();
 
-    expect(service.activeSession()).toEqual({ dayId: 'day2', startedAt: '2026-07-28T09:40:00.000Z' });
+    expect(service.activeSession()).toEqual({
+      dayId: 'day2', startedAt: '2026-07-28T09:40:00.000Z', pausedAt: null, pausedMs: 0
+    });
     expect(service.elapsedSec()).toBe(1200);
   });
 
@@ -125,6 +128,77 @@ describe('WorkoutSessionStateService', () => {
     expect(deleted).toEqual(['activeWorkoutSession']);
   });
 
+  it('in pausa il cronometro si ferma e non avanza col passare del tempo', () => {
+    const { service } = makeService();
+    service.start('day0');
+    vi.advanceTimersByTime(60_000);
+
+    service.togglePause();
+    vi.advanceTimersByTime(300_000);
+
+    expect(service.isPaused()).toBe(true);
+    expect(service.elapsedSec()).toBe(60);
+  });
+
+  it('alla ripresa il tempo passato in pausa resta fuori dalla durata', () => {
+    const { service } = makeService();
+    service.start('day0');
+    vi.advanceTimersByTime(60_000);
+
+    service.togglePause();
+    vi.advanceTimersByTime(300_000);
+    service.togglePause();
+    vi.advanceTimersByTime(30_000);
+
+    expect(service.isPaused()).toBe(false);
+    expect(service.elapsedSec()).toBe(90);
+  });
+
+  it('app sospesa durante la pausa: al rientro il cronometro e\' ancora fermo', () => {
+    const { service } = makeService();
+    service.start('day0');
+    vi.advanceTimersByTime(60_000);
+    service.togglePause();
+
+    // Nessun tick per mezz'ora (schermo bloccato), solo l'orologio avanza.
+    vi.setSystemTime(new Date('2026-07-28T10:31:00.000Z'));
+    document.dispatchEvent(new Event('visibilitychange'));
+
+    expect(service.elapsedSec()).toBe(60);
+  });
+
+  it('la pausa viene persistita su cache locale e account', () => {
+    const { service, calls } = makeService();
+    service.start('day0');
+
+    service.togglePause();
+
+    const atteso = {
+      dayId: 'day0', startedAt: '2026-07-28T10:00:00.000Z',
+      pausedAt: '2026-07-28T10:00:00.000Z', pausedMs: 0
+    };
+    expect(JSON.parse(localStorage.getItem(CACHE_KEY)!)).toEqual(atteso);
+    expect(calls[calls.length - 1]).toEqual(['activeWorkoutSession', atteso]);
+  });
+
+  it('una sessione salvata prima della pausa vale come mai messa in pausa', () => {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ dayId: 'day2', startedAt: '2026-07-28T09:40:00.000Z' }));
+
+    const { service } = makeService();
+
+    expect(service.isPaused()).toBe(false);
+    expect(service.elapsedSec()).toBe(1200);
+  });
+
+  it('togglePause() senza sessione attiva non fa nulla', () => {
+    const { service, calls } = makeService();
+
+    service.togglePause();
+
+    expect(service.activeSession()).toBeNull();
+    expect(calls).toEqual([]);
+  });
+
   it('sincronizza dall\'account la sessione avviata su un altro dispositivo', async () => {
     let resolveLoad!: (v: any) => void;
     const loadPromise = new Promise<any>(res => { resolveLoad = res; });
@@ -166,7 +240,9 @@ describe('WorkoutSessionStateService', () => {
     resolveLoad({ activeWorkoutSession: null });
     await loadPromise;
 
-    expect(service.activeSession()).toEqual({ dayId: 'day0', startedAt: '2026-07-28T10:00:00.000Z' });
+    expect(service.activeSession()).toEqual({
+      dayId: 'day0', startedAt: '2026-07-28T10:00:00.000Z', pausedAt: null, pausedMs: 0
+    });
   });
 
   it('dopo una mutazione locale conclusa, una sincronizzazione successiva dall\'account viene comunque adottata', async () => {

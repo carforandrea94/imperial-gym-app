@@ -34,9 +34,12 @@ const WAVE_BARS: number[] = Array.from({ length: BAR_COUNT }, (_, i) => {
   template: `
     <div class="restwave" *ngIf="active" [class.finished]="svc.restTimer().finished">
       <div class="restwave-bars">
-        <span *ngFor="let h of bars; let i = index"
-          [style.height.px]="h"
-          [class.on]="svc.restTimer().finished || i < litCount"></span>
+        <div class="restwave-track">
+          <span *ngFor="let h of bars" [style.height.px]="h"></span>
+        </div>
+        <div class="restwave-track lit" [style.clip-path]="fillClip">
+          <span *ngFor="let h of bars" [style.height.px]="h"></span>
+        </div>
       </div>
       <div class="restwave-row">
         <span class="restwave-label">
@@ -63,9 +66,15 @@ export class RestWaveComponent {
     return timer.show && timer.exKey === this.exKey;
   }
 
-  /** Quante tacchette restano accese: la parte gia' consumata si spegne da sinistra. */
-  get litCount(): number {
-    return Math.ceil((this.svc.restTimer().fillPct / 100) * BAR_COUNT);
+  /**
+   * Taglio dello strato acceso: la parte gia' consumata viene ritagliata da
+   * destra. Il timer batte una volta al secondo, ma la transizione CSS di 1s
+   * lineare su `clip-path` copre esattamente l'intervallo fra due battiti, per
+   * cui il bordo scorre di continuo invece di saltare da una tacchetta all'altra
+   * — senza far ridisegnare nulla a JS.
+   */
+  get fillClip(): string {
+    return `inset(0 ${(100 - this.svc.restTimer().fillPct).toFixed(2)}% 0 0)`;
   }
 
   stop(): void {

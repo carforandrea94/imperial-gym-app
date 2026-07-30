@@ -61,8 +61,6 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   restModalVm: ExerciseVM | null = null;
   restModalValue = 90;
 
-  /** Indice della slide visibile, contando anche le due card di sessione:
-   *  0 = "Avvia sessione", 1..n = esercizi, n+1 = "Termina e salva". */
   sliderIndex = 0;
   private scrollTicking = false;
 
@@ -341,17 +339,6 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     scrollToSlide(this.sliderEl?.nativeElement, idx);
   }
 
-  /** Esercizio attualmente visibile nello slider, oppure -1 sulle due card di
-   *  sessione: i pallini sono uno per esercizio, quindi li' nessuno e' attivo. */
-  get exerciseSlideIndex(): number {
-    return this.sliderIndex - 1;
-  }
-
-  /** Tap su un pallino: l'esercizio i-esimo e' la slide i+1 (la 0 e' "Avvia sessione"). */
-  scrollToExercise(i: number): void {
-    this.scrollToIndex(i + 1);
-  }
-
   onSetCheck(vm: ExerciseVM, rowIdx: number): void {
     vm.rows[rowIdx].done = !vm.rows[rowIdx].done;
     this.scheduleDraft();
@@ -454,22 +441,50 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     return idx >= 0 ? idx : null;
   }
 
-  /** Ora di avvio della sessione in corso (HH:MM): il tempo trascorso lo mostra
-   *  la barra fissa in alto, la card di avvio dice solo da quando si e' partiti. */
-  get sessionStartedAtLabel(): string {
-    const session = this.sessionState.activeSession();
-    if (!session) return '';
-    const d = new Date(session.startedAt);
-    return `${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}`;
+  /** Etichetta corta: nella barra convive con cronometro e tre comandi. */
+  get sessionBarLabel(): string {
+    if (this.sessionState.isActiveForDay(this.day.id)) {
+      return this.sessionState.isPaused() ? 'In pausa' : 'In corso';
+    }
+    // Sessione avviata su un giorno che il protocollo non ha piu': non e'
+    // raggiungibile, l'unica uscita e' annullarla.
+    if (this.hasOtherSession) return 'Da chiudere';
+    return 'Sessione';
   }
 
-  get endButtonLabel(): string {
+  get isSessionRunning(): boolean {
+    return this.sessionState.isActiveForDay(this.day.id) && !this.sessionState.isPaused();
+  }
+
+  get playPauseLabel(): string {
+    if (!this.sessionState.isActiveForDay(this.day.id)) return 'Avvia la sessione di allenamento';
+    return this.sessionState.isPaused() ? 'Riprendi la sessione' : 'Metti in pausa la sessione';
+  }
+
+  get canSaveSession(): boolean {
+    return this.sessionState.isActiveForDay(this.day.id) && this.state.saveStatus() !== 'saving';
+  }
+
+  /** Annulla vale anche per una sessione orfana (giorno sparito dal protocollo):
+   *  senza questa via d'uscita non si potrebbe piu' avviarne nessuna. */
+  get canCancelSession(): boolean {
+    return this.sessionState.isActiveForDay(this.day.id)
+      || (this.hasOtherSession && this.otherSessionDayIndex === null);
+  }
+
+  /** Etichetta accessibile del tasto salva (il bottone mostra solo l'icona). */
+  get saveButtonLabel(): string {
     switch (this.state.saveStatus()) {
-      case 'saving': return 'Salvataggio…';
-      case 'saved': return 'Salvato ✓';
-      case 'err': return 'Errore, riprova';
-      default: return 'Termina e salva';
+      case 'saving': return 'Salvataggio in corso';
+      case 'saved': return 'Allenamento salvato';
+      case 'err': return 'Errore, riprova a salvare';
+      default: return 'Termina la sessione e salva l\'allenamento';
     }
+  }
+
+  onPlayPause(): void {
+    if (!this.sessionState.activeSession()) { this.startSession(); return; }
+    if (this.sessionState.isActiveForDay(this.day.id)) this.sessionState.togglePause();
   }
 
   startSession(): void {

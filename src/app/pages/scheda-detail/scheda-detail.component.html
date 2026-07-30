@@ -58,77 +58,56 @@
   </span>
 </ng-template>
 
-<!-- Sessione: card di avvio e di chiusura. Sono template perche' le due viste le
-     dispongono diversamente: la lista le mette sopra e sotto l'elenco, lo slider
-     le usa come prima e ultima slide. Lo storico usa un altro componente e non le mostra. -->
-<ng-template #sessionStartCard>
-<div class="infocard session-card">
-  <ng-container *ngIf="sessionState.isActiveForDay(day.id)">
-    <!-- Il cronometro non si ripete qui: vive nella barra fissa in alto. -->
-    <p class="session-label">Iniziata alle</p>
-    <p class="session-since">{{ sessionStartedAtLabel }}</p>
-    <button class="confirmbtn cancel" style="width:100%" (click)="cancelSession()">
-      Annulla sessione
-    </button>
-  </ng-container>
+<!-- Sessione: unico posto da cui si comanda, fisso in alto sopra i pallini, cosi'
+     resta visibile su qualunque slide e anche scorrendo dentro una card lunga.
+     Vale per entrambe le viste; lo storico usa un altro componente e non la mostra. -->
+<div class="session-bar" *ngIf="day && !loading && !errorMsg">
+  <span class="session-bar-dot" [class.live]="sessionState.isActiveForDay(day.id)"></span>
 
-  <ng-container *ngIf="!sessionState.isActiveForDay(day.id)">
-    <button class="savebtn" [disabled]="hasOtherSession" (click)="startSession()">
-      Avvia sessione
-    </button>
-    <p class="session-hint" *ngIf="hasOtherSession">
-      <ng-container *ngIf="otherSessionDayIndex !== null">
-        C'è già una sessione in corso su Giorno {{ otherSessionDayIndex + 1 }}.
-      </ng-container>
-      <ng-container *ngIf="otherSessionDayIndex === null">
-        C'è già una sessione in corso su un allenamento non più presente nel protocollo.
-      </ng-container>
-    </p>
-    <button class="confirmbtn cancel" style="width:100%;margin-top:10px"
-      *ngIf="hasOtherSession && otherSessionDayIndex !== null"
-      (click)="goToOtherSession()">
-      Vai alla sessione
-    </button>
-    <button class="confirmbtn cancel" style="width:100%;margin-top:10px"
-      *ngIf="hasOtherSession && otherSessionDayIndex === null"
-      (click)="cancelSession()">
-      Annulla quella sessione
-    </button>
-  </ng-container>
-</div>
-</ng-template>
+  <!-- Se la sessione e' su un altro giorno l'etichetta ci porta: senza card non
+       ci sarebbe piu' modo di raggiungerla. -->
+  <button class="session-bar-label link" *ngIf="otherSessionDayIndex !== null" (click)="goToOtherSession()">
+    Giorno {{ otherSessionDayIndex + 1 }}
+  </button>
+  <span class="session-bar-label" *ngIf="otherSessionDayIndex === null">{{ sessionBarLabel }}</span>
 
-<!-- Sessione: card di chiusura. "Termina e salva" e' l'unico punto di salvataggio
-     dell'allenamento (il tasto in navbar e' stato rimosso). -->
-<ng-template #sessionEndCard>
-<div class="infocard session-card session-card-end">
-  <button class="savebtn"
-    [class.saved]="state.saveStatus() === 'saved'"
-    [class.err]="state.saveStatus() === 'err'"
-    [disabled]="!sessionState.isActiveForDay(day.id) || state.saveStatus() === 'saving'"
-    (click)="saveWorkout()">
-    {{ endButtonLabel }}
+  <span class="session-bar-time"
+    [class.idle]="!sessionState.isActiveForDay(day.id)"
+    [class.paused]="sessionState.isPaused()">
+    {{ sessionState.isActiveForDay(day.id) ? sessionState.formatDuration(sessionState.elapsedSec()) : '0:00' }}
+  </span>
+
+  <!-- Avvia / metti in pausa / riprendi: un solo tasto, l'icona dice cosa fara'. -->
+  <button class="session-bar-btn" [disabled]="hasOtherSession"
+    (click)="onPlayPause()" [attr.aria-label]="playPauseLabel">
+    <svg *ngIf="!isSessionRunning" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M8 5.5v13l11-6.5z"/>
+    </svg>
+    <svg *ngIf="isSessionRunning" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M8 5h3v14H8zM13 5h3v14h-3z"/>
+    </svg>
   </button>
 
-  <p class="session-hint" *ngIf="!sessionState.isActiveForDay(day.id) && !hasOtherSession">
-    Avvia la sessione per poter salvare l'allenamento nello storico.
-  </p>
-</div>
-</ng-template>
+  <button class="session-bar-btn ghost"
+    [class.saved]="state.saveStatus() === 'saved'"
+    [class.err]="state.saveStatus() === 'err'"
+    [disabled]="!canSaveSession"
+    (click)="saveWorkout()" [attr.aria-label]="saveButtonLabel">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M4 12.5l5 5L20 6.5"/>
+    </svg>
+  </button>
 
-<!-- Cronometro della sessione: fisso in alto sopra i pallini, cosi' resta
-     visibile su qualunque slide e anche scorrendo dentro una card lunga.
-     Sta fuori dai blocchi lista/slider perche' vale per entrambe le viste. -->
-<div class="session-bar" *ngIf="day && !loading && !errorMsg && sessionState.isActiveForDay(day.id)">
-  <span class="session-bar-dot"></span>
-  <span class="session-bar-label">Sessione in corso</span>
-  <span class="session-bar-time">{{ sessionState.formatDuration(sessionState.elapsedSec()) }}</span>
+  <button class="session-bar-btn ghost danger" [disabled]="!canCancelSession"
+    (click)="cancelSession()" aria-label="Annulla la sessione senza salvarla">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true">
+      <path d="M6 6l12 12M18 6L6 18"/>
+    </svg>
+  </button>
 </div>
 
-<!-- Vista elenco (accordion): le card sessione stanno sopra e sotto l'elenco. -->
+<!-- Vista elenco (accordion) -->
 <ng-container *ngIf="day && !loading && !errorMsg && state.viewMode() === 'list'">
-<ng-container *ngTemplateOutlet="sessionStartCard"></ng-container>
-
 <div class="exlist">
   <div class="ex" *ngFor="let vm of exercises; let i = index" [class.open]="vm.open">
 
@@ -164,25 +143,17 @@
     </div>
   </div>
 </div>
-
-<ng-container *ngTemplateOutlet="sessionEndCard"></ng-container>
 </ng-container>
 
-<!-- Vista slider (card scorrevoli, una per volta): avvio e chiusura della
-     sessione sono la prima e l'ultima slide. I pallini restano uno per
-     esercizio, quindi sulle due slide di sessione nessuno risulta attivo. -->
+<!-- Vista slider (card scorrevoli, una per volta) -->
 <div class="exslider-wrap" *ngIf="day && !loading && !errorMsg && state.viewMode() === 'slider'">
   <div class="exslider-dashes" *ngIf="exercises.length > 1">
     <span *ngFor="let vm of exercises; let i = index"
-      class="exslider-dash" [class.active]="i === exerciseSlideIndex" [class.done]="isComplete(vm)"
-      (click)="scrollToExercise(i)"></span>
+      class="exslider-dash" [class.active]="i === sliderIndex" [class.done]="isComplete(vm)"
+      (click)="scrollToIndex(i)"></span>
   </div>
 
   <div class="exslider" #sliderEl (scroll)="onSliderScroll()">
-    <div class="exslide session-slide">
-      <ng-container *ngTemplateOutlet="sessionStartCard"></ng-container>
-    </div>
-
     <div class="ex exslide" *ngFor="let vm of exercises; let i = index">
       <div class="ex-summary noclick">
         <div class="ex-icon ex-num"
@@ -210,10 +181,6 @@
       <div class="content-inner">
         <ng-container *ngTemplateOutlet="exDetail; context: { vm: vm }"></ng-container>
       </div>
-    </div>
-
-    <div class="exslide session-slide">
-      <ng-container *ngTemplateOutlet="sessionEndCard"></ng-container>
     </div>
   </div>
 </div>
