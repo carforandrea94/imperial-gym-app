@@ -15,6 +15,10 @@ export interface ActiveWorkoutSession {
   dayId: string;
   /** Istante di avvio in ISO. Il tempo trascorso si ricalcola da qui, mai accumulato. */
   startedAt: string;
+  /** Istante in cui e' stata messa in pausa (ISO), assente se il cronometro corre. */
+  pausedAt?: string | null;
+  /** Millisecondi gia' passati in pausa: vanno sottratti dalla durata. */
+  pausedMs?: number;
 }
 
 export type ThemeMode = 'dark' | 'light';

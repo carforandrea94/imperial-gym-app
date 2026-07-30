@@ -441,24 +441,39 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     return idx >= 0 ? idx : null;
   }
 
+  /** Etichetta corta: nella barra convive con cronometro e tre comandi. */
   get sessionBarLabel(): string {
-    if (this.sessionState.isActiveForDay(this.day.id)) return 'Sessione in corso';
+    if (this.sessionState.isActiveForDay(this.day.id)) {
+      return this.sessionState.isPaused() ? 'In pausa' : 'In corso';
+    }
     // Sessione avviata su un giorno che il protocollo non ha piu': non e'
-    // raggiungibile, l'unica uscita e' annullarla dal tasto di chiusura.
-    if (this.hasOtherSession) return 'Sessione da chiudere';
-    return 'Nessuna sessione';
+    // raggiungibile, l'unica uscita e' annullarla.
+    if (this.hasOtherSession) return 'Da chiudere';
+    return 'Sessione';
   }
 
-  /** Il tasto di chiusura serve anche a sbloccare una sessione orfana (giorno
-   *  sparito dal protocollo): senza, non si potrebbe piu' avviarne nessuna. */
-  get canEndSession(): boolean {
+  get isSessionRunning(): boolean {
+    return this.sessionState.isActiveForDay(this.day.id) && !this.sessionState.isPaused();
+  }
+
+  get playPauseLabel(): string {
+    if (!this.sessionState.isActiveForDay(this.day.id)) return 'Avvia la sessione di allenamento';
+    return this.sessionState.isPaused() ? 'Riprendi la sessione' : 'Metti in pausa la sessione';
+  }
+
+  get canSaveSession(): boolean {
+    return this.sessionState.isActiveForDay(this.day.id) && this.state.saveStatus() !== 'saving';
+  }
+
+  /** Annulla vale anche per una sessione orfana (giorno sparito dal protocollo):
+   *  senza questa via d'uscita non si potrebbe piu' avviarne nessuna. */
+  get canCancelSession(): boolean {
     return this.sessionState.isActiveForDay(this.day.id)
       || (this.hasOtherSession && this.otherSessionDayIndex === null);
   }
 
-  /** Etichetta accessibile del tasto di chiusura (il bottone mostra solo l'icona). */
-  get endButtonLabel(): string {
-    if (!this.sessionState.isActiveForDay(this.day.id)) return 'Annulla la sessione rimasta aperta';
+  /** Etichetta accessibile del tasto salva (il bottone mostra solo l'icona). */
+  get saveButtonLabel(): string {
     switch (this.state.saveStatus()) {
       case 'saving': return 'Salvataggio in corso';
       case 'saved': return 'Allenamento salvato';
@@ -467,9 +482,9 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  onEndSession(): void {
-    if (this.sessionState.isActiveForDay(this.day.id)) { this.saveWorkout(); return; }
-    if (this.canEndSession) this.cancelSession();
+  onPlayPause(): void {
+    if (!this.sessionState.activeSession()) { this.startSession(); return; }
+    if (this.sessionState.isActiveForDay(this.day.id)) this.sessionState.togglePause();
   }
 
   startSession(): void {

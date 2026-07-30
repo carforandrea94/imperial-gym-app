@@ -71,21 +71,38 @@
   </button>
   <span class="session-bar-label" *ngIf="otherSessionDayIndex === null">{{ sessionBarLabel }}</span>
 
-  <span class="session-bar-time" [class.idle]="!sessionState.isActiveForDay(day.id)">
+  <span class="session-bar-time"
+    [class.idle]="!sessionState.isActiveForDay(day.id)"
+    [class.paused]="sessionState.isPaused()">
     {{ sessionState.isActiveForDay(day.id) ? sessionState.formatDuration(sessionState.elapsedSec()) : '0:00' }}
   </span>
 
-  <button class="session-bar-btn" [disabled]="hasOtherSession || sessionState.isActiveForDay(day.id)"
-    (click)="startSession()" aria-label="Avvia la sessione di allenamento">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>
+  <!-- Avvia / metti in pausa / riprendi: un solo tasto, l'icona dice cosa fara'. -->
+  <button class="session-bar-btn" [disabled]="hasOtherSession"
+    (click)="onPlayPause()" [attr.aria-label]="playPauseLabel">
+    <svg *ngIf="!isSessionRunning" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M8 5.5v13l11-6.5z"/>
+    </svg>
+    <svg *ngIf="isSessionRunning" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M8 5h3v14H8zM13 5h3v14h-3z"/>
+    </svg>
   </button>
 
-  <button class="session-bar-btn"
+  <button class="session-bar-btn ghost"
     [class.saved]="state.saveStatus() === 'saved'"
     [class.err]="state.saveStatus() === 'err'"
-    [disabled]="!canEndSession || state.saveStatus() === 'saving'"
-    (click)="onEndSession()" [attr.aria-label]="endButtonLabel">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>
+    [disabled]="!canSaveSession"
+    (click)="saveWorkout()" [attr.aria-label]="saveButtonLabel">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M4 12.5l5 5L20 6.5"/>
+    </svg>
+  </button>
+
+  <button class="session-bar-btn ghost danger" [disabled]="!canCancelSession"
+    (click)="cancelSession()" aria-label="Annulla la sessione senza salvarla">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true">
+      <path d="M6 6l12 12M18 6L6 18"/>
+    </svg>
   </button>
 </div>
 

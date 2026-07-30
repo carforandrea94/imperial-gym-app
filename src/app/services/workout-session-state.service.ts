@@ -81,12 +81,42 @@ export class WorkoutSessionStateService {
     return this.activeSession()?.dayId === dayId;
   }
 
+  isPaused(): boolean {
+    return !!this.activeSession()?.pausedAt;
+  }
+
   start(dayId: string): void {
     this.mutationCount++;
-    const session: ActiveWorkoutSession = { dayId, startedAt: new Date().toISOString() };
+    const session: ActiveWorkoutSession = {
+      dayId, startedAt: new Date().toISOString(), pausedAt: null, pausedMs: 0
+    };
     this.activeSession.set(session);
     this.writeCache(session);
     this.appState.patchField(APP_STATE_FIELD, session);
+    this.refresh();
+  }
+
+  /**
+   * Mette in pausa il cronometro o lo fa ripartire. Anche la pausa e' registrata
+   * come istante e non come conteggio: alla ripresa i millisecondi fermi
+   * finiscono in `pausedMs`, cosi' la durata resta corretta pure se l'app e'
+   * stata sospesa da iOS mentre era in pausa.
+   */
+  togglePause(): void {
+    const session = this.activeSession();
+    if (!session) return;
+    this.mutationCount++;
+    const now = Date.now();
+    const next: ActiveWorkoutSession = session.pausedAt
+      ? {
+          ...session,
+          pausedAt: null,
+          pausedMs: (session.pausedMs ?? 0) + Math.max(0, now - new Date(session.pausedAt).getTime())
+        }
+      : { ...session, pausedAt: new Date(now).toISOString() };
+    this.activeSession.set(next);
+    this.writeCache(next);
+    this.appState.patchField(APP_STATE_FIELD, next);
     this.refresh();
   }
 
@@ -121,10 +151,12 @@ export class WorkoutSessionStateService {
   /** Riallinea tempo trascorso e ticker allo stato corrente della sessione. */
   private refresh(): void {
     this.syncElapsed();
-    const hasSession = !!this.activeSession();
-    if (hasSession && !this.ticker) {
+    // In pausa il valore e' fermo: tenere acceso il ticker vorrebbe dire
+    // ricalcolare ogni secondo lo stesso numero.
+    const running = !!this.activeSession() && !this.isPaused();
+    if (running && !this.ticker) {
       this.ticker = setInterval(() => this.syncElapsed(), 1000);
-    } else if (!hasSession && this.ticker) {
+    } else if (!running && this.ticker) {
       clearInterval(this.ticker);
       this.ticker = null;
     }
@@ -134,7 +166,9 @@ export class WorkoutSessionStateService {
     const session = this.activeSession();
     if (!session) { this.elapsedSec.set(0); return; }
     const started = new Date(session.startedAt).getTime();
-    this.elapsedSec.set(Math.max(0, Math.floor((Date.now() - started) / 1000)));
+    // In pausa il cronometro si ferma all'istante in cui e' stata premuta.
+    const until = session.pausedAt ? new Date(session.pausedAt).getTime() : Date.now();
+    this.elapsedSec.set(Math.max(0, Math.floor((until - started - (session.pausedMs ?? 0)) / 1000)));
   }
 
   private initialSession(): ActiveWorkoutSession | null {
@@ -145,7 +179,14 @@ export class WorkoutSessionStateService {
     try {
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed.dayId === 'string' && typeof parsed.startedAt === 'string') {
-        return { dayId: parsed.dayId, startedAt: parsed.startedAt };
+        return {
+          dayId: parsed.dayId,
+          startedAt: parsed.startedAt,
+          // Campi aggiunti dopo: una sessione salvata prima non li ha e vale
+          // come sessione mai messa in pausa.
+          pausedAt: typeof parsed.pausedAt === 'string' ? parsed.pausedAt : null,
+          pausedMs: typeof parsed.pausedMs === 'number' ? parsed.pausedMs : 0
+        };
       }
       return null;
     } catch {
@@ -158,8 +199,13 @@ export class WorkoutSessionStateService {
     else localStorage.removeItem(SESSION_CACHE_KEY);
   }
 
+  /** Anche pausa e tempo accumulato entrano nel confronto, altrimenti una pausa
+   *  messa su un altro dispositivo non arriverebbe mai qui. */
   private sameSession(a: ActiveWorkoutSession | null, b: ActiveWorkoutSession | null): boolean {
     if (a === null || b === null) return a === b;
-    return a.dayId === b.dayId && a.startedAt === b.startedAt;
+    return a.dayId === b.dayId
+      && a.startedAt === b.startedAt
+      && (a.pausedAt ?? null) === (b.pausedAt ?? null)
+      && (a.pausedMs ?? 0) === (b.pausedMs ?? 0);
   }
 }

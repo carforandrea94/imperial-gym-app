@@ -438,20 +438,25 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
    sotto la navbar rimpicciolita invece di scorrere via; `top` conta solo da
    pagina scrollata (prima la barra e' gia' nella sua posizione naturale),
    quindi il riferimento e' --nav-h-scrolled. */
-.session-bar{position:sticky;top:var(--nav-h-scrolled);z-index:5;display:flex;align-items:center;gap:10px;padding:8px 8px 8px 14px;margin-bottom:12px;border-radius:18px;background:var(--content-glass-bg);backdrop-filter:blur(14px) saturate(130%);-webkit-backdrop-filter:blur(14px) saturate(130%);border:1px solid var(--content-glass-border);box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 6px 18px rgba(0,0,0,.28);}
+.session-bar{position:sticky;top:var(--nav-h-scrolled);z-index:5;display:flex;align-items:center;gap:8px;padding:8px 8px 8px 13px;margin-bottom:12px;border-radius:18px;background:var(--content-glass-bg);backdrop-filter:blur(14px) saturate(130%);-webkit-backdrop-filter:blur(14px) saturate(130%);border:1px solid var(--content-glass-border);box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 6px 18px rgba(0,0,0,.28);}
 .session-bar-dot{width:7px;height:7px;border-radius:50%;background:var(--label-3);opacity:.45;flex-shrink:0;transition:background .25s ease,opacity .25s ease;}
 .session-bar-dot.live{background:var(--accent);opacity:1;}
-.session-bar-label{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--label-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+/* L'etichetta e' l'unico elemento comprimibile: su schermi stretti cede spazio
+   a cronometro e comandi invece di mandarli a capo. */
+.session-bar-label{flex:1;min-width:0;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--label-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;}
 .session-bar-label.link{background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px;color:var(--accent);}
-.session-bar-time{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;letter-spacing:.02em;color:var(--accent);font-variant-numeric:tabular-nums;transition:color .25s ease;}
+.session-bar-time{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;letter-spacing:.02em;color:var(--accent);font-variant-numeric:tabular-nums;flex-shrink:0;transition:color .25s ease,opacity .25s ease;}
 .session-bar-time.idle{color:var(--label-3);opacity:.5;}
-/* Comandi solo icona: il bottone abilitato e' quello pieno, cosi' l'azione
-   possibile in questo momento si riconosce senza etichetta. */
-.session-bar-btn{width:36px;height:36px;flex-shrink:0;border-radius:50%;border:1px solid transparent;background:var(--accent);color:var(--accent-contrast);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .18s ease,background .2s ease,opacity .2s ease;}
+.session-bar-time.paused{opacity:.55;}
+/* Comandi solo icona: pieno il comando principale (avvia/pausa), a vetro gli
+   altri due, in rosso quello che butta via la sessione. Disabilitato = spento. */
+.session-bar-btn{width:34px;height:34px;flex-shrink:0;border-radius:50%;border:1px solid transparent;background:var(--accent);color:var(--accent-contrast);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .18s ease,background .2s ease,opacity .2s ease;}
 .session-bar-btn:active{transform:scale(0.92);}
-.session-bar-btn:disabled{background:rgba(255,255,255,0.06);border-color:var(--content-glass-border);color:var(--label-3);opacity:.55;cursor:not-allowed;}
-.session-bar-btn.saved{background:var(--state-success);color:var(--accent-contrast);}
-.session-bar-btn.err{background:var(--state-danger);color:#fff;}
+.session-bar-btn.ghost{background:rgba(255,255,255,0.06);border-color:var(--content-glass-border);color:var(--accent);}
+.session-bar-btn.ghost.danger{color:var(--state-danger-text);border-color:rgba(var(--state-danger-rgb),0.35);}
+.session-bar-btn:disabled{background:rgba(255,255,255,0.06);border-color:var(--content-glass-border);color:var(--label-3);opacity:.4;cursor:not-allowed;}
+.session-bar-btn.saved{background:var(--state-success);border-color:transparent;color:var(--accent-contrast);}
+.session-bar-btn.err{background:var(--state-danger);border-color:transparent;color:#fff;}
 .session-bar-btn svg{display:block;}
 
 /* ===== DIETA ===== */
