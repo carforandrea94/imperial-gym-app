@@ -36,7 +36,6 @@ export class App implements OnInit, OnDestroy {
   showShoppingList = false;
   showViewToggle = false;
   viewToggleTarget: 'scheda' | 'dieta' = 'scheda';
-  showSaveWorkout = false;
   showSettings = false;
   showSaveMeasure = false;
   showChrome = false;
@@ -115,7 +114,6 @@ export class App implements OnInit, OnDestroy {
     this.showChrome = true;
     this.showShoppingList = false;
     this.showViewToggle = false;
-    this.showSaveWorkout = false;
     this.showSettings = false;
     this.showSaveMeasure = false;
 
@@ -298,7 +296,6 @@ export class App implements OnInit, OnDestroy {
       this.showAnalytics = false;
       this.showViewToggle = true;
       this.viewToggleTarget = 'scheda';
-      this.showSaveWorkout = true;
       return;
     }
 
@@ -402,9 +399,5 @@ export class App implements OnInit, OnDestroy {
     } else {
       this.workoutState.setViewMode(mode);
     }
-  }
-
-  onSaveWorkoutClick(): void {
-    this.workoutState.requestSave();
   }
 }

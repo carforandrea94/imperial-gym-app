@@ -58,6 +58,39 @@
   </span>
 </ng-template>
 
+<!-- Sessione: card di avvio. Vive qui (fuori dai blocchi lista/slider) cosi' e'
+     visibile in entrambe le viste; lo storico usa un altro componente e non la mostra. -->
+<div class="infocard session-card" *ngIf="day && !loading && !errorMsg">
+  <ng-container *ngIf="sessionState.isActiveForDay(day.id)">
+    <p class="session-label">Sessione in corso</p>
+    <p class="session-timer">{{ sessionState.formatDuration(sessionState.elapsedSec()) }}</p>
+  </ng-container>
+
+  <ng-container *ngIf="!sessionState.isActiveForDay(day.id)">
+    <button class="savebtn" [disabled]="hasOtherSession" (click)="startSession()">
+      Avvia sessione
+    </button>
+    <p class="session-hint" *ngIf="hasOtherSession">
+      <ng-container *ngIf="otherSessionDayIndex !== null">
+        C'è già una sessione in corso su Giorno {{ otherSessionDayIndex + 1 }}.
+      </ng-container>
+      <ng-container *ngIf="otherSessionDayIndex === null">
+        C'è già una sessione in corso su un allenamento non più presente nel protocollo.
+      </ng-container>
+    </p>
+    <button class="confirmbtn cancel" style="width:100%;margin-top:10px"
+      *ngIf="hasOtherSession && otherSessionDayIndex !== null"
+      (click)="goToOtherSession()">
+      Vai alla sessione
+    </button>
+    <button class="confirmbtn cancel" style="width:100%;margin-top:10px"
+      *ngIf="hasOtherSession && otherSessionDayIndex === null"
+      (click)="cancelSession()">
+      Annulla quella sessione
+    </button>
+  </ng-container>
+</div>
+
 <!-- Vista elenco (accordion) -->
 <div class="exlist" *ngIf="day && !loading && !errorMsg && state.viewMode() === 'list'">
   <div class="ex" *ngFor="let vm of exercises; let i = index" [class.open]="vm.open">
@@ -126,6 +159,28 @@
       </div>
     </div>
   </div>
+</div>
+
+<!-- Sessione: card di chiusura. "Termina e salva" e' l'unico punto di salvataggio
+     dell'allenamento (il tasto in navbar e' stato rimosso). -->
+<div class="infocard session-card session-card-end" *ngIf="day && !loading && !errorMsg">
+  <button class="savebtn"
+    [class.saved]="state.saveStatus() === 'saved'"
+    [class.err]="state.saveStatus() === 'err'"
+    [disabled]="!sessionState.isActiveForDay(day.id) || state.saveStatus() === 'saving'"
+    (click)="saveWorkout()">
+    {{ endButtonLabel }}
+  </button>
+
+  <button class="confirmbtn cancel" style="width:100%;margin-top:10px"
+    *ngIf="sessionState.isActiveForDay(day.id)"
+    (click)="cancelSession()">
+    Annulla sessione
+  </button>
+
+  <p class="session-hint" *ngIf="!sessionState.isActiveForDay(day.id) && !hasOtherSession">
+    Avvia la sessione per poter salvare l'allenamento nello storico.
+  </p>
 </div>
 
 <div class="resttimer-sheet-overlay" #restSheetOverlay *ngIf="day" [class.show]="restModalOpen" (click)="onRestOverlayClick($event)">

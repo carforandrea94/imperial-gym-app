@@ -5,6 +5,7 @@ import { WorkoutSessionsService } from '../../services/workout-sessions.service'
 import { WorkoutStateService } from '../../services/workout-state.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { WorkoutSession } from '../../models/workout.model';
+import { WorkoutSessionStateService } from '../../services/workout-session-state.service';
 
 interface SessionEntry {
   key: string;
@@ -37,7 +38,8 @@ export class HistoryListComponent implements OnInit {
     private state: WorkoutStateService,
     private confirm: ConfirmDialogService,
     private router: Router,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    public sessionState: WorkoutSessionStateService
   ) {}
 
   ngOnInit(): void {

@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 import { ThemeService } from '../../services/theme.service';
+import { WorkoutSessionStateService } from '../../services/workout-session-state.service';
 import { isIosSafariNotStandalone } from '../../core/utils/platform.util';
 
 @Component({
@@ -46,7 +47,12 @@ import { isIosSafariNotStandalone } from '../../core/utils/platform.util';
 export class AccountComponent implements OnInit {
   copied = false;
 
-  constructor(public auth: AuthService, private cdr: ChangeDetectorRef, public theme: ThemeService) {}
+  constructor(
+    public auth: AuthService,
+    private cdr: ChangeDetectorRef,
+    public theme: ThemeService,
+    private sessionState: WorkoutSessionStateService
+  ) {}
 
   ngOnInit(): void {
     if (this.auth.isCoach) {
@@ -86,6 +92,11 @@ export class AccountComponent implements OnInit {
 
   async logout(): Promise<void> {
     await this.auth.logout();
+    // Ripulisce la cache locale della sessione di allenamento: i dayId sono
+    // posizionali (day1, day2, ...) e non contengono l'id del protocollo, quindi
+    // senza questa pulizia la sessione dell'account precedente potrebbe essere
+    // mostrata al prossimo utente che accede da questo stesso dispositivo.
+    this.sessionState.clearLocalCache();
     // Reload completo (non router.navigate) cosi' tutti i singleton
     // (AppStateService, ProtocolBootstrapService, WorkoutDataService,
     // DietDataService, ecc.) ripartono da zero: evita che i dati

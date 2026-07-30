@@ -11,6 +11,7 @@ import { WorkoutDataService } from '../../services/workout-data.service';
 import { todayLocalISO } from '../../core/utils/date.util';
 import { HistoryEditStateService } from '../../services/history-edit-state.service';
 import { ToastService } from '../../services/toast.service';
+import { WorkoutSessionStateService } from '../../services/workout-session-state.service';
 
 @Component({
   selector: 'app-history-detail',
@@ -45,7 +46,8 @@ export class HistoryDetailComponent implements OnInit, OnDestroy {
     private sanitizer: DomSanitizer,
     private cdr: ChangeDetectorRef,
     private historyEditState: HistoryEditStateService,
-    private toast: ToastService
+    private toast: ToastService,
+    public sessionState: WorkoutSessionStateService
   ) {}
 
   getMuscleIcon(name: string): SafeHtml {

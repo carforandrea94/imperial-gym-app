@@ -19,7 +19,9 @@
 
   <div class="daymeta">
     <span>{{ session.dayLabel }}</span>
-    <span class="rec">{{ displayDate }}</span>
+    <span class="rec">
+      {{ displayDate }}<ng-container *ngIf="session.durationSec"> &nbsp;·&nbsp; ⏱ {{ sessionState.formatDuration(session.durationSec) }}</ng-container>
+    </span>
   </div>
 
   <p class="autherror" *ngIf="errorMsg && session">{{ errorMsg }}</p>
