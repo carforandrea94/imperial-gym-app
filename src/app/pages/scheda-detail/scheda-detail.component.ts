@@ -61,6 +61,8 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   restModalVm: ExerciseVM | null = null;
   restModalValue = 90;
 
+  /** Indice della slide visibile, contando anche le due card di sessione:
+   *  0 = "Avvia sessione", 1..n = esercizi, n+1 = "Termina e salva". */
   sliderIndex = 0;
   private scrollTicking = false;
 
@@ -339,6 +341,17 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     scrollToSlide(this.sliderEl?.nativeElement, idx);
   }
 
+  /** Esercizio attualmente visibile nello slider, oppure -1 sulle due card di
+   *  sessione: i pallini sono uno per esercizio, quindi li' nessuno e' attivo. */
+  get exerciseSlideIndex(): number {
+    return this.sliderIndex - 1;
+  }
+
+  /** Tap su un pallino: l'esercizio i-esimo e' la slide i+1 (la 0 e' "Avvia sessione"). */
+  scrollToExercise(i: number): void {
+    this.scrollToIndex(i + 1);
+  }
+
   onSetCheck(vm: ExerciseVM, rowIdx: number): void {
     vm.rows[rowIdx].done = !vm.rows[rowIdx].done;
     this.scheduleDraft();
@@ -439,6 +452,15 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!s || s.dayId === this.day.id) return null;
     const idx = this.workoutData.days.findIndex(d => d.id === s.dayId);
     return idx >= 0 ? idx : null;
+  }
+
+  /** Ora di avvio della sessione in corso (HH:MM): il tempo trascorso lo mostra
+   *  la barra fissa in alto, la card di avvio dice solo da quando si e' partiti. */
+  get sessionStartedAtLabel(): string {
+    const session = this.sessionState.activeSession();
+    if (!session) return '';
+    const d = new Date(session.startedAt);
+    return `${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}`;
   }
 
   get endButtonLabel(): string {
