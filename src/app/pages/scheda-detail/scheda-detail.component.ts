@@ -50,6 +50,12 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   private draftTimer: ReturnType<typeof setTimeout> | null = null;
   private paramSub: Subscription | null = null;
 
+  // Guardia contro `loadAll()` sovrapposte: cambiare giorno rapidamente puo'
+  // lasciare "in volo" piu' fetch contemporaneamente. Solo la generazione
+  // avviata per ultima ha il permesso di scrivere lo stato del componente
+  // (stesso pattern di `mutationCount` in workout-session-state.service.ts).
+  private loadGeneration = 0;
+
   restModalOpen = false;
   restModalVm: ExerciseVM | null = null;
   restModalValue = 90;
@@ -96,7 +102,16 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       this.day = this.workoutData.days[n];
       if (!this.day) { this.router.navigate(['/scheda']); return; }
 
+      // Come nell'effect() del costruttore quando si passa a modalita' slider:
+      // azzerare solo l'indice (i puntini) non basta, va riportato all'inizio
+      // anche lo scroll fisico del contenitore, dopo che si e' ridisegnato
+      // con gli esercizi del nuovo giorno (da cui il setTimeout(..., 0)).
       this.sliderIndex = 0;
+      setTimeout(() => this.scrollToIndex(0), 0);
+      // Il bottom sheet "Recupero" appartiene al giorno che si sta lasciando:
+      // se resta aperto mostra l'esercizio sbagliato sotto la pagina nuova.
+      this.closeRestModal();
+      this.restModalVm = null;
       this.loadAll();
     });
   }
@@ -105,6 +120,12 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   // cosi' non compaiono prima con dati incompleti (peso pre-compilato,
   // "Ultimo", suggerimento di progressione) e poi si aggiornano di scatto.
   async loadAll(): Promise<void> {
+    // Guardia contro `loadAll()` sovrapposte (vedi `loadGeneration`): la
+    // fetch cattura il giorno di QUESTA esecuzione, non quello che risultera'
+    // corrente quando la Promise si risolve.
+    const generation = ++this.loadGeneration;
+    const dayId = this.day.id;
+
     this.loading = true;
     this.errorMsg = '';
 
@@ -114,19 +135,26 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
     try {
       const [appState, daySessions] = await Promise.race([
-        Promise.all([this.appState.load(), this.sessions.listForDay(this.day.id)]),
+        Promise.all([this.appState.load(), this.sessions.listForDay(dayId)]),
         timeout
       ]);
+      // Un caricamento piu' recente e' partito prima che questo si risolvesse:
+      // i suoi dati sono superati e non vanno applicati allo stato corrente.
+      if (generation !== this.loadGeneration) return;
       this.buildExercises(appState.restOverrides);
-      this.loadDraft(appState.workoutDrafts[this.day.id]);
+      this.loadDraft(appState.workoutDrafts[dayId]);
       this.loadInsights(daySessions);
     } catch (e: any) {
+      if (generation !== this.loadGeneration) return;
       console.error('Errore caricamento scheda:', e);
       this.errorMsg = e?.message === 'TIMEOUT'
         ? 'La connessione sta impiegando troppo tempo. Controlla la rete e riprova.'
         : 'Errore nel caricamento della scheda. Riprova.';
     } finally {
-      this.loading = false;
+      // `loading` va sempre riportato a false per QUESTA esecuzione, anche se
+      // superata: altrimenti resterebbe bloccato a `true` se il caricamento
+      // corrente (quello vincente) fosse gia' terminato prima di questo.
+      if (generation === this.loadGeneration) this.loading = false;
       this.cdr.detectChanges();
     }
   }
