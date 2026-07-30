@@ -119,6 +119,9 @@
       </div>
     </div>
 
+    <!-- Fuori da .ex-summary: cosi' la ✕ del timer non fa aprire/chiudere l'accordion. -->
+    <app-rest-wave [exKey]="restKey(vm.ex.name)"></app-rest-wave>
+
     <div class="content-inner" *ngIf="vm.open">
       <ng-container *ngTemplateOutlet="exDetail; context: { vm: vm }"></ng-container>
     </div>
@@ -155,6 +158,8 @@
           <ng-container *ngTemplateOutlet="exMeta; context: { vm: vm }"></ng-container>
         </div>
       </div>
+
+      <app-rest-wave [exKey]="restKey(vm.ex.name)"></app-rest-wave>
 
       <div class="content-inner">
         <ng-container *ngTemplateOutlet="exDetail; context: { vm: vm }"></ng-container>

@@ -6,7 +6,6 @@ import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { NavbarComponent } from './components/navbar/navbar.component';
 import { TabbarComponent } from './components/tabbar/tabbar.component';
-import { RestTimerComponent } from './components/rest-timer/rest-timer.component';
 import { ConfirmDialogComponent } from './components/confirm-dialog/confirm-dialog.component';
 import { ToastComponent } from './components/toast/toast.component';
 import { WorkoutDataService } from './services/workout-data.service';
@@ -22,7 +21,7 @@ import { ThemeService } from './services/theme.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, NavbarComponent, TabbarComponent, RestTimerComponent, ConfirmDialogComponent, ToastComponent],
+  imports: [CommonModule, RouterOutlet, NavbarComponent, TabbarComponent, ConfirmDialogComponent, ToastComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })

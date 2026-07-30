@@ -14,6 +14,7 @@ import { Day, Exercise, WorkoutSession, ExInsight } from '../../models/workout.m
 import { todayLocalISO } from '../../core/utils/date.util';
 import { findClosestSlideIndex, scrollToSlide } from '../../core/utils/horizontal-slider.util';
 import { ToastService } from '../../services/toast.service';
+import { RestWaveComponent } from '../../components/rest-wave/rest-wave.component';
 
 interface SerieRow {
   reps: string;
@@ -37,7 +38,7 @@ interface ExerciseVM {
 @Component({
   selector: 'app-scheda-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RestWaveComponent],
   templateUrl: './scheda-detail.component.html',
   styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
 })
@@ -112,6 +113,11 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       // se resta aperto mostra l'esercizio sbagliato sotto la pagina nuova.
       this.closeRestModal();
       this.restModalVm = null;
+      // Il timer di recupero vive dentro la card dell'esercizio da cui e'
+      // partito: se quell'esercizio appartiene a un altro giorno resterebbe in
+      // corso senza essere disegnato da nessuna parte, e senza modo di fermarlo.
+      const timer = this.state.restTimer();
+      if (timer.show && !timer.exKey?.startsWith(`${this.day.id}:`)) this.state.stopRestTimer();
       this.loadAll();
     });
   }
@@ -207,7 +213,9 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     return Math.round((nums[0] + nums[1]) / 2);
   }
 
-  private restKey(exName: string): string {
+  /** Chiave stabile dell'esercizio nel giorno: usata sia per l'override del
+   *  recupero salvato sull'account sia per sapere in quale card disegnare il timer. */
+  restKey(exName: string): string {
     return `${this.day.id}:${exName}`;
   }
 
@@ -335,7 +343,7 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     vm.rows[rowIdx].done = !vm.rows[rowIdx].done;
     this.scheduleDraft();
     if (vm.rows[rowIdx].done) {
-      this.state.startRestTimer(vm.restSeconds);
+      this.state.startRestTimer(vm.restSeconds, this.restKey(vm.ex.name));
     }
   }
 
