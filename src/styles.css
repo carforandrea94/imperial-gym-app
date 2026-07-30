@@ -434,22 +434,25 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
    specificita' vincerebbe lei, essendo dichiarata dopo, e questi margini non
    avrebbero alcun effetto. Classe dedicata per la card finale invece di
    :last-of-type, che guarda il tipo di elemento (div) e non la classe. */
-.infocard.session-card{margin-bottom:14px;}
-.infocard.session-card-end{margin-top:16px;margin-bottom:0;}
-/* Nello slider le due card di sessione sono slide a se': niente stacco verticale
-   (disallineerebbe le card) e altezza piena come le card esercizio, con il
-   contenuto centrato perche' e' molto piu' corto. */
-.session-slide .infocard.session-card{margin:0;height:100%;display:flex;flex-direction:column;justify-content:center;}
-.session-label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--label-3);text-align:center;}
-.session-since{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--label-2);text-align:center;margin:8px 0 16px;font-variant-numeric:tabular-nums;}
-/* Cronometro della sessione: si ferma sotto la navbar rimpicciolita invece di
-   scorrere via. `top` conta solo da pagina scrollata (prima la barra e' gia'
-   nella sua posizione naturale), quindi il riferimento e' --nav-h-scrolled. */
-.session-bar{position:sticky;top:var(--nav-h-scrolled);z-index:5;display:flex;align-items:center;gap:10px;padding:9px 14px;margin-bottom:12px;border-radius:16px;background:var(--content-glass-bg);backdrop-filter:blur(14px) saturate(130%);-webkit-backdrop-filter:blur(14px) saturate(130%);border:1px solid var(--content-glass-border);box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 6px 18px rgba(0,0,0,.28);}
-.session-bar-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;}
-.session-bar-label{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--label-3);}
-.session-bar-time{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;letter-spacing:.02em;color:var(--accent);font-variant-numeric:tabular-nums;}
-.session-hint{font-family:'Inter',sans-serif;font-size:12.5px;line-height:1.5;color:var(--label-3);text-align:center;margin-top:10px;}
+/* Barra sessione: cronometro e i due comandi (avvia / termina e salva). Si ferma
+   sotto la navbar rimpicciolita invece di scorrere via; `top` conta solo da
+   pagina scrollata (prima la barra e' gia' nella sua posizione naturale),
+   quindi il riferimento e' --nav-h-scrolled. */
+.session-bar{position:sticky;top:var(--nav-h-scrolled);z-index:5;display:flex;align-items:center;gap:10px;padding:8px 8px 8px 14px;margin-bottom:12px;border-radius:18px;background:var(--content-glass-bg);backdrop-filter:blur(14px) saturate(130%);-webkit-backdrop-filter:blur(14px) saturate(130%);border:1px solid var(--content-glass-border);box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 6px 18px rgba(0,0,0,.28);}
+.session-bar-dot{width:7px;height:7px;border-radius:50%;background:var(--label-3);opacity:.45;flex-shrink:0;transition:background .25s ease,opacity .25s ease;}
+.session-bar-dot.live{background:var(--accent);opacity:1;}
+.session-bar-label{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--label-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.session-bar-label.link{background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px;color:var(--accent);}
+.session-bar-time{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;letter-spacing:.02em;color:var(--accent);font-variant-numeric:tabular-nums;transition:color .25s ease;}
+.session-bar-time.idle{color:var(--label-3);opacity:.5;}
+/* Comandi solo icona: il bottone abilitato e' quello pieno, cosi' l'azione
+   possibile in questo momento si riconosce senza etichetta. */
+.session-bar-btn{width:36px;height:36px;flex-shrink:0;border-radius:50%;border:1px solid transparent;background:var(--accent);color:var(--accent-contrast);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .18s ease,background .2s ease,opacity .2s ease;}
+.session-bar-btn:active{transform:scale(0.92);}
+.session-bar-btn:disabled{background:rgba(255,255,255,0.06);border-color:var(--content-glass-border);color:var(--label-3);opacity:.55;cursor:not-allowed;}
+.session-bar-btn.saved{background:var(--state-success);color:var(--accent-contrast);}
+.session-bar-btn.err{background:var(--state-danger);color:#fff;}
+.session-bar-btn svg{display:block;}
 
 /* ===== DIETA ===== */
 .rocker{display:flex;align-items:center;justify-content:center;margin:2px auto 20px;width:236px;height:52px;background:var(--glass-bg);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);border:1px solid rgba(255,255,255,0.14);border-radius:26px;padding:4px;box-shadow:inset 0 1px 4px rgba(255,255,255,.35),inset 0 -1px 5px rgba(0,0,0,.28),0 6px 18px rgba(0,0,0,.3);position:relative;cursor:pointer;-webkit-user-select:none;user-select:none;}
@@ -508,10 +511,18 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
    altezze arrivano dal componente e non cambiano mai durante il recupero:
    scorre solo la soglia fra tacchette accese e spente. */
 .restwave{padding:0 16px 11px;animation:fade .25s ease;}
-.restwave-bars{display:flex;align-items:center;justify-content:space-between;height:20px;overflow:hidden;}
-.restwave-bars span{display:block;flex:none;width:1.5px;border-radius:.75px;background:var(--restwave-off);transition:background-color .3s ease;}
-.restwave-bars span.on{background:var(--sys-cyan);}
-.restwave.finished .restwave-bars span.on{background:var(--state-success);}
+/* Due file identiche sovrapposte: quella spenta sotto, quella accesa sopra
+   ritagliata da destra. Il taglio si sposta con una transizione lineare di 1s,
+   la stessa cadenza del timer, cosi' il bordo scorre in modo continuo. */
+.restwave-bars{position:relative;height:20px;}
+.restwave-track{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;}
+.restwave-track span{display:block;flex:none;width:1.5px;border-radius:.75px;background:var(--restwave-off);}
+.restwave-track.lit{transition:clip-path 1s linear;}
+.restwave-track.lit span{background:var(--sys-cyan);}
+/* A recupero finito resta accesa tutta la fila, senza far tornare indietro il
+   taglio: lo strato acceso sparisce e a colorarsi e' quello sotto. */
+.restwave.finished .restwave-track.lit{display:none;}
+.restwave.finished .restwave-track span{background:var(--state-success);}
 .restwave-row{display:flex;align-items:center;gap:10px;padding-top:7px;}
 .restwave-label{font-family:'Inter',sans-serif;font-size:12px;color:var(--label-3);}
 .restwave-time{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px;color:var(--sys-cyan);font-variant-numeric:tabular-nums;}
