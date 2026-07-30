@@ -107,7 +107,6 @@
         <span class="ex-muscle" [style.background]="getMuscleInfo(vm.ex.muscle).color">
           {{ vm.ex.muscle }}
         </span>
-        <span class="ex-chip" *ngIf="vm.ex.text">{{ vm.ex.text }}</span>
         <span class="ex-chip rest">⏱ {{ formatRest(vm.restSeconds) }}</span>
       </div>
       <div class="ex-meta">
@@ -146,7 +145,6 @@
           <span class="ex-muscle" [style.background]="getMuscleInfo(vm.ex.muscle).color">
             {{ vm.ex.muscle }}
           </span>
-          <span class="ex-chip" *ngIf="vm.ex.text">{{ vm.ex.text }}</span>
           <span class="ex-chip rest">⏱ {{ formatRest(vm.restSeconds) }}</span>
         </div>
         <div class="ex-meta">
