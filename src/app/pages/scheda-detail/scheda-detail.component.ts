@@ -61,6 +61,8 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   restModalVm: ExerciseVM | null = null;
   restModalValue = 90;
 
+  /** Indice della slide visibile, contando anche le due card di sessione:
+   *  0 = "Avvia sessione", 1..n = esercizi, n+1 = "Termina e salva". */
   sliderIndex = 0;
   private scrollTicking = false;
 
@@ -337,6 +339,17 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   scrollToIndex(idx: number): void {
     scrollToSlide(this.sliderEl?.nativeElement, idx);
+  }
+
+  /** Esercizio attualmente visibile nello slider, oppure -1 sulle due card di
+   *  sessione: i pallini sono uno per esercizio, quindi li' nessuno e' attivo. */
+  get exerciseSlideIndex(): number {
+    return this.sliderIndex - 1;
+  }
+
+  /** Tap su un pallino: l'esercizio i-esimo e' la slide i+1 (la 0 e' "Avvia sessione"). */
+  scrollToExercise(i: number): void {
+    this.scrollToIndex(i + 1);
   }
 
   onSetCheck(vm: ExerciseVM, rowIdx: number): void {

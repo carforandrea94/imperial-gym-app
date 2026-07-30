@@ -433,6 +433,9 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
    :last-of-type, che guarda il tipo di elemento (div) e non la classe. */
 .infocard.session-card{margin-bottom:14px;}
 .infocard.session-card-end{margin-top:16px;margin-bottom:0;}
+/* Nello slider le due card di sessione sono slide a se': lo stacco verticale
+   che serve nella vista elenco qui diventa disallineamento fra le card. */
+.session-slide .infocard.session-card{margin:0;}
 .session-label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--label-3);text-align:center;}
 .session-timer{font-family:'IBM Plex Mono',monospace;font-size:34px;font-weight:600;letter-spacing:.02em;color:var(--accent);text-align:center;margin-top:6px;font-variant-numeric:tabular-nums;}
 .session-hint{font-family:'Inter',sans-serif;font-size:12.5px;line-height:1.5;color:var(--label-3);text-align:center;margin-top:10px;}
