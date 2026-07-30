@@ -151,9 +151,10 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         ? 'La connessione sta impiegando troppo tempo. Controlla la rete e riprova.'
         : 'Errore nel caricamento della scheda. Riprova.';
     } finally {
-      // `loading` va sempre riportato a false per QUESTA esecuzione, anche se
-      // superata: altrimenti resterebbe bloccato a `true` se il caricamento
-      // corrente (quello vincente) fosse gia' terminato prima di questo.
+      // Solo il caricamento corrente puo' spegnere `loading`: se lo facesse
+      // anche uno superato, la pagina si mostrerebbe come pronta mentre la
+      // fetch del giorno visualizzato e' ancora in volo. Non resta bloccato a
+      // `true`: il caricamento vincente passa comunque da qui.
       if (generation === this.loadGeneration) this.loading = false;
       this.cdr.detectChanges();
     }
