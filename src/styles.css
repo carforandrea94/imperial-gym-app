@@ -32,7 +32,7 @@
   --state-danger-rgb: 92,43,57;
   --state-danger-deep: #33181F;
   --state-danger-deep-rgb: 51,24,31;
-  --state-danger-text: #A64D67;  /* tinta chiara del vino scuro, per testo leggibile su sfondo scuro */
+  --state-danger-text: #C4657F;  /* tinta chiara del vino scuro: 4,87:1 su card scura, il precedente #A64D67 bastava solo per le icone */
   --glass-bg: rgba(20,24,32,0.30);
   --glass-border: rgba(255,255,255,0.10);
   --content-glass-bg: rgba(22,26,34,0.46);
@@ -62,15 +62,15 @@
   --separator:rgba(20,23,28,0.12);
   --label:#14171C;
   --label-2:rgba(20,23,28,0.72);
-  --label-3:rgba(20,23,28,0.50);
+  --label-3:rgba(20,23,28,0.62);   /* 5,04:1 su card bianca: sotto 0,58 il testo piccolo non arriva a 4,5:1 */
   --imp-red:#3E63E0;
   --imp-red-dim:rgba(62,99,224,0.12);
   --imp-amber:#2E9A5C;
   --imp-amber-dim:rgba(46,154,92,0.14);
   --macro-carb:#B8862A;
   --macro-protein:#C85C52;
-  --sys-cyan:#0A8FC4;
-  --sys-cyan-dim:rgba(10,143,196,0.14);
+  --sys-cyan:#0B6E97;              /* 5,69:1 su bianco: il precedente #0A8FC4 si fermava a 3,66:1 */
+  --sys-cyan-dim:rgba(11,110,151,0.14);
   --restwave-off:rgba(20,23,28,0.16);
   --accent-contrast:#FFFFFF;
   --state-success-rgb: 62,99,224;
