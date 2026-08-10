@@ -424,7 +424,7 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .savebar.dual .savebtn{width:auto;flex:1;}
 .savebtn.cancel{background:var(--content-glass-bg);color:var(--label);box-shadow:none;border-color:var(--content-glass-border);}
 .savebtn.cancel-accent{background:var(--imp-red-dim);color:var(--imp-red);border-color:var(--imp-red);box-shadow:none;}
-.savebtn{width:100%;padding:16px;min-height:52px;border-radius:20px;border:1px solid rgba(255,255,255,.14);background:var(--imp-red);color:var(--accent-contrast);font-family:'Inter',sans-serif;font-weight:700;letter-spacing:-.005em;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 8px 22px rgba(0,0,0,.3);transition:filter .2s ease;}
+.savebtn{width:100%;padding:16px;min-height:52px;border-radius:20px;border:1px solid rgba(255,255,255,.14);font-family:'Inter',sans-serif;font-weight:700;letter-spacing:-.005em;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 8px 22px rgba(0,0,0,.3);transition:filter .2s ease;}
 .savebtn:active{filter:brightness(0.92);}
 .savebtn:disabled{opacity:.5;cursor:not-allowed;filter:none;}
 .delete-session-btn{background:rgba(var(--state-danger-rgb),.16);color:var(--state-danger-text);border:1px solid rgba(var(--state-danger-rgb),.3);box-shadow:none;}
@@ -436,8 +436,6 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .history-ex b{color:var(--label);font-weight:600;}
 .ro-value{width:100%;text-align:center;padding:8px 6px;font-size:13px;font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--label-2);background:var(--surface-raise);border:1px solid var(--content-glass-border);border-radius:9px;}
 .ex.readonly .ex-chip,.ex.readonly .ex-meta{display:none;}
-.savebtn.saved{background:var(--state-success);color:var(--accent-contrast);}
-.savebtn.err{background:var(--state-danger);color:#fff;}
 
 /* ===== Card sessione di allenamento (avvio / chiusura) =====
    I margini sono qualificati con .infocard (specificita' 0-2-0) perche' la
@@ -554,8 +552,6 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .confirmtext{font-size:14.5px;color:var(--label);line-height:1.5;text-align:center;margin-bottom:18px;}
 .confirmbtns{display:flex;gap:10px;}
 .confirmbtn{flex:1;padding:12px;border-radius:14px;border:1px solid var(--content-glass-border);font-family:'Inter',sans-serif;font-weight:700;font-size:14.5px;cursor:pointer;}
-.confirmbtn.cancel{background:var(--surface-raise);color:var(--label);}
-.confirmbtn.danger{background:var(--state-danger);color:#fff;border-color:transparent;}
 
 /* ===== REST TIMER — BOTTOM SHEET ===== */
 .resttimer-sheet-overlay{position:fixed;inset:0;z-index:100;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0);pointer-events:none;transition:background-color .3s ease;}
@@ -749,5 +745,5 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
   }
 }
 
-.apptoast{position:fixed;left:50%;bottom:calc(var(--tabbar-h) + var(--safe-b) + 12px);transform:translateX(-50%);z-index:65;padding:10px 20px;border-radius:20px;background:rgba(48,209,88,0.92);color:#04220f;font-weight:600;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.3);backdrop-filter:blur(12px) saturate(125%);-webkit-backdrop-filter:blur(12px) saturate(125%);animation:fade .2s ease;white-space:nowrap;max-width:calc(100vw - 32px);text-overflow:ellipsis;overflow:hidden;}
-.apptoast.error{background:rgba(255,69,58,0.92);color:#fff;}
+.apptoast{position:fixed;left:50%;bottom:calc(var(--tabbar-h) + var(--safe-b) + 12px);transform:translateX(-50%);z-index:65;padding:10px 20px;border-radius:20px;background:var(--accent);color:var(--accent-contrast);font-weight:600;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.3);backdrop-filter:blur(12px) saturate(125%);-webkit-backdrop-filter:blur(12px) saturate(125%);animation:fade .2s ease;white-space:nowrap;max-width:calc(100vw - 32px);text-overflow:ellipsis;overflow:hidden;}
+.apptoast.error{background:var(--state-danger);color:#fff;}
