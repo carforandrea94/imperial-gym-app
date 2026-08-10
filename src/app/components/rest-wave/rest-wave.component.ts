@@ -48,7 +48,7 @@ const WAVE_BARS: number[] = Array.from({ length: BAR_COUNT }, (_, i) => {
         <span class="restwave-time">
           {{ svc.restTimer().finished ? '✓' : svc.formatTime(svc.restTimer().remaining) }}
         </span>
-        <button class="restwave-x" (click)="stop()" aria-label="Ferma il recupero">✕</button>
+        <button class="restwave-x tap44" (click)="stop()" aria-label="Ferma il recupero">✕</button>
       </div>
     </div>
   `,

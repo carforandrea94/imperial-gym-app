@@ -551,6 +551,17 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .resttimer-sheet .grabber{width:36px;height:4px;border-radius:2px;background:var(--content-glass-border);margin:0 auto 14px;}
 
 /* ===== UTILS ===== */
+/* Bersaglio di tocco a 44px (minimo iOS) senza toccare il disegno: lo
+   pseudo-elemento e' invisibile e centrato sul bottone, cosi' il dito ha
+   margine anche dove l'icona e' minuta. Da applicare SOLO dove l'area
+   allargata non copre qualcosa di cliccabile con un'altra azione: meglio un
+   bersaglio piccolo che un tocco che fa la cosa sbagliata. */
+.tap44{position:relative;}
+.tap44::after{content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:44px;height:44px;}
+/* Per i bottoni affiancati il bersaglio cresce solo in verticale: in
+   orizzontale ruberebbe i tocchi al vicino. */
+.tap44.tap44-v::after{width:100%;}
+
 .press-fx{transition:transform .35s var(--spring),filter .15s ease;}
 /* Schiarire e' un ritorno visivo che esiste solo su fondo scuro: in tema
    chiaro la card e' gia' bianca, quindi li' la pressione scurisce. */
