@@ -32,7 +32,7 @@ export class DietStateService {
           this.viewMode.set(state.dietViewMode);
           localStorage.setItem(VIEW_MODE_CACHE_KEY, state.dietViewMode);
         }
-      });
+      }).catch(e => console.error('Lettura dello stato utente fallita:', e));
     });
   }
 
@@ -40,6 +40,6 @@ export class DietStateService {
     if (this.viewMode() === mode) return;
     this.viewMode.set(mode);
     localStorage.setItem(VIEW_MODE_CACHE_KEY, mode);
-    this.appState.patchField('dietViewMode', mode);
+    this.appState.patchField('dietViewMode', mode).catch(() => { /* gia' segnalato da AppStateService */ });
   }
 }

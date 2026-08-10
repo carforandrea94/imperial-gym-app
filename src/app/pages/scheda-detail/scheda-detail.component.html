@@ -2,7 +2,7 @@
 
 <div *ngIf="!loading && errorMsg" class="history-empty">
   {{ errorMsg }}<br>
-  <button class="savebtn" style="margin-top:12px" (click)="loadAll()">Riprova</button>
+  <button class="savebtn mt-3" (click)="loadAll()">Riprova</button>
 </div>
 
 <ng-template #exDetail let-vm="vm">
@@ -54,8 +54,8 @@
 <!-- Sessione: unico posto da cui si comanda, fisso in alto sopra i pallini, cosi'
      resta visibile su qualunque slide e anche scorrendo dentro una card lunga.
      Vale per entrambe le viste; lo storico usa un altro componente e non la mostra. -->
-<div class="session-bar" *ngIf="day && !loading && !errorMsg">
-  <span class="session-bar-dot" [class.live]="sessionState.isActiveForDay(day.id)"></span>
+<div class="session-bar" *ngIf="day && !loading">
+  <span class="session-bar-dot" [class.live]="isSessionOnThisDay"></span>
 
   <!-- Se la sessione e' su un altro giorno l'etichetta ci porta: senza card non
        ci sarebbe piu' modo di raggiungerla. -->
@@ -65,9 +65,9 @@
   <span class="session-bar-label" *ngIf="otherSessionDayIndex === null">{{ sessionBarLabel }}</span>
 
   <span class="session-bar-time"
-    [class.idle]="!sessionState.isActiveForDay(day.id)"
+    [class.idle]="!isSessionOnThisDay"
     [class.paused]="sessionState.isPaused()">
-    {{ sessionState.isActiveForDay(day.id) ? sessionState.formatDuration(sessionState.elapsedSec()) : '0:00' }}
+    {{ isSessionOnThisDay ? sessionState.formatDuration(sessionState.elapsedSec()) : '0:00' }}
   </span>
 
   <!-- Avvia / metti in pausa / riprendi: un solo tasto, l'icona dice cosa fara'. -->

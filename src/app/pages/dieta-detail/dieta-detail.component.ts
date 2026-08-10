@@ -158,6 +158,6 @@ export class DietaDetailComponent implements OnInit {
     vm.completed = !vm.completed;
     const done: Record<string, boolean> = {};
     this.meals.forEach(m => { done[m.meal.id] = m.completed; });
-    this.appState.patchField('mealsCompletion', { date: todayLocalISO(), done });
+    this.appState.patchField('mealsCompletion', { date: todayLocalISO(), done }).catch(() => { /* gia' segnalato da AppStateService */ });
   }
 }

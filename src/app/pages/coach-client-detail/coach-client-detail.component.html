@@ -2,19 +2,19 @@
 
 <div *ngIf="!loading && errorMsg" class="history-empty">
   {{ errorMsg }}
-  <div style="margin-top:12px">
+  <div class="mt-3">
     <button class="confirmbtn cancel" (click)="load()">Riprova</button>
   </div>
 </div>
 
 <ng-container *ngIf="!loading && !errorMsg">
   <p class="sectiontitle">Cliente</p>
-  <div class="infocard" style="margin-bottom:16px">
-    <div class="lbl" style="font-size:16px;font-weight:700">{{ client?.displayName }}</div>
-    <div class="meta" style="margin-top:2px">{{ client?.email }}</div>
+  <div class="infocard mb-4">
+    <div class="lbl" style="font-size:var(--text-lg);font-weight:700">{{ client?.displayName }}</div>
+    <div class="meta mt-1">{{ client?.email }}</div>
   </div>
 
-  <div class="savebar" style="margin-top:0;margin-bottom:16px">
+  <div class="savebar mt-0 mb-4">
     <button class="savebtn" (click)="newProtocol()">+ Nuovo protocollo</button>
   </div>
 

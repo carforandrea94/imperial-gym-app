@@ -109,7 +109,7 @@ export class ListaSpesaComponent implements OnInit {
 
   toggle(item: ShoppingItem): void {
     item.checked = !item.checked;
-    this.appState.patchField(`shoppingChecked.${this.safeKey(item.key)}`, item.checked);
+    this.appState.patchField(`shoppingChecked.${this.safeKey(item.key)}`, item.checked).catch(() => { /* gia' segnalato da AppStateService */ });
   }
 
   private safeKey(key: string): string {

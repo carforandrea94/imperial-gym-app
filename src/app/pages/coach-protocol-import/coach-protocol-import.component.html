@@ -1,12 +1,12 @@
 <p class="sectiontitle">{{ isUpdateMode ? 'Aggiorna da PDF' : 'Carica i PDF' }}</p>
 
-<div class="infocard" style="margin-bottom:14px">
-  <p class="bacheca-text" style="margin-bottom:14px" *ngIf="!isUpdateMode">
+<div class="infocard mb-4">
+  <p class="bacheca-text mb-4" *ngIf="!isUpdateMode">
     L'app prova a leggere i PDF ed estrarre esercizi e alimenti automaticamente.
     E' un'estrazione best-effort: funziona meglio se il PDF ha un formato semplice
     (una riga per esercizio/alimento). Rivedi sempre la bozza nel builder prima di attivarla.
   </p>
-  <p class="bacheca-text" style="margin-bottom:14px" *ngIf="isUpdateMode">
+  <p class="bacheca-text mb-4" *ngIf="isUpdateMode">
     Carica almeno uno dei PDF per aggiornare le parti corrispondenti del
     protocollo. Ricaricare la dieta o l'integrazione da sola non cancella le
     note dell'altra.
@@ -22,7 +22,7 @@
     <input type="file" accept="application/pdf" (change)="onFile($event, 'dieta')" />
   </div>
 
-  <div class="authfield" style="margin-bottom:0">
+  <div class="authfield mb-0">
     <label>Integrazione (opzionale — finisce nella scheda Info)</label>
     <input type="file" accept="application/pdf" (change)="onFile($event, 'integrazione')" />
   </div>

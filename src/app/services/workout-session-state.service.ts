@@ -6,6 +6,15 @@ const SESSION_CACHE_KEY = 'activeWorkoutSession';
 const APP_STATE_FIELD = 'activeWorkoutSession';
 
 /**
+ * Oltre questa distanza dall'avvio la sessione si considera dimenticata e
+ * viene buttata invece di essere ripresa: senza, chi dimentica di chiudere si
+ * ritrova nello storico una seduta di venti ore. Otto ore coprono con
+ * abbondanza qualsiasi allenamento, pause comprese. Si butta solo il
+ * cronometro: i dati inseriti vivono nella bozza, che e' un campo separato.
+ */
+const STALE_AFTER_MS = 8 * 60 * 60 * 1000;
+
+/**
  * Sessione di allenamento in corso: un solo allenamento alla volta.
  *
  * Viene salvato l'ISTANTE DI AVVIO, non i secondi trascorsi: il tempo si
@@ -55,19 +64,28 @@ export class WorkoutSessionStateService {
         // continuano a funzionare.
         if (generation !== this.mutationCount) return;
         const saved = state.activeWorkoutSession ?? null;
+        // Una sessione dimenticata sull'account non va ripresa: va chiusa, cosi'
+        // sparisce anche dagli altri dispositivi invece di rimbalzare fra loro.
+        if (saved && this.isStale(saved)) { this.clear(); return; }
         if (!this.sameSession(saved, this.activeSession())) {
           this.activeSession.set(saved);
           this.writeCache(saved);
           this.refresh();
         }
-      });
+      }).catch(e => console.error('Lettura dello stato utente fallita:', e));
     });
 
     // Il tick puo' essere rimasto fermo per minuti mentre l'app era in
     // background: appena torna visibile ricalcoliamo subito, senza aspettare
     // il prossimo tick.
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') this.syncElapsed();
+      if (document.visibilityState !== 'visible') return;
+      const session = this.activeSession();
+      // Rientro dopo ore (telefono in tasca, app in background): se nel
+      // frattempo la sessione e' scaduta si butta, invece di mostrare un
+      // cronometro che continua a correre da ieri.
+      if (session && this.isStale(session)) { this.clear(); return; }
+      this.syncElapsed();
     });
   }
 
@@ -81,18 +99,36 @@ export class WorkoutSessionStateService {
     return this.activeSession()?.dayId === dayId;
   }
 
+  /**
+   * Come isActiveForDay, ma verifica anche che il giorno sia ancora QUELLO su
+   * cui la sessione e' partita. Gli id sono posizionali: se il coach riordina i
+   * giorni del protocollo, day1 puo' diventare un altro allenamento e la
+   * sessione "trasloca" senza che nessuno se ne accorga. Le sessioni avviate
+   * prima di questo controllo non hanno l'etichetta e restano valide.
+   */
+  matchesDay(dayId: string, dayLabel: string): boolean {
+    const session = this.activeSession();
+    if (!session || session.dayId !== dayId) return false;
+    return !session.dayLabel || session.dayLabel === dayLabel;
+  }
+
+  /** true se la sessione e' stata avviata cosi' tanto tempo fa da essere, di fatto, dimenticata. */
+  private isStale(session: ActiveWorkoutSession): boolean {
+    return Date.now() - new Date(session.startedAt).getTime() > STALE_AFTER_MS;
+  }
+
   isPaused(): boolean {
     return !!this.activeSession()?.pausedAt;
   }
 
-  start(dayId: string): void {
+  start(dayId: string, dayLabel = ''): void {
     this.mutationCount++;
     const session: ActiveWorkoutSession = {
-      dayId, startedAt: new Date().toISOString(), pausedAt: null, pausedMs: 0
+      dayId, dayLabel, startedAt: new Date().toISOString(), pausedAt: null, pausedMs: 0
     };
     this.activeSession.set(session);
     this.writeCache(session);
-    this.appState.patchField(APP_STATE_FIELD, session);
+    this.appState.patchField(APP_STATE_FIELD, session).catch(() => { /* gia' segnalato da AppStateService */ });
     this.refresh();
   }
 
@@ -116,7 +152,7 @@ export class WorkoutSessionStateService {
       : { ...session, pausedAt: new Date(now).toISOString() };
     this.activeSession.set(next);
     this.writeCache(next);
-    this.appState.patchField(APP_STATE_FIELD, next);
+    this.appState.patchField(APP_STATE_FIELD, next).catch(() => { /* gia' segnalato da AppStateService */ });
     this.refresh();
   }
 
@@ -144,7 +180,7 @@ export class WorkoutSessionStateService {
     this.mutationCount++;
     this.activeSession.set(null);
     localStorage.removeItem(SESSION_CACHE_KEY);
-    this.appState.deleteFieldPath(APP_STATE_FIELD);
+    this.appState.deleteFieldPath(APP_STATE_FIELD).catch(() => { /* gia' segnalato da AppStateService */ });
     this.refresh();
   }
 
@@ -179,8 +215,13 @@ export class WorkoutSessionStateService {
     try {
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed.dayId === 'string' && typeof parsed.startedAt === 'string') {
+        if (Date.now() - new Date(parsed.startedAt).getTime() > STALE_AFTER_MS) {
+          localStorage.removeItem(SESSION_CACHE_KEY);
+          return null;
+        }
         return {
           dayId: parsed.dayId,
+          dayLabel: typeof parsed.dayLabel === 'string' ? parsed.dayLabel : undefined,
           startedAt: parsed.startedAt,
           // Campi aggiunti dopo: una sessione salvata prima non li ha e vale
           // come sessione mai messa in pausa.
@@ -204,6 +245,7 @@ export class WorkoutSessionStateService {
   private sameSession(a: ActiveWorkoutSession | null, b: ActiveWorkoutSession | null): boolean {
     if (a === null || b === null) return a === b;
     return a.dayId === b.dayId
+      && (a.dayLabel ?? '') === (b.dayLabel ?? '')
       && a.startedAt === b.startedAt
       && (a.pausedAt ?? null) === (b.pausedAt ?? null)
       && (a.pausedMs ?? 0) === (b.pausedMs ?? 0);

@@ -2,7 +2,7 @@
 
 <div *ngIf="!loading && errorMsg" class="history-empty">
   {{ errorMsg }}<br>
-  <button class="savebtn" style="margin-top:12px" (click)="load()">Riprova</button>
+  <button class="savebtn mt-3" (click)="load()">Riprova</button>
 </div>
 
 <div *ngIf="!loading && !errorMsg && !entry" class="history-empty">Misurazione non trovata.</div>
@@ -26,7 +26,7 @@
           </span>
         </span>
       </div>
-      <button class="savebtn" style="margin-top:12px" (click)="editCategory('peso')">Modifica peso</button>
+      <button class="savebtn mt-3" (click)="editCategory('peso')">Modifica peso</button>
     </div>
   </ng-container>
 
@@ -43,7 +43,7 @@
           </span>
         </span>
       </div>
-      <button class="savebtn" style="margin-top:12px" (click)="editCategory('pliche')">Modifica pliche</button>
+      <button class="savebtn mt-3" (click)="editCategory('pliche')">Modifica pliche</button>
     </div>
   </ng-container>
 
@@ -60,7 +60,7 @@
           </span>
         </span>
       </div>
-      <button class="savebtn" style="margin-top:12px" (click)="editCategory('centimetri')">Modifica centimetri</button>
+      <button class="savebtn mt-3" (click)="editCategory('centimetri')">Modifica centimetri</button>
     </div>
   </ng-container>
 

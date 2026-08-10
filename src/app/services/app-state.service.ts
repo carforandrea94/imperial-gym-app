@@ -4,6 +4,7 @@ import { FirebaseService } from '../core/services/firebase.service';
 import { AuthService } from '../core/services/auth.service';
 import { ZoneFixService } from '../core/utils/zone.util';
 import { sanitizeForFirestore } from '../core/utils/sanitize.util';
+import { ToastService } from './toast.service';
 
 export interface WorkoutDraftRow {
   reps: string;
@@ -13,6 +14,10 @@ export interface WorkoutDraftRow {
 
 export interface ActiveWorkoutSession {
   dayId: string;
+  /** Etichetta del giorno all'avvio. Gli id sono posizionali (day0, day1...):
+   *  se il coach riordina o sostituisce i giorni, lo stesso id punta a un altro
+   *  allenamento. Confrontare l'etichetta e' cio' che smaschera il cambio. */
+  dayLabel?: string;
   /** Istante di avvio in ISO. Il tempo trascorso si ricalcola da qui, mai accumulato. */
   startedAt: string;
   /** Istante in cui e' stata messa in pausa (ISO), assente se il cronometro corre. */
@@ -36,6 +41,9 @@ export interface AppState {
   activeWorkoutSession: ActiveWorkoutSession | null;
 }
 
+/** Finestra di silenzio fra due segnalazioni di scrittura fallita. */
+const WRITE_ERROR_QUIET_MS = 5000;
+
 function emptyState(): AppState {
   return { workoutDrafts: {}, restOverrides: {}, measureDraft: null, shoppingChecked: {}, shoppingCustomItems: [], workoutViewMode: 'list', dietViewMode: 'list', mealsCompletion: null, themeMode: null, activeWorkoutSession: null };
 }
@@ -51,7 +59,32 @@ function emptyState(): AppState {
 export class AppStateService {
   private cache: AppState | null = null;
 
-  constructor(private fb: FirebaseService, private auth: AuthService, private zoneFix: ZoneFixService) {}
+  /** Ultima segnalazione di scrittura fallita: evita una raffica di toast
+   *  identici quando la rete cade e falliscono dieci scritture di fila. */
+  private lastWriteErrorAt = 0;
+
+  constructor(
+    private fb: FirebaseService,
+    private auth: AuthService,
+    private zoneFix: ZoneFixService,
+    private toast: ToastService
+  ) {}
+
+  /**
+   * Le scritture di stato sono quasi tutte "fire and forget": nessuno aspetta
+   * la Promise, quindi un errore sparirebbe in silenzio e l'utente crederebbe
+   * salvato quello che non lo e'. Qui viene segnalato una volta sola, e poi
+   * rilanciato per chi invece la Promise la sta aspettando davvero.
+   */
+  private reportWriteFailure(what: string, error: unknown): never {
+    console.error(`Scrittura fallita (${what}):`, error);
+    const now = Date.now();
+    if (now - this.lastWriteErrorAt > WRITE_ERROR_QUIET_MS) {
+      this.lastWriteErrorAt = now;
+      this.toast.error('Modifica non salvata. Controlla la connessione.');
+    }
+    throw error;
+  }
 
   private ref() {
     const uid = this.auth.currentUser()!.uid;
@@ -83,9 +116,11 @@ export class AppStateService {
   patch(partial: Partial<AppState>): Promise<void> {
     const clean = sanitizeForFirestore(partial);
     return this.zoneFix.run((async () => {
-      await this.ensureDoc();
-      await updateDoc(this.ref(), clean as any);
-      this.cache = { ...(this.cache ?? emptyState()), ...clean };
+      try {
+        await this.ensureDoc();
+        await updateDoc(this.ref(), clean as any);
+        this.cache = { ...(this.cache ?? emptyState()), ...clean };
+      } catch (e) { this.reportWriteFailure('patch', e); }
     })());
   }
 
@@ -93,18 +128,22 @@ export class AppStateService {
   patchField(path: string, value: unknown): Promise<void> {
     const cleanValue = sanitizeForFirestore(value);
     return this.zoneFix.run((async () => {
-      await this.ensureDoc();
-      await updateDoc(this.ref(), { [path]: cleanValue } as any);
-      this.invalidateCache();
+      try {
+        await this.ensureDoc();
+        await updateDoc(this.ref(), { [path]: cleanValue } as any);
+        this.invalidateCache();
+      } catch (e) { this.reportWriteFailure(path, e); }
     })());
   }
 
   /** Rimuove un campo annidato tramite dot-notation. */
   deleteFieldPath(path: string): Promise<void> {
     return this.zoneFix.run((async () => {
-      await this.ensureDoc();
-      await updateDoc(this.ref(), { [path]: deleteField() } as any);
-      this.invalidateCache();
+      try {
+        await this.ensureDoc();
+        await updateDoc(this.ref(), { [path]: deleteField() } as any);
+        this.invalidateCache();
+      } catch (e) { this.reportWriteFailure(`${path} (rimozione)`, e); }
     })());
   }
 

@@ -3,7 +3,7 @@
 <ng-container *ngIf="!loading && protocol">
 
   <ng-container *ngIf="!editingExercise && !editingMeal">
-    <div class="authfield" style="margin-bottom:14px">
+    <div class="authfield mb-4">
       <label>Nome protocollo</label>
       <div class="measure-input-wrap">
         <input type="text" [(ngModel)]="protocol.name" placeholder="Es. Protocollo Settembre" />
@@ -21,8 +21,8 @@
   <ng-container *ngIf="tab === 'scheda' && !editingExercise">
 
     <p class="sectiontitle">Programma</p>
-    <div class="infocard" style="margin-bottom:14px">
-      <div class="authfield" style="margin-bottom:0">
+    <div class="infocard mb-4">
+      <div class="authfield mb-0">
         <label>Data inizio programma</label>
         <div class="measure-input-wrap">
           <input type="date" [(ngModel)]="protocol.workout.programStart" />
@@ -45,13 +45,13 @@
         </div>
       </div>
 
-      <p class="sectiontitle" style="margin-top:16px">Esercizi</p>
+      <p class="sectiontitle mt-4">Esercizi</p>
 
-      <div *ngIf="day.ex.length === 0" class="history-empty" style="margin-bottom:10px">
+      <div *ngIf="day.ex.length === 0" class="history-empty mb-3">
         Nessun esercizio ancora.
       </div>
 
-      <div class="grouplist" *ngIf="day.ex.length > 0" style="margin-bottom:10px">
+      <div class="grouplist mb-3" *ngIf="day.ex.length > 0">
         <div class="daycard press-fx protocol-row" *ngFor="let ex of day.ex" (click)="editExercise(day, ex)">
           <div class="info">
             <div class="lbl">{{ ex.name || 'Esercizio senza nome' }}</div>
@@ -63,8 +63,8 @@
         </div>
       </div>
 
-      <button class="confirmbtn cancel" style="width:100%" (click)="addExercise(day)">+ Aggiungi esercizio</button>
-      <button class="savebtn" style="margin-top:14px;background:linear-gradient(90deg,#7A1414,#C8102E)" (click)="removeDay(di)">Rimuovi giorno</button>
+      <button class="confirmbtn cancel w-full" (click)="addExercise(day)">+ Aggiungi esercizio</button>
+      <button class="savebtn delete-session-btn mt-4" (click)="removeDay(di)">Rimuovi giorno</button>
     </div>
 
     <div class="savebar">
@@ -74,7 +74,7 @@
 
   <!-- ===================== EDITOR ESERCIZIO ===================== -->
   <ng-container *ngIf="tab === 'scheda' && editingExercise as ee">
-    <button class="confirmbtn cancel" style="margin-bottom:14px" (click)="cancelExercise()">← Annulla</button>
+    <button class="confirmbtn cancel mb-4" (click)="cancelExercise()">← Annulla</button>
 
     <div class="authfield">
       <label>Nome esercizio</label>
@@ -128,7 +128,7 @@
 
     <ng-container *ngIf="ee.ex.scheme === 'wave'">
       <p class="sectiontitle">Progressione settimanale di questo esercizio</p>
-      <div class="infocard" style="margin-bottom:14px">
+      <div class="infocard mb-4">
         <div class="weekplan-row" *ngFor="let wp of ee.ex.weekPlan; let i = index">
           <span class="weekplan-num">S{{ i + 1 }}</span>
           <div class="measure-input-wrap weekplan-input">
@@ -141,7 +141,7 @@
           </div>
           <button class="delete-btn" (click)="removeExWeek(ee.ex, i)" title="Rimuovi settimana">✕</button>
         </div>
-        <button class="confirmbtn cancel" style="margin-top:8px;width:100%" (click)="addExWeek(ee.ex)">+ Aggiungi settimana</button>
+        <button class="confirmbtn cancel mt-2 w-full" (click)="addExWeek(ee.ex)">+ Aggiungi settimana</button>
       </div>
     </ng-container>
 
@@ -163,7 +163,7 @@
 
     <!-- Lista piani -->
     <ng-container *ngIf="!editingPlan">
-      <p class="sectiontitle" style="margin-top:0">Piani alimentari</p>
+      <p class="sectiontitle mt-0">Piani alimentari</p>
 
       <div *ngIf="protocol.diet.length === 0" class="history-empty">
         Nessun piano ancora.<br>Aggiungine uno (es. "Giorno ON", "Giorno OFF", "Rifeed"...).
@@ -193,16 +193,16 @@
 
     <!-- Editor del piano selezionato -->
     <ng-container *ngIf="editingPlan && !editingMeal">
-      <button class="confirmbtn cancel" style="margin-bottom:14px" (click)="closePlan()">← Torna ai piani</button>
+      <button class="confirmbtn cancel mb-4" (click)="closePlan()">← Torna ai piani</button>
 
-      <div class="authfield" style="margin-bottom:16px">
+      <div class="authfield mb-4">
         <label>Nome del piano</label>
         <div class="measure-input-wrap">
           <input type="text" [(ngModel)]="editingPlan.name" placeholder='Es. "Giorno ON"' />
         </div>
       </div>
 
-      <p class="sectiontitle" style="margin-top:0">Pasti</p>
+      <p class="sectiontitle mt-0">Pasti</p>
 
       <div *ngIf="editingPlan.meals.length === 0" class="history-empty">
         Nessun pasto ancora.
@@ -218,7 +218,7 @@
           </button>
         </div>
 
-        <span class="meal-preview-catlabel" *ngIf="meal.combinations.length > 1" style="display:block;margin-bottom:6px">Combinazioni</span>
+        <span class="meal-preview-catlabel mb-2" *ngIf="meal.combinations.length > 1" style="display:block">Combinazioni</span>
         <div class="variant-tabs" *ngIf="meal.combinations.length > 1" (click)="$event.stopPropagation()">
           <button *ngFor="let combo of meal.combinations"
             [class.active]="getActiveCombo(meal).id === combo.id"
@@ -293,16 +293,16 @@
 
     <!-- Editor del pasto selezionato -->
     <ng-container *ngIf="editingPlan && editingMeal as em">
-      <button class="confirmbtn cancel" style="margin-bottom:14px" (click)="closeMeal()">← Torna ai pasti</button>
+      <button class="confirmbtn cancel mb-4" (click)="closeMeal()">← Torna ai pasti</button>
 
-      <div class="authfield" style="margin-bottom:16px">
+      <div class="authfield mb-4">
         <label>Nome pasto</label>
         <div class="measure-input-wrap">
           <input type="text" [(ngModel)]="em.name" placeholder="Es. Colazione" />
         </div>
       </div>
 
-      <p class="sectiontitle" style="margin-top:0">Combinazioni</p>
+      <p class="sectiontitle mt-0">Combinazioni</p>
       <div class="variant-tabs">
         <button *ngFor="let combo of em.combinations"
           [class.active]="getActiveCombo(em).id === combo.id"
@@ -319,13 +319,13 @@
             <input type="text" [ngModel]="getActiveCombo(em).label" (ngModelChange)="getActiveCombo(em).label = $event" placeholder="Es. Alternativa 1" style="flex:1" />
           </div>
         </div>
-        <button class="confirmbtn cancel" style="width:100%;margin-bottom:16px" (click)="removeCombination(em, getActiveCombo(em), $event)">
+        <button class="confirmbtn cancel w-full mb-4" (click)="removeCombination(em, getActiveCombo(em), $event)">
           Rimuovi questa combinazione
         </button>
       </ng-container>
 
       <ng-container *ngFor="let cat of foodCategories">
-        <p class="sectiontitle" style="margin-top:16px">{{ foodCategoryLabels[cat] }}</p>
+        <p class="sectiontitle mt-4">{{ foodCategoryLabels[cat] }}</p>
         <div class="infocard">
           <div class="builder-item" *ngIf="getActiveCombo(em)[cat] as item; else noComboItem">
             <div class="measure-input-wrap">
@@ -338,14 +338,14 @@
           </div>
 
           <ng-container *ngIf="getActiveCombo(em)[cat] as item2">
-            <div class="altwrap-header" (click)="toggleItemAltExpanded(getActiveCombo(em), cat)" style="margin-top:10px">
+            <div class="altwrap-header mt-3" (click)="toggleItemAltExpanded(getActiveCombo(em), cat)">
               <span>Alternative per questo alimento ({{ itemAlt(item2).length }})</span>
               <span class="chevron">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
               </span>
             </div>
             <ng-container *ngIf="isItemAltExpanded(getActiveCombo(em), cat)">
-              <div class="builder-item" *ngFor="let a of itemAlt(item2)" style="margin-top:8px">
+              <div class="builder-item mt-2" *ngFor="let a of itemAlt(item2)">
                 <div class="measure-input-wrap">
                   <input type="text" [(ngModel)]="a.name" placeholder="Alimento alternativo" />
                 </div>
@@ -354,7 +354,7 @@
                 </div>
                 <button class="delete-btn" (click)="removeItemAltEntry(item2, a)">✕</button>
               </div>
-              <button class="confirmbtn cancel" style="width:100%;margin-top:8px" (click)="addItemAltEntry(item2)">+ Alternativa</button>
+              <button class="confirmbtn cancel w-full mt-2" (click)="addItemAltEntry(item2)">+ Alternativa</button>
             </ng-container>
           </ng-container>
 
@@ -371,10 +371,10 @@
         </div>
       </ng-container>
 
-      <p class="sectiontitle" style="margin-top:24px">Alternative</p>
-      <p class="bacheca-text" style="margin-bottom:12px">Alimenti sostitutivi validi per tutto il pasto, a prescindere dalla combinazione scelta.</p>
+      <p class="sectiontitle mt-5">Alternative</p>
+      <p class="bacheca-text mb-3">Alimenti sostitutivi validi per tutto il pasto, a prescindere dalla combinazione scelta.</p>
 
-      <div class="infocard" style="margin-bottom:10px">
+      <div class="infocard mb-3">
         <div class="altwrap-header" (click)="toggleAltExpanded(em)" style="padding:0 0 8px">
           <span>Alternative ({{ totalAlternatives(em) }})</span>
           <span class="chevron">
@@ -393,13 +393,13 @@
               </div>
               <button class="delete-btn" (click)="removeAltItem(em, cat, item)">✕</button>
             </div>
-            <button class="confirmbtn cancel" style="width:100%;margin-top:6px" (click)="addAltItem(em, cat)">+ Aggiungi {{ foodCategoryLabels[cat].toLowerCase() }}</button>
+            <button class="confirmbtn cancel w-full mt-2" (click)="addAltItem(em, cat)">+ Aggiungi {{ foodCategoryLabels[cat].toLowerCase() }}</button>
           </ng-container>
         </ng-container>
       </div>
 
-      <p class="sectiontitle" style="margin-top:24px">Integrazione</p>
-      <div class="infocard" style="margin-bottom:10px">
+      <p class="sectiontitle mt-5">Integrazione</p>
+      <div class="infocard mb-3">
         <div class="builder-item" *ngFor="let s of em.supplements ?? []">
           <div class="measure-input-wrap">
             <input type="text" [(ngModel)]="s.name" placeholder="Nome (es. Creatina)" />
@@ -409,7 +409,7 @@
           </div>
           <button class="delete-btn" (click)="removeSupplement(em, s)">✕</button>
         </div>
-        <button class="confirmbtn cancel" style="width:100%;margin-top:6px" (click)="addSupplement(em)">+ Aggiungi integratore</button>
+        <button class="confirmbtn cancel w-full mt-2" (click)="addSupplement(em)">+ Aggiungi integratore</button>
       </div>
 
       <div class="savebar builder-savebar">

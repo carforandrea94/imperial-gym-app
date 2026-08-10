@@ -28,7 +28,7 @@ export class ThemeService {
           this.mode.set(state.themeMode);
           localStorage.setItem(THEME_CACHE_KEY, state.themeMode);
         }
-      });
+      }).catch(e => console.error('Lettura dello stato utente fallita:', e));
     });
   }
 
@@ -47,6 +47,6 @@ export class ThemeService {
   setMode(mode: ThemeMode): void {
     this.mode.set(mode);
     localStorage.setItem(THEME_CACHE_KEY, mode);
-    this.appState.patchField('themeMode', mode);
+    this.appState.patchField('themeMode', mode).catch(() => { /* gia' segnalato da AppStateService */ });
   }
 }

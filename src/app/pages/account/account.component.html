@@ -1,4 +1,4 @@
-<p class="sectiontitle" style="margin-top:0">Il tuo profilo</p>
+<p class="sectiontitle mt-0">Il tuo profilo</p>
 
 <div class="infocard account-header">
   <div class="badge account-avatar">{{ initial }}</div>
@@ -21,7 +21,7 @@
   </div>
 </div>
 
-<div class="infocard" *ngIf="showIosNotificationHint" style="margin-bottom:12px">
+<div class="infocard mb-3" *ngIf="showIosNotificationHint">
   <p class="bacheca-text">
     📲 Su iPhone le notifiche (es. fine recupero) funzionano solo se l'app è installata sulla schermata Home:
     da Safari tocca <b>Condividi</b> e poi <b>Aggiungi a Home</b>.
@@ -42,7 +42,7 @@
 <ng-container *ngIf="auth.isCoach">
   <p class="sectiontitle">Il tuo codice</p>
   <div class="infocard mycode-card">
-    <p class="bacheca-text" style="margin-bottom:12px">
+    <p class="bacheca-text mb-3">
       Comunica questo codice ai tuoi clienti: lo useranno in fase di registrazione per accoppiarsi a te.
     </p>
     <div class="mycode-row">
@@ -55,5 +55,5 @@
 </ng-container>
 
 <div class="savebar">
-  <button class="confirmbtn cancel" style="width:100%" (click)="logout()">Esci</button>
+  <button class="confirmbtn cancel w-full" (click)="logout()">Esci</button>
 </div>
