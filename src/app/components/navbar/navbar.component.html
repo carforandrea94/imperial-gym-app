@@ -11,7 +11,7 @@
 
     <div class="navactions" [class.hide]="!showHistory && !showInfo && !showAnalytics && !showShoppingList && !showViewToggle && !showSettings && !showSaveEdit && !showProtocolSave && !showSaveMeasure">
       <div class="viewtoggle" *ngIf="showViewToggle">
-        <button class="viewtogglebtn" [class.active]="viewMode === 'list'" (click)="viewModeChange.emit('list')" aria-label="Vista elenco" title="Elenco">
+        <button class="viewtogglebtn tap44 tap44-v" [class.active]="viewMode === 'list'" (click)="viewModeChange.emit('list')" aria-label="Vista elenco" title="Elenco">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="8" y1="6" x2="21" y2="6"/>
             <line x1="8" y1="12" x2="21" y2="12"/>
@@ -21,7 +21,7 @@
             <line x1="3" y1="18" x2="3.01" y2="18"/>
           </svg>
         </button>
-        <button class="viewtogglebtn" [class.active]="viewMode === 'slider'" (click)="viewModeChange.emit('slider')" aria-label="Vista slider" title="Slider">
+        <button class="viewtogglebtn tap44 tap44-v" [class.active]="viewMode === 'slider'" (click)="viewModeChange.emit('slider')" aria-label="Vista slider" title="Slider">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="2" y="4" width="14" height="16" rx="2"/>
             <path d="M19 8v8"/>

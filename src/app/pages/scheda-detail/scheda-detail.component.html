@@ -78,7 +78,7 @@
   </span>
 
   <!-- Avvia / metti in pausa / riprendi: un solo tasto, l'icona dice cosa fara'. -->
-  <button class="session-bar-btn" [disabled]="hasOtherSession"
+  <button class="session-bar-btn tap44 tap44-v" [disabled]="hasOtherSession"
     (click)="onPlayPause()" [attr.aria-label]="playPauseLabel">
     <svg *ngIf="!isSessionRunning" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d="M8 5.5v13l11-6.5z"/>
@@ -88,7 +88,7 @@
     </svg>
   </button>
 
-  <button class="session-bar-btn ghost"
+  <button class="session-bar-btn ghost tap44 tap44-v"
     [class.saved]="state.saveStatus() === 'saved'"
     [class.err]="state.saveStatus() === 'err'"
     [disabled]="!canSaveSession"
@@ -98,7 +98,7 @@
     </svg>
   </button>
 
-  <button class="session-bar-btn ghost danger" [disabled]="!canCancelSession"
+  <button class="session-bar-btn ghost danger tap44 tap44-v" [disabled]="!canCancelSession"
     (click)="cancelSession()" aria-label="Annulla la sessione senza salvarla">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true">
       <path d="M6 6l12 12M18 6L6 18"/>
