@@ -423,7 +423,7 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .history-date{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--label);font-weight:600;margin-bottom:6px;}
 .history-ex{font-size:12.5px;color:var(--label-2);line-height:1.5;}
 .history-ex b{color:var(--label);font-weight:600;}
-.ro-value{width:100%;text-align:center;padding:8px 6px;font-size:13px;font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--label-2);background:var(--surface-raise);border:1px solid var(--content-glass-border);border-radius:9px;}
+.ro-value{width:100%;text-align:center;padding:8px 6px;font-size:13px;font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--label-2);background:var(--surface-press);border:1px solid var(--content-glass-border);border-radius:9px;}
 .ex.readonly .ex-chip,.ex.readonly .ex-meta{display:none;}
 
 /* ===== Card sessione di allenamento (avvio / chiusura) =====
