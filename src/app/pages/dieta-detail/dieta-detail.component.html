@@ -55,7 +55,7 @@
 
   <!-- Alternative per macro, un unico accordion -->
   <ng-container *ngIf="totalAlternatives(vm) > 0">
-    <div class="altwrap-header" (click)="toggleMacroAltExpanded(vm)" style="margin-top:14px">
+    <div class="altwrap-header mt-4" (click)="toggleMacroAltExpanded(vm)">
       <span>Alternative ({{ totalAlternatives(vm) }})</span>
       <span class="chevron">
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
@@ -64,7 +64,7 @@
     <div class="altlist" *ngIf="isMacroAltExpanded(vm)">
       <ng-container *ngFor="let cat of foodCategories">
         <ng-container *ngIf="macroAlternatives(vm, cat).length > 0">
-          <p class="fooditem-category" style="margin-top:10px" [class.fat]="cat === 'fat'" [class.carb]="cat === 'carb'" [class.protein]="cat === 'protein'">{{ foodCategoryLabels[cat] }}</p>
+          <p class="fooditem-category mt-3" [class.fat]="cat === 'fat'" [class.carb]="cat === 'carb'" [class.protein]="cat === 'protein'">{{ foodCategoryLabels[cat] }}</p>
           <div class="row" *ngFor="let alt of macroAlternatives(vm, cat)">
             <span>{{ alt.name }}</span>
             <span>{{ alt.qty }}</span>

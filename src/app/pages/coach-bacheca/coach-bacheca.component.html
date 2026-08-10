@@ -2,7 +2,7 @@
 <div class="infocard">
   <textarea class="bacheca-textarea" rows="3" [(ngModel)]="newText"
     placeholder="Scrivi un avviso per i tuoi clienti…"></textarea>
-  <button class="savebtn" style="margin-top:10px" [disabled]="posting || !newText.trim()" (click)="post()">
+  <button class="savebtn mt-3" [disabled]="posting || !newText.trim()" (click)="post()">
     {{ posting ? 'Pubblicazione…' : 'Pubblica avviso' }}
   </button>
 </div>
@@ -13,7 +13,7 @@
 
 <div *ngIf="!loading && errorMsg" class="history-empty">
   {{ errorMsg }}
-  <div style="margin-top:12px">
+  <div class="mt-3">
     <button class="confirmbtn cancel" (click)="load()">Riprova</button>
   </div>
 </div>
