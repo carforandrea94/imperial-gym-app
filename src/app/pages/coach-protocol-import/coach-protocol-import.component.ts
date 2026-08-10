@@ -50,7 +50,7 @@ const STEP_TIMEOUT_MS = 25000;
     }
     .pdf-progress-fill {
       height: 100%; border-radius: 999px;
-      background: linear-gradient(90deg, var(--state-success-deep), var(--imp-red));
+      background: linear-gradient(90deg, var(--state-success-deep), var(--brand));
       transition: width .35s var(--spring-soft, ease);
     }
     .pdf-progress-pct {

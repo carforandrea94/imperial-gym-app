@@ -10,31 +10,25 @@
   --label-2:rgba(255,255,255,0.92);
   --label-3:rgba(255,255,255,0.80);
   /* ===== Imperial Gym — palette blu/verde ===== */
-  --imp-red:#A4C2F6;                     /* blu — accento primario */
-  --imp-red-dim:rgba(164,194,246,0.16);
-  --imp-amber:#80D09A;                   /* verde — accento secondario */
-  --imp-amber-dim:rgba(128,208,154,0.18);
+  --brand:#A4C2F6;                     /* blu — accento primario */
+  --brand-dim:rgba(164,194,246,0.16);
+  --brand-2:#80D09A;                   /* verde — accento secondario */
   --macro-carb:#E8C468;                  /* ambra — etichetta "Carboidrati" */
   --macro-protein:#E8918A;               /* corallo — etichetta "Proteine" */
   --sys-cyan:#64D2FF;
-  --sys-cyan-dim:rgba(100,210,255,0.18);
   --restwave-off:rgba(255,255,255,0.16); /* tacchetta gia' consumata nel timer di recupero */
-  --sys-red:var(--state-danger);
-  --accent: var(--imp-red);
-  --accent-dim: var(--imp-red-dim);
-  --on: var(--imp-red);
-  --on-dim: var(--imp-red-dim);
-  --state-success: var(--imp-red);
+  --accent: var(--brand);
+  --accent-dim: var(--brand-dim);
+  /* Non esiste un verde nella palette: la conferma parla con l'accento.
+     Resta un token a se' perche' il significato e' diverso da --accent, non il colore. */
+  --state-success: var(--brand);
   --state-success-rgb: 164,194,246;
   --state-success-deep: #5A6A87;
-  --state-success-deep-rgb: 90,106,135;
   --state-danger: #5C2B39;
   --state-danger-rgb: 92,43,57;
-  --state-danger-deep: #33181F;
   --state-danger-deep-rgb: 51,24,31;
   --state-danger-text: #C4657F;  /* tinta chiara del vino scuro: 4,87:1 su card scura, il precedente #A64D67 bastava solo per le icone */
   --glass-bg: rgba(20,24,32,0.30);
-  --glass-border: rgba(255,255,255,0.10);
   --content-glass-bg: rgba(22,26,34,0.46);
   --content-glass-border: rgba(255,255,255,0.12);
   /* Superfici sopraelevate: nel tema scuro si ottengono aggiungendo luce, nel
@@ -63,26 +57,21 @@
   --label:#14171C;
   --label-2:rgba(20,23,28,0.72);
   --label-3:rgba(20,23,28,0.62);   /* 5,04:1 su card bianca: sotto 0,58 il testo piccolo non arriva a 4,5:1 */
-  --imp-red:#3E63E0;
-  --imp-red-dim:rgba(62,99,224,0.12);
-  --imp-amber:#2E9A5C;
-  --imp-amber-dim:rgba(46,154,92,0.14);
+  --brand:#3E63E0;
+  --brand-dim:rgba(62,99,224,0.12);
+  --brand-2:#2E9A5C;
   --macro-carb:#B8862A;
   --macro-protein:#C85C52;
   --sys-cyan:#0B6E97;              /* 5,69:1 su bianco: il precedente #0A8FC4 si fermava a 3,66:1 */
-  --sys-cyan-dim:rgba(11,110,151,0.14);
   --restwave-off:rgba(20,23,28,0.16);
   --accent-contrast:#FFFFFF;
   --state-success-rgb: 62,99,224;
   --state-success-deep: #9FB0D9;
-  --state-success-deep-rgb: 159,176,217;
   --state-danger: #A32E3E;
   --state-danger-rgb: 163,46,62;
-  --state-danger-deep: #6E1F29;
   --state-danger-deep-rgb: 110,31,41;
   --state-danger-text: #A32E3E;
   --glass-bg: rgba(255,255,255,0.55);
-  --glass-border: rgba(20,23,28,0.12);
   --content-glass-bg: #FFFFFF;
   --content-glass-border: rgba(20,23,28,0.10);
   --surface-raise: rgba(20,23,28,0.045);
@@ -372,7 +361,7 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .shop-addrow{display:flex;gap:8px;margin-bottom:16px;}
 .shop-addrow input{flex:1;padding:12px 14px;border-radius:14px;border:1px solid var(--content-glass-border);background:var(--content-glass-bg);color:var(--label);font-family:'Inter',sans-serif;font-size:14px;}
 .shop-addrow input::placeholder{color:var(--label-3);}
-.shop-addbtn{width:46px;height:46px;border-radius:14px;border:1px solid rgba(255,255,255,.14);background:var(--imp-red);color:var(--accent-contrast);font-size:20px;font-weight:700;cursor:pointer;flex-shrink:0;}
+.shop-addbtn{width:46px;height:46px;border-radius:14px;border:1px solid rgba(255,255,255,.14);background:var(--brand);color:var(--accent-contrast);font-size:20px;font-weight:700;cursor:pointer;flex-shrink:0;}
 .shop-addbtn:active{filter:brightness(0.92);}
 
 .diet-card.disabled{opacity:.5;cursor:default;}
@@ -423,7 +412,7 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .savebar.dual{display:flex;gap:10px;}
 .savebar.dual .savebtn{width:auto;flex:1;}
 .savebtn.cancel{background:var(--content-glass-bg);color:var(--label);box-shadow:none;border-color:var(--content-glass-border);}
-.savebtn.cancel-accent{background:var(--imp-red-dim);color:var(--imp-red);border-color:var(--imp-red);box-shadow:none;}
+.savebtn.cancel-accent{background:var(--brand-dim);color:var(--brand);border-color:var(--brand);box-shadow:none;}
 .savebtn{width:100%;padding:16px;min-height:52px;border-radius:20px;border:1px solid rgba(255,255,255,.14);font-family:'Inter',sans-serif;font-weight:700;letter-spacing:-.005em;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 8px 22px rgba(0,0,0,.3);transition:filter .2s ease;}
 .savebtn:active{filter:brightness(0.92);}
 .savebtn:disabled{opacity:.5;cursor:not-allowed;filter:none;}
@@ -487,7 +476,7 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .variant-tabs button.active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
 .fooditem{padding:11px 0;border-bottom:1px solid var(--separator);}
 .fooditem-category{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--label-3);margin:14px 0 4px;}
-.fooditem-category.fat{color:var(--imp-amber);}
+.fooditem-category.fat{color:var(--brand-2);}
 .fooditem-category.carb{color:var(--macro-carb);}
 .fooditem-category.protein{color:var(--macro-protein);}
 .fooditem-category.integration{color:var(--sys-cyan);}
@@ -711,7 +700,7 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 
 /* Pulsante primario "Completa allenamento" — colore pieno, nessuna sfumatura */
 .savebtn {
-  background: var(--imp-red);
+  background: var(--brand);
   color: var(--accent-contrast);
 }
 /* Stati di feedback restano pieni per massima chiarezza */
