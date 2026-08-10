@@ -34,28 +34,28 @@ const STEP_TIMEOUT_MS = 25000;
     .pdf-overlay-card {
       width: min(340px, 86vw);
       padding: 28px 24px;
-      border-radius: 24px;
+      border-radius: var(--r-xl);
       background: var(--content-glass-bg, rgba(20,26,24,0.9));
       border: 1px solid var(--content-glass-border, rgba(255,255,255,.12));
       box-shadow: 0 20px 50px rgba(0,0,0,.45);
       text-align: center;
     }
     .pdf-overlay-stage {
-      font-family: 'Inter', sans-serif; font-weight: 600; font-size: 15px;
+      font-family: 'Inter', sans-serif; font-weight: 600; font-size: var(--text-md);
       color: #fff; margin-bottom: 18px;
     }
     .pdf-progress-track {
-      width: 100%; height: 8px; border-radius: 999px;
+      width: 100%; height: 8px; border-radius: var(--r-pill);
       background: rgba(255,255,255,.12); overflow: hidden;
     }
     .pdf-progress-fill {
-      height: 100%; border-radius: 999px;
+      height: 100%; border-radius: var(--r-pill);
       background: linear-gradient(90deg, var(--state-success-deep), var(--brand));
       transition: width .35s var(--spring-soft, ease);
     }
     .pdf-progress-pct {
       margin-top: 10px; font-family: 'IBM Plex Mono', monospace;
-      font-size: 12.5px; color: var(--label-2, rgba(255,255,255,.6));
+      font-size: var(--text-sm); color: var(--label-2, rgba(255,255,255,.6));
     }
   `]
 })

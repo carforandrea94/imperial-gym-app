@@ -10,7 +10,7 @@
 <ng-container *ngIf="!loading && !errorMsg">
   <p class="sectiontitle">Cliente</p>
   <div class="infocard" style="margin-bottom:16px">
-    <div class="lbl" style="font-size:16px;font-weight:700">{{ client?.displayName }}</div>
+    <div class="lbl" style="font-size:var(--text-lg);font-weight:700">{{ client?.displayName }}</div>
     <div class="meta" style="margin-top:2px">{{ client?.email }}</div>
   </div>
 

@@ -14,7 +14,7 @@
     <p class="sectiontitle">{{ g.label }}</p>
     <div class="grouplist">
       <div class="daycard press-fx" *ngFor="let s of g.entries" (click)="goToDetail(s.key)">
-        <div class="badge" style="font-size:12px">{{ s.session.dayId.replace('day','G') }}</div>
+        <div class="badge" style="font-size:var(--text-xs)">{{ s.session.dayId.replace('day','G') }}</div>
         <div class="info">
           <div class="lbl">{{ s.session.dayLabel }}</div>
           <div class="meta">

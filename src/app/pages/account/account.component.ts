@@ -14,20 +14,20 @@ import { isIosSafariNotStandalone } from '../../core/utils/platform.util';
     :host { display: block; animation: fade .4s var(--spring-soft); }
     .account-header { display: flex; align-items: center; gap: 14px; }
     .account-avatar {
-      width: 56px; height: 56px; border-radius: 16px; flex-shrink: 0;
+      width: 56px; height: 56px; border-radius: var(--r-lg); flex-shrink: 0;
       background: var(--accent-dim); color: var(--accent);
       border: 1px solid rgba(255,255,255,.12);
       box-shadow: inset 0 1px 0 rgba(255,255,255,.25);
       display: flex; align-items: center; justify-content: center;
-      font-family: 'Inter', sans-serif; font-weight: 800; font-size: 22px;
+      font-family: 'Inter', sans-serif; font-weight: 800; font-size: var(--text-2xl);
     }
     .account-header .info { flex: 1; min-width: 0; }
     .account-header .lbl {
-      font-family: 'Inter', sans-serif; font-weight: 700; font-size: 17px;
+      font-family: 'Inter', sans-serif; font-weight: 700; font-size: var(--text-lg);
       letter-spacing: -.005em; line-height: 1.25;
     }
     .account-header .meta {
-      font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+      font-family: 'IBM Plex Mono', monospace; font-size: var(--text-xs);
       color: var(--label-2); margin-top: 3px;
     }
     .account-row {
