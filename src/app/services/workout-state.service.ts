@@ -62,7 +62,7 @@ export class WorkoutStateService {
           this.viewMode.set(state.workoutViewMode);
           localStorage.setItem(VIEW_MODE_CACHE_KEY, state.workoutViewMode);
         }
-      });
+      }).catch(e => console.error('Lettura dello stato utente fallita:', e));
     });
 
     // iOS sospende l'esecuzione JS quando l'app va in background: il
@@ -80,7 +80,7 @@ export class WorkoutStateService {
     if (this.viewMode() === mode) return;
     this.viewMode.set(mode);
     localStorage.setItem(VIEW_MODE_CACHE_KEY, mode);
-    this.appState.patchField('workoutViewMode', mode);
+    this.appState.patchField('workoutViewMode', mode).catch(() => { /* gia' segnalato da AppStateService */ });
   }
 
   /** Ricalcola la settimana corrente in base a un nuovo inizio programma (dal protocollo attivo). */

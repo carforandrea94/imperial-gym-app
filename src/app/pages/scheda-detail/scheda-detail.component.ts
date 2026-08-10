@@ -356,7 +356,7 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private saveDraft(): void {
     const data = this.exercises.map(vm => ({ rows: vm.rows }));
-    this.appState.patchField(`workoutDrafts.${this.day.id}`, data);
+    this.appState.patchField(`workoutDrafts.${this.day.id}`, data).catch(() => { /* gia' segnalato da AppStateService */ });
   }
 
   getDoneCount(vm: ExerciseVM): number {
@@ -423,10 +423,16 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     return m > 0 ? `${m}:${s.toString().padStart(2, '0')}` : `${s}s`;
   }
 
-  /** true se esiste una sessione in corso, ma su un giorno diverso da questo. */
+  /** La sessione in corso appartiene a QUESTO allenamento: stesso id e stessa
+   *  etichetta. Se il protocollo e' cambiato sotto i piedi, l'id da solo
+   *  mentirebbe (vedi matchesDay nel servizio). */
+  get isSessionOnThisDay(): boolean {
+    return this.sessionState.matchesDay(this.day.id, this.day.label);
+  }
+
+  /** true se esiste una sessione in corso che non e' di questo allenamento. */
   get hasOtherSession(): boolean {
-    const s = this.sessionState.activeSession();
-    return !!s && s.dayId !== this.day.id;
+    return !!this.sessionState.activeSession() && !this.isSessionOnThisDay;
   }
 
   /** Indice del giorno su cui e' in corso la sessione, per il link "vai alla sessione".
@@ -434,8 +440,10 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
    *  esiste piu' nel protocollo attuale (protocollo cambiato dopo l'avvio). */
   get otherSessionDayIndex(): number | null {
     const s = this.sessionState.activeSession();
-    if (!s || s.dayId === this.day.id) return null;
-    const idx = this.workoutData.days.findIndex(d => d.id === s.dayId);
+    if (!s || this.isSessionOnThisDay) return null;
+    const idx = this.workoutData.days.findIndex(
+      d => d.id === s.dayId && (!s.dayLabel || d.label === s.dayLabel)
+    );
     return idx >= 0 ? idx : null;
   }
 
@@ -443,8 +451,11 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
    *  A sessione avviata dice quanto manca alla chiusura, altrimenti il tasto
    *  salva resterebbe spento senza spiegare perche'. */
   get sessionBarLabel(): string {
-    if (this.sessionState.isActiveForDay(this.day.id)) {
+    if (this.isSessionOnThisDay) {
       if (this.sessionState.isPaused()) return 'In pausa';
+      // Con un errore di caricamento le serie in memoria non ci sono: dire
+      // "Completo" sarebbe una bugia, e "mancano 0 serie" pure.
+      if (this.errorMsg) return 'In corso';
       const left = this.remainingSets;
       if (left === 0) return 'Completo';
       return left === 1 ? 'Manca 1 serie' : `Mancano ${left} serie`;
@@ -456,11 +467,11 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get isSessionRunning(): boolean {
-    return this.sessionState.isActiveForDay(this.day.id) && !this.sessionState.isPaused();
+    return this.isSessionOnThisDay && !this.sessionState.isPaused();
   }
 
   get playPauseLabel(): string {
-    if (!this.sessionState.isActiveForDay(this.day.id)) return 'Avvia la sessione di allenamento';
+    if (!this.isSessionOnThisDay) return 'Avvia la sessione di allenamento';
     return this.sessionState.isPaused() ? 'Riprendi la sessione' : 'Metti in pausa la sessione';
   }
 
@@ -477,14 +488,17 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.exercises.reduce((tot, vm) => tot + vm.rows.filter(r => !r.done).length, 0);
   }
 
+  /** Con un errore di caricamento gli esercizi in memoria sono vuoti o vecchi:
+   *  salvare scriverebbe nello storico una seduta sbagliata. Annullare invece
+   *  resta possibile, altrimenti la sessione sarebbe in trappola. */
   get canSaveSession(): boolean {
-    return this.sessionState.isActiveForDay(this.day.id) && this.state.saveStatus() !== 'saving';
+    return this.isSessionOnThisDay && !this.errorMsg && this.state.saveStatus() !== 'saving';
   }
 
   /** Annulla vale anche per una sessione orfana (giorno sparito dal protocollo):
    *  senza questa via d'uscita non si potrebbe piu' avviarne nessuna. */
   get canCancelSession(): boolean {
-    return this.sessionState.isActiveForDay(this.day.id)
+    return this.isSessionOnThisDay
       || (this.hasOtherSession && this.otherSessionDayIndex === null);
   }
 
@@ -495,7 +509,7 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       case 'saved': return 'Allenamento salvato';
       case 'err': return 'Errore, riprova a salvare';
     }
-    if (this.sessionState.isActiveForDay(this.day.id) && !this.allSetsDone) {
+    if (this.isSessionOnThisDay && !this.allSetsDone) {
       const left = this.remainingSets;
       return left === 1
         ? 'Termina e salva: manca 1 serie da spuntare, verra\' chiesta conferma'
@@ -506,11 +520,11 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onPlayPause(): void {
     if (!this.sessionState.activeSession()) { this.startSession(); return; }
-    if (this.sessionState.isActiveForDay(this.day.id)) this.sessionState.togglePause();
+    if (this.isSessionOnThisDay) this.sessionState.togglePause();
   }
 
   startSession(): void {
-    this.sessionState.start(this.day.id);
+    this.sessionState.start(this.day.id, this.day.label);
   }
 
   goToOtherSession(): void {
@@ -532,7 +546,7 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   async saveWorkout(): Promise<void> {
     if (this.state.saveStatus() === 'saving') return; // evita doppio invio mentre e' gia' in corso
     // Il salvataggio esiste solo come chiusura di una sessione avviata su questo giorno.
-    if (!this.sessionState.isActiveForDay(this.day.id)) return;
+    if (!this.isSessionOnThisDay) return;
 
     // Chiudere con delle serie non spuntate e' legittimo (un esercizio saltato,
     // un allenamento interrotto), ma quasi sempre e' una dimenticanza: si chiede
@@ -548,7 +562,7 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       if (!ok) return;
       // La conferma e' asincrona: nel frattempo la sessione puo' essere stata
       // annullata o chiusa da un'altra scheda, quindi la guardia va rifatta.
-      if (!this.sessionState.isActiveForDay(this.day.id)) return;
+      if (!this.isSessionOnThisDay) return;
       if (this.state.saveStatus() === 'saving') return;
     }
 

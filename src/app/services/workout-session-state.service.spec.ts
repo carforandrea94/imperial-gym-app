@@ -49,7 +49,7 @@ describe('WorkoutSessionStateService', () => {
 
     service.start('day0');
 
-    const atteso = { dayId: 'day0', startedAt: '2026-07-28T10:00:00.000Z', pausedAt: null, pausedMs: 0 };
+    const atteso = { dayId: 'day0', dayLabel: '', startedAt: '2026-07-28T10:00:00.000Z', pausedAt: null, pausedMs: 0 };
     expect(service.activeSession()).toEqual(atteso);
     expect(JSON.parse(localStorage.getItem(CACHE_KEY)!)).toEqual(atteso);
     expect(calls).toEqual([['activeWorkoutSession', atteso]]);
@@ -174,7 +174,7 @@ describe('WorkoutSessionStateService', () => {
     service.togglePause();
 
     const atteso = {
-      dayId: 'day0', startedAt: '2026-07-28T10:00:00.000Z',
+      dayId: 'day0', dayLabel: '', startedAt: '2026-07-28T10:00:00.000Z',
       pausedAt: '2026-07-28T10:00:00.000Z', pausedMs: 0
     };
     expect(JSON.parse(localStorage.getItem(CACHE_KEY)!)).toEqual(atteso);
@@ -197,6 +197,67 @@ describe('WorkoutSessionStateService', () => {
 
     expect(service.activeSession()).toBeNull();
     expect(calls).toEqual([]);
+  });
+
+  it('una sessione avviata piu\' di otto ore fa non viene ripresa dalla cache', () => {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ dayId: 'day2', startedAt: '2026-07-27T20:00:00.000Z' }));
+
+    const { service } = makeService();
+
+    expect(service.activeSession()).toBeNull();
+    expect(localStorage.getItem(CACHE_KEY)).toBeNull();
+  });
+
+  it('una sessione di sette ore fa e\' ancora buona', () => {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ dayId: 'day2', startedAt: '2026-07-28T03:00:00.000Z' }));
+
+    const { service } = makeService();
+
+    expect(service.activeSession()?.dayId).toBe('day2');
+  });
+
+  it('rientrando in app dopo la scadenza la sessione viene chiusa', () => {
+    const { service, deleted } = makeService();
+    service.start('day0', 'Petto');
+
+    vi.setSystemTime(new Date('2026-07-28T19:00:00.000Z'));
+    document.dispatchEvent(new Event('visibilitychange'));
+
+    expect(service.activeSession()).toBeNull();
+    expect(deleted).toEqual(['activeWorkoutSession']);
+  });
+
+  it('una sessione scaduta sull\'account viene chiusa invece che ripresa', async () => {
+    // Il mock di default registra le cancellazioni: serve per verificare che la
+    // sessione venga chiusa anche sull'account, non solo in memoria.
+    const { service, deleted } = makeService({
+      savedSession: { dayId: 'day3', startedAt: '2026-07-27T20:00:00.000Z' },
+      authReady: true
+    });
+    TestBed.flushEffects();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(service.activeSession()).toBeNull();
+    expect(deleted).toEqual(['activeWorkoutSession']);
+  });
+
+  it('matchesDay smaschera il giorno che ha cambiato allenamento sotto lo stesso id', () => {
+    const { service } = makeService();
+    service.start('day1', 'Petto-Spalle-Tricipiti');
+
+    expect(service.matchesDay('day1', 'Petto-Spalle-Tricipiti')).toBe(true);
+    // Il coach ha riordinato i giorni: day1 ora e' un altro allenamento.
+    expect(service.matchesDay('day1', 'Gambe')).toBe(false);
+    expect(service.matchesDay('day2', 'Petto-Spalle-Tricipiti')).toBe(false);
+  });
+
+  it('una sessione salvata prima dell\'etichetta resta valida su qualunque nome', () => {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ dayId: 'day1', startedAt: '2026-07-28T09:40:00.000Z' }));
+
+    const { service } = makeService();
+
+    expect(service.matchesDay('day1', 'Gambe')).toBe(true);
   });
 
   it('sincronizza dall\'account la sessione avviata su un altro dispositivo', async () => {
@@ -241,7 +302,7 @@ describe('WorkoutSessionStateService', () => {
     await loadPromise;
 
     expect(service.activeSession()).toEqual({
-      dayId: 'day0', startedAt: '2026-07-28T10:00:00.000Z', pausedAt: null, pausedMs: 0
+      dayId: 'day0', dayLabel: '', startedAt: '2026-07-28T10:00:00.000Z', pausedAt: null, pausedMs: 0
     });
   });
 
