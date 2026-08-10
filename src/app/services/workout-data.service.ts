@@ -79,17 +79,4 @@ export class WorkoutDataService {
     }
   }
 
-  sparklineSVG(values: number[]): string {
-    const w = 120, h = 30, pad = 4;
-    const min = Math.min(...values), max = Math.max(...values), range = (max - min) || 1;
-    const coords = values.map((v, i) => ({
-      x: pad + (w - 2 * pad) * (values.length === 1 ? 0.5 : i / (values.length - 1)),
-      y: h - pad - (h - 2 * pad) * ((v - min) / range)
-    }));
-    const pts = coords.map(c => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
-    const dots = coords.map((c, i) =>
-      `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="${i === coords.length - 1 ? 3 : 2}" fill="var(--accent)"/>`
-    ).join('');
-    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/>${dots}</svg>`;
-  }
 }

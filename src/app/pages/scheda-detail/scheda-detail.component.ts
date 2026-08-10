@@ -273,20 +273,6 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         lastText = dd ? `Ultimo (${dd}): ${maxLoad > 0 ? maxLoad + ' kg' : '—'}` : '';
       }
 
-      let sparkSvg: string | null = null;
-      let delta: string | null = null;
-      let deltaClass = '';
-
-      if (maxLoads.length >= 2) {
-        sparkSvg = this.workoutData.sparklineSVG(maxLoads);
-        const diff = maxLoads[maxLoads.length - 1] - maxLoads[maxLoads.length - 2];
-        if (diff > 0) { delta = `+${diff} kg`; deltaClass = 'up'; }
-        else if (diff < 0) { delta = `${diff} kg`; deltaClass = 'down'; }
-        else { delta = '= kg'; deltaClass = ''; }
-      } else if (maxLoads.length === 1) {
-        sparkSvg = this.workoutData.sparklineSVG(maxLoads);
-      }
-
       let suggestion: string | null = null;
       if (vm.ex.scheme === 'wave' && maxLoads.length > 0) {
         const lastMax = maxLoads[maxLoads.length - 1];
@@ -294,8 +280,8 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         suggestion = `Prova <b>${suggested} kg</b> — +2.5 kg rispetto all'ultima volta`;
       }
 
-      if (lastText || sparkSvg || suggestion) {
-        vm.insight = { lastText, sparkSvg, delta, deltaClass, suggestion };
+      if (lastText || suggestion) {
+        vm.insight = { lastText, suggestion };
         vm.insightVisible = true;
       }
 
@@ -340,9 +326,21 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onSetCheck(vm: ExerciseVM, rowIdx: number): void {
-    vm.rows[rowIdx].done = !vm.rows[rowIdx].done;
+    const row = vm.rows[rowIdx];
+    row.done = !row.done;
+
+    // Spuntare la serie e' il momento in cui i suggerimenti diventano valori
+    // veri: il carico dell'ultima volta e le ripetizioni del protocollo entrano
+    // nei campi e finiscono nello storico. Vale solo qui, perche' una serie non
+    // spuntata non e' stata fatta e non deve portarsi dietro un carico. Solo i
+    // campi vuoti: quello che hai digitato non si tocca.
+    if (row.done) {
+      if (!row.reps && row.ripPlaceholder) row.reps = row.ripPlaceholder;
+      if (!row.load && row.loadPlaceholder) row.load = row.loadPlaceholder;
+    }
+
     this.scheduleDraft();
-    if (vm.rows[rowIdx].done) {
+    if (row.done) {
       this.state.startRestTimer(vm.restSeconds, this.restKey(vm.ex.name));
     }
   }
@@ -441,10 +439,15 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     return idx >= 0 ? idx : null;
   }
 
-  /** Etichetta corta: nella barra convive con cronometro e tre comandi. */
+  /** Etichetta corta: nella barra convive con cronometro e tre comandi.
+   *  A sessione avviata dice quanto manca alla chiusura, altrimenti il tasto
+   *  salva resterebbe spento senza spiegare perche'. */
   get sessionBarLabel(): string {
     if (this.sessionState.isActiveForDay(this.day.id)) {
-      return this.sessionState.isPaused() ? 'In pausa' : 'In corso';
+      if (this.sessionState.isPaused()) return 'In pausa';
+      const left = this.remainingSets;
+      if (left === 0) return 'Completo';
+      return left === 1 ? 'Manca 1 serie' : `Mancano ${left} serie`;
     }
     // Sessione avviata su un giorno che il protocollo non ha piu': non e'
     // raggiungibile, l'unica uscita e' annullarla.
@@ -459,6 +462,19 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   get playPauseLabel(): string {
     if (!this.sessionState.isActiveForDay(this.day.id)) return 'Avvia la sessione di allenamento';
     return this.sessionState.isPaused() ? 'Riprendi la sessione' : 'Metti in pausa la sessione';
+  }
+
+  /** Nessuna serie lasciata indietro, in nessun esercizio: e' la condizione per
+   *  poter chiudere l'allenamento. Contata sulle righe e non su isComplete()
+   *  cosi' un esercizio senza serie (schema degenere) non blocca il salvataggio
+   *  per sempre; un giorno senza esercizi resta non salvabile. */
+  get allSetsDone(): boolean {
+    return this.exercises.length > 0 && this.remainingSets === 0;
+  }
+
+  /** Quante serie mancano alla chiusura, per dirlo invece di lasciare un tasto spento e muto. */
+  get remainingSets(): number {
+    return this.exercises.reduce((tot, vm) => tot + vm.rows.filter(r => !r.done).length, 0);
   }
 
   get canSaveSession(): boolean {
@@ -478,8 +494,14 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       case 'saving': return 'Salvataggio in corso';
       case 'saved': return 'Allenamento salvato';
       case 'err': return 'Errore, riprova a salvare';
-      default: return 'Termina la sessione e salva l\'allenamento';
     }
+    if (this.sessionState.isActiveForDay(this.day.id) && !this.allSetsDone) {
+      const left = this.remainingSets;
+      return left === 1
+        ? 'Termina e salva: manca 1 serie da spuntare, verra\' chiesta conferma'
+        : `Termina e salva: mancano ${left} serie da spuntare, verra' chiesta conferma`;
+    }
+    return 'Termina la sessione e salva l\'allenamento';
   }
 
   onPlayPause(): void {
@@ -511,6 +533,25 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.state.saveStatus() === 'saving') return; // evita doppio invio mentre e' gia' in corso
     // Il salvataggio esiste solo come chiusura di una sessione avviata su questo giorno.
     if (!this.sessionState.isActiveForDay(this.day.id)) return;
+
+    // Chiudere con delle serie non spuntate e' legittimo (un esercizio saltato,
+    // un allenamento interrotto), ma quasi sempre e' una dimenticanza: si chiede
+    // conferma invece di bloccare, cosi' la sessione non va persa per forza.
+    if (!this.allSetsDone) {
+      const left = this.remainingSets;
+      const ok = await this.confirm.confirm(
+        left === 1
+          ? 'Manca 1 serie da spuntare. Vuoi salvare lo stesso l\'allenamento?'
+          : `Mancano ${left} serie da spuntare. Vuoi salvare lo stesso l'allenamento?`,
+        { confirmLabel: 'Salva lo stesso', dangerous: false }
+      );
+      if (!ok) return;
+      // La conferma e' asincrona: nel frattempo la sessione puo' essere stata
+      // annullata o chiusa da un'altra scheda, quindi la guardia va rifatta.
+      if (!this.sessionState.isActiveForDay(this.day.id)) return;
+      if (this.state.saveStatus() === 'saving') return;
+    }
+
     this.state.saveStatus.set('saving');
     if (this.draftTimer) { clearTimeout(this.draftTimer); this.draftTimer = null; }
 

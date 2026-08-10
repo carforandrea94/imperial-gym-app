@@ -48,8 +48,5 @@ export interface WorkoutSession {
 
 export interface ExInsight {
   lastText: string;
-  sparkSvg: string | null;
-  delta: string | null;
-  deltaClass: string;
   suggestion: string | null;
 }
