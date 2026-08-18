@@ -13,8 +13,12 @@ import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { Day, Exercise, WorkoutSession, ExInsight } from '../../models/workout.model';
 import { todayLocalISO } from '../../core/utils/date.util';
 import { findClosestSlideIndex, scrollToSlide } from '../../core/utils/horizontal-slider.util';
+import { PerformedSet, suggestLoad } from '../../core/utils/load-estimate.util';
 import { ToastService } from '../../services/toast.service';
 import { RestWaveComponent } from '../../components/rest-wave/rest-wave.component';
+
+/** Passo di arrotondamento del carico consigliato: i dischi da 2,5 kg per lato. */
+const LOAD_STEP_KG = 5;
 
 interface SerieRow {
   reps: string;
@@ -244,6 +248,9 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       // Collect max loads per session for this exercise
       const maxLoads: number[] = [];
       let lastSessionData: { load: string | null; reps: string | null }[] = [];
+      // Carico e ripetizioni della stessa serie vanno tenuti insieme: e' la
+      // coppia, non il solo carico, a dire quanto e' stato faticoso.
+      const performed: PerformedSet[] = [];
 
       sessions.forEach(s => {
         const sexData = s.exercises.find(e => e.name === exName);
@@ -251,6 +258,11 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         const loads = sexData.sets.map(sr => parseFloat(sr.load ?? '') || 0);
         const maxLoad = Math.max(...loads.filter(l => l > 0));
         if (maxLoad > 0) maxLoads.push(maxLoad);
+        sexData.sets.forEach(sr => {
+          const load = parseFloat(sr.load ?? '');
+          const reps = parseFloat(sr.reps ?? '');
+          if (load > 0 && reps > 0) performed.push({ load, reps });
+        });
         lastSessionData = sexData.sets.map(sr => ({ load: sr.load, reps: sr.reps }));
       });
 
@@ -273,11 +285,15 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         lastText = dd ? `Ultimo (${dd}): ${maxLoad > 0 ? maxLoad + ' kg' : '—'}` : '';
       }
 
+      // Il carico da provare dipende dalle ripetizioni previste oggi: lo stesso
+      // peso di un 5x6 non regge in un 4x10. Si passa dal massimale stimato
+      // (vedi load-estimate.util) e vale per qualsiasi schema, non solo wave.
       let suggestion: string | null = null;
-      if (vm.ex.scheme === 'wave' && maxLoads.length > 0) {
-        const lastMax = maxLoads[maxLoads.length - 1];
-        const suggested = lastMax + 2.5;
-        suggestion = `Prova <b>${suggested} kg</b> — +2.5 kg rispetto all'ultima volta`;
+      const targetReps = parseInt(vm.rows[0]?.ripPlaceholder ?? '', 10);
+      const advice = isNaN(targetReps) ? null : suggestLoad(performed, targetReps, LOAD_STEP_KG);
+      if (advice) {
+        suggestion = `Prova <b>${advice.load} kg</b> per ${targetReps} rip.`
+          + ` — dal tuo ${advice.from.load} kg × ${advice.from.reps}`;
       }
 
       if (lastText || suggestion) {
