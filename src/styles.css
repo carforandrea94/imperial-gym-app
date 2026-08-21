@@ -182,7 +182,14 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .navicon:disabled{opacity:.5;cursor:not-allowed;}
 .protocolsave{display:flex;gap:8px;}
 .navactions.hide{display:none;}
-.content{padding-top:calc(var(--nav-h) + 22px);padding-bottom:calc(var(--tabbar-h) + var(--safe-b) + 28px);transition:padding-top .15s ease;}
+/* Lo stacco sotto la navbar parte dalla sua altezza REALE (--nav-h-rest, misurata
+   da NavbarComponent) e non da --nav-h, che era una stima ferma e sempre
+   piu' generosa del vero: da li' veniva il vuoto in cima alla pagina.
+   --nav-h resta come valore di ripiego per il primo fotogramma, prima che la
+   misura arrivi. Si usa l'altezza A RIPOSO e non quella corrente: seguire la
+   navbar che si rimpicciolisce farebbe saltare il contenuto verso l'alto
+   proprio mentre si sta scorrendo. */
+.content{padding-top:calc(var(--nav-h-rest, var(--nav-h)) + 10px);padding-bottom:calc(var(--tabbar-h) + var(--safe-b) + 28px);transition:padding-top .15s ease;}
 .content.no-chrome{padding-top:0;padding-bottom:0;}
 .wrap{position:relative;z-index:1;max-width:640px;margin:0 auto;padding:0 16px;}
 
@@ -452,11 +459,12 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
    specificita' vincerebbe lei, essendo dichiarata dopo, e questi margini non
    avrebbero alcun effetto. Classe dedicata per la card finale invece di
    :last-of-type, che guarda il tipo di elemento (div) e non la classe. */
-/* Barra sessione: cronometro e i due comandi (avvia / termina e salva). Si ferma
-   sotto la navbar rimpicciolita invece di scorrere via; `top` conta solo da
-   pagina scrollata (prima la barra e' gia' nella sua posizione naturale),
-   quindi il riferimento e' --nav-h-scrolled. */
-.session-bar{position:sticky;top:var(--nav-h-scrolled);z-index:5;display:flex;align-items:center;gap:8px;padding:8px 8px 8px 13px;margin-bottom:12px;border-radius:var(--r-xl);background:var(--content-glass-bg);backdrop-filter:blur(14px) saturate(130%);-webkit-backdrop-filter:blur(14px) saturate(130%);border:1px solid var(--content-glass-border);box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 6px 18px rgba(0,0,0,.28);}
+/* Barra sessione: cronometro e i tre comandi. Si ferma appena sotto la navbar
+   invece di scorrere via, agganciandosi alla sua altezza corrente (--nav-h-now):
+   quando la navbar si rimpicciolisce allo scroll, la barra la segue senza mai
+   finirle sotto e senza restare staccata. --nav-h-scrolled e' solo il ripiego
+   per il primo fotogramma, prima che la misura arrivi. */
+.session-bar{position:sticky;top:calc(var(--nav-h-now, var(--nav-h-scrolled)) + 8px);z-index:5;display:flex;align-items:center;gap:8px;padding:8px 8px 8px 13px;margin-bottom:12px;border-radius:var(--r-xl);background:var(--content-glass-bg);backdrop-filter:blur(14px) saturate(130%);-webkit-backdrop-filter:blur(14px) saturate(130%);border:1px solid var(--content-glass-border);box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 6px 18px rgba(0,0,0,.28);}
 .session-bar-dot{width:7px;height:7px;border-radius:50%;background:var(--label-3);opacity:.45;flex-shrink:0;transition:background .25s ease,opacity .25s ease;}
 .session-bar-dot.live{background:var(--accent);opacity:1;}
 /* L'etichetta e' l'unico elemento comprimibile: su schermi stretti cede spazio
