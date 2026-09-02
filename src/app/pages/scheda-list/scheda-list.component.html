@@ -20,6 +20,13 @@
           <span *ngIf="hasDraft(day.id)" style="color:var(--accent);margin-left:6px">● bozza</span>
         </div>
       </div>
+      <span class="daycheck" *ngIf="isDoneThisWeek(day.id)"
+        title="Allenamento gia' fatto questa settimana"
+        aria-label="Allenamento gia' fatto questa settimana">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 12.5l5 5L20 6.5"/>
+        </svg>
+      </span>
       <span class="chev">›</span>
     </div>
   </div>
