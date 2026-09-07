@@ -2,22 +2,7 @@ import { Injectable, signal, effect } from '@angular/core';
 import { AppStateService } from './app-state.service';
 import { AuthService } from '../core/services/auth.service';
 import { isIosSafariNotStandalone } from '../core/utils/platform.util';
-import { todayLocalISO } from '../core/utils/date.util';
-
-/**
- * Lunedi' della settimana in cui cade la data, a mezzanotte locale. E' il
- * riferimento con cui si confrontano due date per sapere se stanno nella
- * stessa settimana di calendario.
- */
-function mondayOf(dateISO: string): Date {
-  const d = new Date(dateISO + 'T00:00:00');
-  // getDay(): 0 = domenica. La domenica appartiene alla settimana che inizia
-  // sei giorni prima, non a quella che inizia il giorno dopo.
-  const offset = (d.getDay() + 6) % 7;
-  d.setDate(d.getDate() - offset);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
+import { todayLocalISO, mondayOf } from '../core/utils/date.util';
 
 export interface RestTimerState {
   show: boolean;

@@ -4,6 +4,7 @@ import { ProtocolService } from './protocol.service';
 import { WorkoutDataService } from './workout-data.service';
 import { DietDataService } from './diet-data.service';
 import { WorkoutStateService } from './workout-state.service';
+import { RunningStateService } from './running-state.service';
 
 @Injectable({ providedIn: 'root' })
 export class ProtocolBootstrapService {
@@ -14,7 +15,8 @@ export class ProtocolBootstrapService {
     private protocolSvc: ProtocolService,
     private workoutData: WorkoutDataService,
     private dietData: DietDataService,
-    private workoutState: WorkoutStateService
+    private workoutState: WorkoutStateService,
+    private runningState: RunningStateService
   ) {}
 
   /** Idempotente: la prima volta carica il protocollo attivo del client e lo applica, poi non rifa' nulla. */
@@ -31,6 +33,7 @@ export class ProtocolBootstrapService {
         this.workoutData.protocolName = active.name ?? '';
         this.dietData.applyDiet(active.diet);
         this.workoutState.recomputeWeek(active.workout.programStart, active.workout.weekPlan.length);
+        this.runningState.applyGoal(active.running);
       }
     } catch (e) {
       console.error('Errore caricamento protocollo attivo:', e);

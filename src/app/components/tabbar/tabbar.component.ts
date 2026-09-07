@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
-type ClientTab = 'scheda' | 'dieta' | 'misure' | 'account';
+type ClientTab = 'scheda' | 'dieta' | 'corsa' | 'misure' | 'account';
 type CoachTab = 'bacheca' | 'clienti' | 'account';
 
 @Component({
@@ -22,6 +22,7 @@ export class TabbarComponent {
   get activeTab(): ClientTab {
     const url = this.router.url;
     if (url.startsWith('/dieta')) return 'dieta';
+    if (url.startsWith('/corsa')) return 'corsa';
     if (url.startsWith('/misure')) return 'misure';
     if (url.startsWith('/account')) return 'account';
     return 'scheda';

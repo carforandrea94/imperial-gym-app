@@ -106,6 +106,17 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/dieta-detail/dieta-detail.component').then(m => m.DietaDetailComponent)
   },
   {
+    path: 'corsa',
+    canActivate: [authGuard, clientGuard],
+    loadComponent: () => import('./pages/corsa/corsa.component').then(m => m.CorsaComponent)
+  },
+  {
+    path: 'corsa/nuova',
+    canActivate: [authGuard, clientGuard],
+    loadComponent: () => import('./pages/corsa-nuova/corsa-nuova.component').then(m => m.CorsaNuovaComponent)
+  },
+
+  {
     path: 'misure',
     canActivate: [authGuard, clientGuard],
     loadComponent: () => import('./pages/misure/misure.component').then(m => m.MisureComponent)

@@ -7,12 +7,13 @@ import { ProtocolService } from '../../services/protocol.service';
 import { WorkoutDataService } from '../../services/workout-data.service';
 import { Protocol } from '../../models/protocol.model';
 import { Day, Exercise } from '../../models/workout.model';
+import { RunGoal, emptyRunGoal } from '../../models/run.model';
 import { FoodItem, DietPlan, NamedMeal, MealCombination, SupplementItem, newDietPlan, newNamedMeal, newCombination, FoodCategory, FOOD_CATEGORIES, FOOD_CATEGORY_LABELS } from '../../models/diet.model';
 import { ProtocolBuilderStateService } from '../../services/protocol-builder-state.service';
 import { ToastService } from '../../services/toast.service';
 import { PdfImportService } from '../../services/pdf-import.service';
 
-type Tab = 'scheda' | 'dieta' | 'info';
+type Tab = 'scheda' | 'dieta' | 'corsa' | 'info';
 
 @Component({
   selector: 'app-coach-protocol-builder',
@@ -51,6 +52,10 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
   }
 
   readonly muscles = ['Petto', 'Spalle', 'Tricipiti', 'Dorso', 'Bicipiti', 'Gambe', 'Core'];
+
+  /** L'obiettivo di corsa esiste sempre dopo load(): il template puo' legarsi senza guardie. */
+  get runGoal(): RunGoal { return this.protocol!.running!; }
+
   readonly foodCategories = FOOD_CATEGORIES;
   readonly foodCategoryLabels = FOOD_CATEGORY_LABELS;
 
@@ -84,6 +89,10 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.protocol = await this.protocolSvc.get(this.clientId, this.protocolId);
     if (!this.protocol) { this.router.navigate(['/coach/clienti', this.clientId]); return; }
+    // I protocolli creati prima della sezione Corsa non hanno l'obiettivo: si
+    // riempie qui, vuoto, cosi' il form ha sempre qualcosa a cui legarsi. Un
+    // obiettivo a zero vale come "non impostato" e il cliente non vede barre.
+    if (!this.protocol.running) this.protocol.running = emptyRunGoal();
     this.loading = false;
     this.cdr.detectChanges();
   }
@@ -415,6 +424,7 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
         name: this.protocol.name,
         workout: this.protocol.workout,
         diet: this.protocol.diet,
+        running: this.protocol.running,
         infoNote: this.protocol.infoNote
       };
       await this.protocolSvc.update(this.clientId, this.protocolId, toSave);
