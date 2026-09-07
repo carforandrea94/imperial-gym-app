@@ -1,67 +1,37 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
-const mockDocs = new Map<string, any>();
+// Mock condivisa: vedi src/test-support/firestore-mock.ts per il perche' non
+// puo' vivere qui dentro (isolate: false condivide i moduli fra i file).
+vi.mock('firebase/firestore', async () => (await import('../../test-support/firestore-mock')).firestoreMock);
 
-vi.mock('firebase/firestore', () => ({
-  // Stubbed so this mock stays harmless if it leaks into another spec file (isolate: false shares modules across files) that constructs the real FirebaseService.
-  initializeFirestore: () => ({}) as any,
-  collection: (_db: any, ...segments: string[]) => ({ path: segments.join('/') }),
-  doc: (_col: any, id: string) => ({ id }),
-  getDoc: async (ref: { id: string }) => {
-    const data = mockDocs.get(ref.id);
-    return { exists: () => data !== undefined, data: () => data };
-  },
-  getDocs: async () => ({
-    docs: Array.from(mockDocs.entries()).map(([id, data]) => ({ id, data: () => data }))
-  }),
-  setDoc: async (ref: { id: string }, data: any, opts?: { merge?: boolean }) => {
-    const existing = mockDocs.get(ref.id) ?? {};
-    mockDocs.set(ref.id, opts?.merge ? { ...existing, ...data } : data);
-  },
-  updateDoc: async (ref: { id: string }, data: any) => {
-    const existing = mockDocs.get(ref.id) ?? {};
-    mockDocs.set(ref.id, { ...existing, ...data });
-  },
-  deleteDoc: async (ref: { id: string }) => {
-    mockDocs.delete(ref.id);
-  },
-  writeBatch: (_db: any) => {
-    const ops: (() => void)[] = [];
-    return {
-      set: (ref: { id: string }, data: any, opts?: { merge?: boolean }) => {
-        ops.push(() => {
-          const existing = mockDocs.get(ref.id) ?? {};
-          mockDocs.set(ref.id, opts?.merge ? { ...existing, ...data } : data);
-        });
-      },
-      update: (ref: { id: string }, data: any) => {
-        ops.push(() => {
-          const existing = mockDocs.get(ref.id) ?? {};
-          mockDocs.set(ref.id, { ...existing, ...data });
-        });
-      },
-      delete: (ref: { id: string }) => {
-        ops.push(() => { mockDocs.delete(ref.id); });
-      },
-      commit: async () => {
-        ops.forEach(op => op());
-      }
-    };
-  }
-}));
+import { mockDocs } from '../../test-support/firestore-mock';
 
-import { MeasurementDataService } from './measurement-data.service';
+import type { MeasurementDataService } from './measurement-data.service';
+
+/**
+ * I moduli sono condivisi fra i file di test (isolate: false): se un altro file
+ * ha gia' caricato questo servizio, il servizio ha gia' legato le funzioni VERE
+ * di firebase/firestore e la mock non lo raggiungerebbe — fallimento a
+ * intermittenza, dipendente dall'ordine dei file. Ricaricarlo qui, dopo la
+ * registrazione della mock, lo lega alla mock.
+ */
+async function makeService(): Promise<MeasurementDataService> {
+  vi.resetModules();
+  const { MeasurementDataService } = await import('./measurement-data.service');
+  return new MeasurementDataService(
+    { db: {} } as any,
+    { currentUser: () => ({ uid: 'u1' }) } as any,
+    {} as any,
+    { run: (p: Promise<any>) => p } as any
+  );
+}
 
 describe('MeasurementDataService.moveCategoryEntry', () => {
   let service: MeasurementDataService;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockDocs.clear();
-    const fbStub = { db: {} } as any;
-    const authStub = { currentUser: () => ({ uid: 'u1' }) } as any;
-    const appStateStub = {} as any;
-    const zoneFixStub = { run: (p: Promise<any>) => p } as any;
-    service = new MeasurementDataService(fbStub, authStub, appStateStub, zoneFixStub);
+    service = await makeService();
   });
 
   it('sposta i campi della categoria in una nuova data senza collisioni, pulendo l\'origine', async () => {
@@ -106,12 +76,8 @@ describe('MeasurementDataService.moveCategoryEntry', () => {
 describe('MeasurementDataService.parseMeasureValue', () => {
   let service: MeasurementDataService;
 
-  beforeEach(() => {
-    const fbStub = { db: {} } as any;
-    const authStub = { currentUser: () => ({ uid: 'u1' }) } as any;
-    const appStateStub = {} as any;
-    const zoneFixStub = { run: (p: Promise<any>) => p } as any;
-    service = new MeasurementDataService(fbStub, authStub, appStateStub, zoneFixStub);
+  beforeEach(async () => {
+    service = await makeService();
   });
 
   it('interpreta la virgola italiana come separatore decimale', () => {
@@ -139,12 +105,8 @@ describe('MeasurementDataService.parseMeasureValue', () => {
 describe('MeasurementDataService.formatMeasureNumber', () => {
   let service: MeasurementDataService;
 
-  beforeEach(() => {
-    const fbStub = { db: {} } as any;
-    const authStub = { currentUser: () => ({ uid: 'u1' }) } as any;
-    const appStateStub = {} as any;
-    const zoneFixStub = { run: (p: Promise<any>) => p } as any;
-    service = new MeasurementDataService(fbStub, authStub, appStateStub, zoneFixStub);
+  beforeEach(async () => {
+    service = await makeService();
   });
 
   it('mostra i decimali con la virgola italiana', () => {
