@@ -2,6 +2,22 @@ import { Injectable, signal, effect } from '@angular/core';
 import { AppStateService } from './app-state.service';
 import { AuthService } from '../core/services/auth.service';
 import { isIosSafariNotStandalone } from '../core/utils/platform.util';
+import { todayLocalISO } from '../core/utils/date.util';
+
+/**
+ * Lunedi' della settimana in cui cade la data, a mezzanotte locale. E' il
+ * riferimento con cui si confrontano due date per sapere se stanno nella
+ * stessa settimana di calendario.
+ */
+function mondayOf(dateISO: string): Date {
+  const d = new Date(dateISO + 'T00:00:00');
+  // getDay(): 0 = domenica. La domenica appartiene alla settimana che inizia
+  // sei giorni prima, non a quella che inizia il giorno dopo.
+  const offset = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - offset);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
 
 export interface RestTimerState {
   show: boolean;
@@ -107,24 +123,25 @@ export class WorkoutStateService {
 
   /**
    * Numero di settimana del protocollo per una data qualsiasi (non solo oggi),
-   * stessa formula di computeAutoWeek ma senza clamp: un risultato <= 0 indica
-   * una data precedente all'inizio del programma attuale, un risultato oltre
-   * maxWeeks e' legittimo (nessun tetto superiore). Usato per raggruppare lo
-   * storico sedute per settimana.
+   * senza clamp: un risultato <= 0 indica una data precedente all'inizio del
+   * programma, un risultato oltre maxWeeks e' legittimo. Usato per raggruppare
+   * lo storico e per decidere quali allenamenti risultano fatti "questa
+   * settimana".
+   *
+   * La settimana e' quella del CALENDARIO, da lunedi' a domenica: si contano i
+   * lunedi', non i giorni passati dall'inizio. Prima si contavano blocchi di
+   * sette giorni a partire dalla data di inizio del protocollo, che pero' non
+   * cade per forza di lunedi': con un inizio di domenica le settimane correvano
+   * da domenica a sabato, il numero scattava a meta' settimana e le spunte si
+   * azzeravano in un giorno qualsiasi.
    */
   weekNumberForDate(dateISO: string, programStart: string): number {
-    const start = new Date(programStart + 'T00:00:00');
-    const date = new Date(dateISO + 'T00:00:00');
-    const diffDays = Math.floor((date.getTime() - start.getTime()) / 86400000);
-    return Math.floor(diffDays / 7) + 1;
+    const days = (mondayOf(dateISO).getTime() - mondayOf(programStart).getTime()) / 86400000;
+    return Math.round(days / 7) + 1;
   }
 
   private computeAutoWeek(startISO: string, maxWeeks = 8): number {
-    const start = new Date(startISO + 'T00:00:00');
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    const diffDays = Math.floor((now.getTime() - start.getTime()) / 86400000);
-    const week = Math.floor(diffDays / 7) + 1;
+    const week = this.weekNumberForDate(todayLocalISO(), startISO);
     return Math.min(Math.max(week, 1), maxWeeks);
   }
 
