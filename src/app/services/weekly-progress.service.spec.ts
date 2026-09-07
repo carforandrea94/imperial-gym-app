@@ -8,7 +8,8 @@ function makeService(opts: { sessions?: any[]; fallisce?: boolean; week?: number
     : Promise.resolve((opts.sessions ?? []).map((session, i) => ({ id: `s${i}`, session }))));
   const sessions = { listAll } as any;
   const state = {
-    currentWeek: opts.week ?? 2,
+    // Getter, come nel servizio reale: la settimana si ricalcola a ogni lettura.
+    get currentWeek() { return opts.week ?? 2; },
     DEFAULT_PROGRAM_START: '2026-07-06',
     // Stessa formula del servizio reale, gia' coperta dai suoi test.
     weekNumberForDate: (dateISO: string, start: string) => {
@@ -39,16 +40,18 @@ describe('WeeklyProgressService', () => {
     expect(service.isDone('day2')).toBe(false);
   });
 
-  it('al cambio di settimana le spunte si azzerano da sole', async () => {
-    const sessions = [{ dayId: 'day1', date: '2026-07-14' }];
-    const settimana2 = makeService({ week: 2, sessions });
-    await settimana2.service.refresh();
-    expect(settimana2.service.isDone('day1')).toBe(true);
+  it('al cambio di settimana le spunte si azzerano da sole, senza rileggere', async () => {
+    const opts = { week: 2, sessions: [{ dayId: 'day1', date: '2026-07-14' }] };
+    const { service, listAll } = makeService(opts);
+    await service.refresh();
+    expect(service.isDone('day1')).toBe(true);
 
-    // Stesse sedute salvate, ma ora si e' in settimana 3: nessuna spunta.
-    const settimana3 = makeService({ week: 3, sessions });
-    await settimana3.service.refresh();
-    expect(settimana3.service.isDone('day1')).toBe(false);
+    // Passa la settimana mentre l'app e' aperta: nessuna nuova lettura, ma la
+    // spunta deve sparire lo stesso perche' e' ricavata al momento.
+    opts.week = 3;
+
+    expect(service.isDone('day1')).toBe(false);
+    expect(listAll).toHaveBeenCalledTimes(1);
   });
 
   it('una lettura fallita non cancella le spunte gia\' note', async () => {

@@ -12,7 +12,6 @@ import { WorkoutSessionsService } from '../../services/workout-sessions.service'
   styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
 })
 export class SchedaInfoComponent implements OnInit {
-  readonly currentWeek;
   readonly weekPlan;
 
   loadingHistory = true;
@@ -25,8 +24,13 @@ export class SchedaInfoComponent implements OnInit {
     private sessionsSvc: WorkoutSessionsService,
     private cdr: ChangeDetectorRef
   ) {
-    this.currentWeek = state.currentWeek;
     this.weekPlan = workoutData.WEEK_PLAN;
+  }
+
+  /** Letta dal servizio a ogni giro: se cambia settimana mentre l'app e'
+   *  aperta, la pagina si aggiorna invece di restare al giorno dell'apertura. */
+  get currentWeek(): number {
+    return this.state.currentWeek;
   }
 
   get hasWaveExercises(): boolean {

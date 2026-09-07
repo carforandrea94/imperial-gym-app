@@ -22,7 +22,23 @@ const VIEW_MODE_CACHE_KEY = 'schedaViewMode';
 export class WorkoutStateService {
 
   DEFAULT_PROGRAM_START = '2026-07-05';
-  currentWeek: number;
+  /** Numero di settimane del protocollo: e' il tetto della settimana corrente. */
+  private programWeeks = 8;
+
+  /**
+   * Settimana di protocollo di OGGI, ricalcolata a ogni lettura.
+   *
+   * Prima era un campo, calcolato all'avvio del servizio e all'arrivo del
+   * protocollo: se l'app restava aperta a cavallo del cambio settimana — cosa
+   * normale in una PWA, che spesso viene solo sospesa e ripresa — il numero
+   * restava fermo a quello del giorno in cui era stata aperta. Da li' due
+   * effetti visibili: l'indicatore della settimana non avanzava e le spunte
+   * degli allenamenti, che confrontano la data delle sedute con questo numero,
+   * non si azzeravano.
+   */
+  get currentWeek(): number {
+    return this.computeAutoWeek(this.DEFAULT_PROGRAM_START, this.programWeeks);
+  }
 
   restTimer = signal<RestTimerState>({
     show: false, remaining: REST_DURATION, finished: false, fillPct: 100, exKey: null
@@ -51,7 +67,6 @@ export class WorkoutStateService {
   private restExKey: string | null = null;
 
   constructor(private appState: AppStateService, private auth: AuthService) {
-    this.currentWeek = this.computeAutoWeek(this.DEFAULT_PROGRAM_START);
 
     // Aspetta che l'autenticazione sia risolta prima di leggere l'account:
     // altrimenti currentUser() e' ancora null (crash) all'avvio dell'app.
@@ -83,10 +98,11 @@ export class WorkoutStateService {
     this.appState.patchField('workoutViewMode', mode).catch(() => { /* gia' segnalato da AppStateService */ });
   }
 
-  /** Ricalcola la settimana corrente in base a un nuovo inizio programma (dal protocollo attivo). */
+  /** Registra inizio e durata del protocollo attivo: la settimana corrente si
+   *  ricalcola da li' a ogni lettura di `currentWeek`. */
   recomputeWeek(programStart: string, maxWeeks = 8): void {
     this.DEFAULT_PROGRAM_START = programStart;
-    this.currentWeek = this.computeAutoWeek(programStart, maxWeeks);
+    this.programWeeks = maxWeeks;
   }
 
   /**

@@ -15,7 +15,6 @@ import { WeeklyProgressService } from '../../services/weekly-progress.service';
 })
 export class SchedaListComponent implements OnInit {
   readonly days;
-  readonly currentWeek;
   readonly weekPlan;
   readonly weeks: number[];
 
@@ -29,7 +28,6 @@ export class SchedaListComponent implements OnInit {
     public weekly: WeeklyProgressService
   ) {
     this.days = workoutData.days;
-    this.currentWeek = state.currentWeek;
     this.weekPlan = workoutData.WEEK_PLAN;
     this.weeks = Array.from({ length: this.weekPlan.length }, (_, i) => i + 1);
   }
@@ -51,6 +49,12 @@ export class SchedaListComponent implements OnInit {
     return this.weekly.isDone(dayId);
   }
 
+  /** Letta dal servizio a ogni giro: se cambia settimana mentre l'app e'
+   *  aperta, la pagina si aggiorna invece di restare al giorno dell'apertura. */
+  get currentWeek(): number {
+    return this.state.currentWeek;
+  }
+
   goToDay(idx: number): void {
     this.router.navigate(['/scheda/day', idx]);
   }
@@ -64,8 +68,10 @@ export class SchedaListComponent implements OnInit {
   }
 
   getWaveInfo(): string {
+    // La settimana ora e' calcolata da oggi e non piu' fotografata all'avvio:
+    // se il piano avesse meno settimane del tetto, l'indice cadrebbe fuori.
     const wp = this.workoutData.WEEK_PLAN[this.currentWeek - 1];
-    return `${wp.sets}×${wp.reps} reps`;
+    return wp ? `${wp.sets}×${wp.reps} reps` : '';
   }
 
   get todayWeekday(): string {
