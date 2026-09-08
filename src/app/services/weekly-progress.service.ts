@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { WorkoutSessionsService } from './workout-sessions.service';
-import { WorkoutStateService } from './workout-state.service';
+import { todayLocalISO, mondayISO } from '../core/utils/date.util';
 
 /** Il minimo che serve per decidere se un giorno e' gia' stato fatto. */
 interface SessionMark {
@@ -9,7 +9,7 @@ interface SessionMark {
 }
 
 /**
- * Quali allenamenti sono gia' stati fatti nella settimana di protocollo in corso.
+ * Quali allenamenti sono gia' stati fatti nella settimana in corso.
  *
  * Vive in un servizio e non dentro la pagina perche' la pagina viene ricreata
  * piu' spesso di quanto sembri (ritorno sulla scheda, rinnovo del token
@@ -20,6 +20,14 @@ interface SessionMark {
  * di salvare un insieme gia' calcolato: cosi' al cambio di settimana le spunte
  * si azzerano da sole anche senza rileggere niente, che e' quello che serve a
  * una PWA lasciata aperta per giorni.
+ *
+ * La settimana e' quella di CALENDARIO, confrontata lunedi' contro lunedi'.
+ * Prima si confrontava il NUMERO di settimana del protocollo, che pero' e'
+ * limitato alla durata del programma: finito il protocollo il numero restava
+ * fermo all'ultima settimana, e da li' in poi le sedute nuove cadevano sempre
+ * in una settimana diversa da quella "corrente" — nessuna spunta compariva
+ * piu', mentre quelle dell'ultima settimana del programma restavano accese per
+ * sempre. Il lunedi' non ha un tetto: funziona anche fuori dal protocollo.
  */
 @Injectable({ providedIn: 'root' })
 export class WeeklyProgressService {
@@ -29,7 +37,7 @@ export class WeeklyProgressService {
   private saved = signal<SessionMark[]>([]);
   private inFlight: Promise<void> | null = null;
 
-  constructor(private sessions: WorkoutSessionsService, private state: WorkoutStateService) {}
+  constructor(private sessions: WorkoutSessionsService) {}
 
   /**
    * Rilegge le sedute. Chiamate ravvicinate condividono la stessa lettura
@@ -57,20 +65,16 @@ export class WeeklyProgressService {
 
   /** true se il giorno ha almeno una seduta salvata nella settimana corrente. */
   isDone(dayId: string): boolean {
-    const week = this.state.currentWeek;
-    const start = this.state.DEFAULT_PROGRAM_START;
-    return this.saved().some(
-      s => s.dayId === dayId && this.state.weekNumberForDate(s.date, start) === week
-    );
+    const week = mondayISO(todayLocalISO());
+    return this.saved().some(s => s.dayId === dayId && mondayISO(s.date) === week);
   }
 
   /** Tutti i giorni gia' fatti in questa settimana. */
   doneDayIds(): ReadonlySet<string> {
-    const week = this.state.currentWeek;
-    const start = this.state.DEFAULT_PROGRAM_START;
+    const week = mondayISO(todayLocalISO());
     const done = new Set<string>();
     for (const s of this.saved()) {
-      if (this.state.weekNumberForDate(s.date, start) === week) done.add(s.dayId);
+      if (mondayISO(s.date) === week) done.add(s.dayId);
     }
     return done;
   }

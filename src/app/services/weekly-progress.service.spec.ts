@@ -1,35 +1,35 @@
 import { TestBed } from '@angular/core/testing';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { WeeklyProgressService } from './weekly-progress.service';
 
-function makeService(opts: { sessions?: any[]; fallisce?: boolean; week?: number } = {}) {
-  const listAll = vi.fn(() => opts.fallisce
-    ? Promise.reject(new Error('offline'))
-    : Promise.resolve((opts.sessions ?? []).map((session, i) => ({ id: `s${i}`, session }))));
+// La settimana corrente ora si ricava dall'orologio, non da un numero passato
+// dal chiamante: i test spostano la data di sistema invece di un parametro.
+// 2026-07-13 e 2026-07-19 sono lunedi' e domenica della stessa settimana.
+function oggiE(dateISO: string): void {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date(dateISO + 'T09:00:00'));
+}
+
+function makeService(opts: { sessions?: any[] } = {}) {
+  const listAll = vi.fn(() =>
+    Promise.resolve((opts.sessions ?? []).map((session, i) => ({ id: `s${i}`, session }))));
   const sessions = { listAll } as any;
-  const state = {
-    // Getter, come nel servizio reale: la settimana si ricalcola a ogni lettura.
-    get currentWeek() { return opts.week ?? 2; },
-    DEFAULT_PROGRAM_START: '2026-07-06',
-    // Stessa formula del servizio reale, gia' coperta dai suoi test.
-    weekNumberForDate: (dateISO: string, start: string) => {
-      const d = new Date(dateISO + 'T00:00:00').getTime();
-      const s = new Date(start + 'T00:00:00').getTime();
-      return Math.floor(Math.floor((d - s) / 86400000) / 7) + 1;
-    }
-  } as any;
-  const service = TestBed.runInInjectionContext(() => new WeeklyProgressService(sessions, state));
+  const service = TestBed.runInInjectionContext(() => new WeeklyProgressService(sessions));
   return { service, listAll };
 }
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe('WeeklyProgressService', () => {
   it('segna solo i giorni allenati nella settimana corrente', async () => {
+    oggiE('2026-07-15');
     const { service } = makeService({
-      week: 2,
       sessions: [
-        { dayId: 'day1', date: '2026-07-14' },  // settimana 2
-        { dayId: 'day3', date: '2026-07-15' },  // settimana 2
-        { dayId: 'day2', date: '2026-07-07' }   // settimana 1: non deve comparire
+        { dayId: 'day1', date: '2026-07-13' },  // lunedi' di questa settimana
+        { dayId: 'day3', date: '2026-07-19' },  // domenica di questa settimana
+        { dayId: 'day2', date: '2026-07-12' }   // domenica precedente: non deve comparire
       ]
     });
 
@@ -41,21 +41,40 @@ describe('WeeklyProgressService', () => {
   });
 
   it('al cambio di settimana le spunte si azzerano da sole, senza rileggere', async () => {
-    const opts = { week: 2, sessions: [{ dayId: 'day1', date: '2026-07-14' }] };
-    const { service, listAll } = makeService(opts);
+    oggiE('2026-07-15');
+    const { service, listAll } = makeService({ sessions: [{ dayId: 'day1', date: '2026-07-14' }] });
     await service.refresh();
     expect(service.isDone('day1')).toBe(true);
 
-    // Passa la settimana mentre l'app e' aperta: nessuna nuova lettura, ma la
+    // Scatta la settimana mentre l'app e' aperta: nessuna nuova lettura, ma la
     // spunta deve sparire lo stesso perche' e' ricavata al momento.
-    opts.week = 3;
+    vi.setSystemTime(new Date('2026-07-20T09:00:00'));
 
     expect(service.isDone('day1')).toBe(false);
     expect(listAll).toHaveBeenCalledTimes(1);
   });
 
+  it('le spunte continuano a funzionare dopo l\'ultima settimana del protocollo', async () => {
+    // Un protocollo di 8 settimane partito il 2026-07-06 finisce il 2026-08-30.
+    // Qui siamo a novembre, ben oltre: la seduta di oggi deve comunque
+    // spuntarsi, e quella dell'ultima settimana del programma no.
+    oggiE('2026-11-04');
+    const { service } = makeService({
+      sessions: [
+        { dayId: 'day1', date: '2026-11-04' },  // oggi
+        { dayId: 'day2', date: '2026-08-25' }   // ultima settimana del protocollo
+      ]
+    });
+
+    await service.refresh();
+
+    expect(service.isDone('day1')).toBe(true);
+    expect(service.isDone('day2')).toBe(false);
+  });
+
   it('una lettura fallita non cancella le spunte gia\' note', async () => {
-    const { service } = makeService({ week: 2, sessions: [{ dayId: 'day1', date: '2026-07-14' }] });
+    oggiE('2026-07-15');
+    const { service } = makeService({ sessions: [{ dayId: 'day1', date: '2026-07-14' }] });
     await service.refresh();
     expect(service.isDone('day1')).toBe(true);
 
@@ -67,8 +86,8 @@ describe('WeeklyProgressService', () => {
   });
 
   it('lo stesso giorno fatto due volte conta una volta sola', async () => {
+    oggiE('2026-07-15');
     const { service } = makeService({
-      week: 2,
       sessions: [{ dayId: 'day1', date: '2026-07-13' }, { dayId: 'day1', date: '2026-07-15' }]
     });
 
@@ -78,7 +97,8 @@ describe('WeeklyProgressService', () => {
   });
 
   it('letture ravvicinate condividono la stessa richiesta', async () => {
-    const { service, listAll } = makeService({ week: 2, sessions: [] });
+    oggiE('2026-07-15');
+    const { service, listAll } = makeService({ sessions: [] });
 
     await Promise.all([service.refresh(), service.refresh(), service.refresh()]);
 
@@ -86,8 +106,8 @@ describe('WeeklyProgressService', () => {
   });
 
   it('ignora le sedute senza data o senza giorno', async () => {
+    oggiE('2026-07-15');
     const { service } = makeService({
-      week: 2,
       sessions: [{ dayId: 'day1', date: '' }, { dayId: '', date: '2026-07-14' }, null]
     });
 
