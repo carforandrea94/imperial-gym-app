@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -37,6 +37,14 @@ export class CorsaNuovaComponent implements OnInit, OnDestroy {
   saving = false;
   errorMsg = '';
 
+  /**
+   * Id con cui verra' scritta una nuova uscita, deciso una volta sola.
+   * Se il primo salvataggio fallisce e l'utente riprova, la seconda scrittura
+   * finisce sullo stesso documento invece di crearne un altro: senza, un
+   * tentativo che in realta' era arrivato lascerebbe due uscite uguali.
+   */
+  private pendingId: string | null = null;
+
   private paramSub: Subscription | null = null;
 
   constructor(
@@ -44,7 +52,8 @@ export class CorsaNuovaComponent implements OnInit, OnDestroy {
     private state: RunningStateService,
     private router: Router,
     private route: ActivatedRoute,
-    private toast: ToastService
+    private toast: ToastService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -58,7 +67,7 @@ export class CorsaNuovaComponent implements OnInit, OnDestroy {
     // In modifica servono le uscite gia' salvate: se si arriva qui da un link
     // diretto l'elenco puo' essere ancora vuoto.
     if (!this.state.runs().length) this.state.refresh().then(() => {
-      if (this.editId) this.loadForEdit(this.editId);
+      if (this.editId) this.loadForEdit(this.editId, true);
     });
   }
 
@@ -100,14 +109,21 @@ export class CorsaNuovaComponent implements OnInit, OnDestroy {
       note: this.note.trim() || undefined
     };
 
-    // In modifica l'id contiene la data originale: se la data cambia l'id
-    // resta quello vecchio, ma e' solo una chiave — la data buona e' nel
-    // documento, ed e' quella che i totali settimanali leggono.
-    const saved = await this.runsSvc.save(run, this.editId ?? undefined);
+    // L'id contiene la data, ma resta quello deciso la prima volta anche se
+    // poi la data cambia: e' solo una chiave. La data buona sta nel documento
+    // ed e' quella che i totali settimanali leggono.
+    if (!this.editId) this.pendingId ??= this.runsSvc.newId(this.date);
+    const saved = await this.runsSvc.save(run, this.editId ?? this.pendingId!);
     this.saving = false;
 
     if (!saved) {
       this.errorMsg = 'Salvataggio non riuscito. Controlla la connessione e riprova.';
+      // L'app e' zoneless: dopo un await nessuno ridisegna da solo, e senza
+      // questo il bottone resterebbe su "Salvataggio…" per sempre — l'errore
+      // ci sarebbe, ma solo in memoria. Il toast e' un secondo canale, mosso
+      // da un signal, cosi' l'utente se ne accorge comunque.
+      this.cdr.detectChanges();
+      this.toast.error('Uscita non salvata. Riprova.');
       return;
     }
 
@@ -116,7 +132,7 @@ export class CorsaNuovaComponent implements OnInit, OnDestroy {
     this.router.navigate(['/corsa']);
   }
 
-  private loadForEdit(id: string): void {
+  private loadForEdit(id: string, redraw = false): void {
     const found = this.state.runs().find(r => r.id === id);
     if (!found) return;
     const run = found.run;
@@ -126,6 +142,11 @@ export class CorsaNuovaComponent implements OnInit, OnDestroy {
     this.type = run.type;
     this.effort = run.effort;
     this.note = run.note ?? '';
+    // Quando i dati arrivano dalla lettura delle uscite siamo fuori da
+    // qualsiasi evento: l'app e' zoneless e i campi del form sono proprieta'
+    // normali, quindi senza questo il form resterebbe vuoto. Dal ramo
+    // sincrono no: siamo gia' dentro un ciclo di rilevamento.
+    if (redraw) this.cdr.detectChanges();
   }
 
   /** Il tempo torna nel campo nella stessa forma in cui si scrive: `m:ss` o `h:mm:ss`. */
