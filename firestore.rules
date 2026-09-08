@@ -39,9 +39,13 @@ service cloud.firestore {
 
       allow delete: if false;
 
-      // Dati personali del client: allenamenti salvati, misurazioni, stato/bozze.
-      // Solo il proprietario puo' leggere/scrivere (nessuna condivisione col coach, per ora).
+      // Dati personali del client: allenamenti salvati, uscite di corsa,
+      // misurazioni, stato/bozze. Solo il proprietario puo' leggere/scrivere
+      // (nessuna condivisione col coach, per ora).
       match /sessions/{id} {
+        allow read, write: if isSignedIn() && request.auth.uid == uid;
+      }
+      match /runs/{id} {
         allow read, write: if isSignedIn() && request.auth.uid == uid;
       }
       match /measurements/{id} {
