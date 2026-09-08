@@ -1,0 +1,63 @@
+<p class="sectiontitle">{{ title }}</p>
+
+<div class="infocard measure-card">
+  <div class="measure-field">
+    <label>Data</label>
+    <div class="measure-input-wrap">
+      <input type="date" [(ngModel)]="date" [max]="maxDate" />
+    </div>
+  </div>
+
+  <div class="measure-grid cols-2 mt-3">
+    <div class="measure-field">
+      <label>Distanza</label>
+      <div class="measure-input-wrap">
+        <input type="text" inputmode="decimal" [(ngModel)]="distance" placeholder="8,5" />
+        <span class="unit">km</span>
+      </div>
+    </div>
+
+    <div class="measure-field">
+      <label>Tempo</label>
+      <div class="measure-input-wrap">
+        <input type="text" inputmode="numeric" [(ngModel)]="duration" placeholder="47:12" />
+      </div>
+    </div>
+  </div>
+
+  <div class="runpace">
+    <span class="k">Passo</span>
+    <span class="v">{{ livePace }}</span>
+  </div>
+</div>
+
+<div class="infocard measure-card">
+  <div class="measure-field">
+    <label>Tipo di uscita</label>
+    <div class="runseg">
+      <button type="button" class="runseg-btn" *ngFor="let t of types"
+        [class.on]="type === t.id" (click)="type = t.id">{{ t.label }}</button>
+    </div>
+  </div>
+
+  <div class="measure-field mt-3">
+    <label>Come e' andata</label>
+    <div class="runseg">
+      <button type="button" class="runseg-btn" *ngFor="let e of efforts"
+        [class.on]="effort === e.id" (click)="effort = e.id">{{ e.label }}</button>
+    </div>
+  </div>
+
+  <div class="measure-field mt-3">
+    <label>Note</label>
+    <div class="measure-input-wrap">
+      <input type="text" [(ngModel)]="note" placeholder="Percorso, sensazioni, meteo…" />
+    </div>
+  </div>
+</div>
+
+<p class="autherror" *ngIf="errorMsg">{{ errorMsg }}</p>
+
+<button class="runsave tap44 press-fx" [disabled]="!canSave" (click)="save()">
+  {{ saving ? 'Salvataggio…' : (editId ? 'Salva modifiche' : 'Salva uscita') }}
+</button>

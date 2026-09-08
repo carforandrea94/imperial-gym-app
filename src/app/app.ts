@@ -220,6 +220,26 @@ export class App implements OnInit, OnDestroy {
       return;
     }
 
+    if (u === '/corsa') {
+      this.navTitle = 'Corsa';
+      this.navSubtitle = 'Le tue uscite';
+      this.showBack = false;
+      this.showHistory = false;
+      this.showInfo = false;
+      this.showAnalytics = false;
+      return;
+    }
+
+    if (u === '/corsa/nuova') {
+      this.navTitle = 'Corsa';
+      this.navSubtitle = 'Registra un\'uscita';
+      this.showBack = true;
+      this.showHistory = false;
+      this.showInfo = false;
+      this.showAnalytics = false;
+      return;
+    }
+
     if (u === '/misure') {
       this.navTitle = 'Misure';
       this.navSubtitle = 'Le tue misurazioni';

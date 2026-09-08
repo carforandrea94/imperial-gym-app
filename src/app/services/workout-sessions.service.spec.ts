@@ -1,43 +1,13 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
-const mockDocs = new Map<string, any>();
+// Mock condivisa: vedi src/test-support/firestore-mock.ts per il perche' non
+// puo' vivere qui dentro (isolate: false condivide i moduli fra i file).
+vi.mock('firebase/firestore', async () => (await import('../../test-support/firestore-mock')).firestoreMock);
 
-vi.mock('firebase/firestore', () => ({
-  // Stubbed so this mock stays harmless if it leaks into another spec file (isolate: false shares modules across files) that constructs the real FirebaseService.
-  initializeFirestore: () => ({}) as any,
-  collection: (_db: any, ...segments: string[]) => ({ path: segments.join('/') }),
-  doc: (_col: any, id: string) => ({ id }),
-  getDoc: async (ref: { id: string }) => {
-    const data = mockDocs.get(ref.id);
-    return { exists: () => data !== undefined, data: () => data };
-  },
-  getDocs: async () => ({
-    docs: Array.from(mockDocs.entries()).map(([id, data]) => ({ id, data: () => data }))
-  }),
-  setDoc: async (ref: { id: string }, data: any) => {
-    mockDocs.set(ref.id, data);
-  },
-  deleteDoc: async (ref: { id: string }) => {
-    mockDocs.delete(ref.id);
-  },
-  query: (col: any) => col,
-  where: () => ({}),
-  writeBatch: (_db: any) => {
-    const ops: (() => void)[] = [];
-    return {
-      set: (ref: { id: string }, data: any) => {
-        ops.push(() => { mockDocs.set(ref.id, data); });
-      },
-      delete: (ref: { id: string }) => {
-        ops.push(() => { mockDocs.delete(ref.id); });
-      },
-      commit: async () => { ops.forEach(op => op()); }
-    };
-  }
-}));
+import { mockDocs } from '../../test-support/firestore-mock';
 
-import { WorkoutSessionsService } from './workout-sessions.service';
-import { WorkoutSession } from '../models/workout.model';
+import type { WorkoutSessionsService } from './workout-sessions.service';
+import type { WorkoutSession } from '../models/workout.model';
 
 describe('WorkoutSessionsService.moveSession', () => {
   let service: WorkoutSessionsService;
@@ -49,8 +19,15 @@ describe('WorkoutSessionsService.moveSession', () => {
     exercises: [{ name: 'Squat', sets: [{ load: '100', reps: '8', done: true }] }]
   };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockDocs.clear();
+    // I moduli sono condivisi fra i file di test (isolate: false): se un altro
+    // file ha gia' caricato questo servizio, il servizio ha gia' legato le
+    // funzioni VERE di firebase/firestore e la mock non lo raggiungerebbe —
+    // fallimento a intermittenza, dipendente dall'ordine dei file. Ricaricarlo
+    // qui, dopo la registrazione della mock, lo lega alla mock.
+    vi.resetModules();
+    const { WorkoutSessionsService } = await import('./workout-sessions.service');
     const fbStub = { db: {} } as any;
     const authStub = { currentUser: () => ({ uid: 'u1' }) } as any;
     const zoneFixStub = { run: (p: Promise<any>) => p } as any;

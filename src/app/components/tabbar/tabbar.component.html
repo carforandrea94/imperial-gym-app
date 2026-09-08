@@ -1,6 +1,10 @@
-<!-- Tabbar CLIENT: Scheda / Dieta / Misure / Account -->
-<nav class="tabbar tabbar-4" *ngIf="!isCoach && auth.authReady()">
-  <div class="pill" [class.p1]="activeTab === 'dieta'" [class.p2]="activeTab === 'misure'" [class.p3]="activeTab === 'account'"></div>
+<!-- Tabbar CLIENT: Scheda / Dieta / Corsa / Misure / Account -->
+<nav class="tabbar tabbar-5" *ngIf="!isCoach && auth.authReady()">
+  <div class="pill"
+    [class.p1]="activeTab === 'dieta'"
+    [class.p2]="activeTab === 'corsa'"
+    [class.p3]="activeTab === 'misure'"
+    [class.p4]="activeTab === 'account'"></div>
 
   <button class="tabbtn" [class.active]="activeTab === 'scheda'" (click)="navigate('scheda')" aria-label="Scheda">
     <span class="ic">
@@ -21,6 +25,17 @@
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12c0-2.76 1.12-5.26 2.93-7.07"/>
         <path d="M8 12h8M12 8v8"/>
+      </svg>
+    </span>
+  </button>
+
+  <button class="tabbtn" [class.active]="activeTab === 'corsa'" (click)="navigate('corsa')" aria-label="Corsa">
+    <span class="ic">
+      <!-- Scarpa da corsa vista di lato: leggibile a 21px, e non e' la solita
+           sagoma di podista che a questa dimensione diventa una macchia. -->
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 16.5c0-1.1.5-2 1.6-2.4l3.6-1.3a3 3 0 0 0 1.4-1.1L11 8.2a1 1 0 0 1 1.6-.1l1 1.2c.5.6 1.1 1 1.9 1.3l4.1 1.4c1.5.5 2.4 1.6 2.4 3v1.9c0 .6-.4 1.1-1.1 1.1H3.1c-.6 0-1.1-.5-1.1-1.1z"/>
+        <path d="M11.2 10.6l1.9 1.7M8.7 13l2 1.8M6 14.2l1.8 1.6"/>
       </svg>
     </span>
   </button>

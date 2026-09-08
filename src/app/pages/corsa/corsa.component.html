@@ -1,0 +1,103 @@
+<!-- Obiettivo della settimana: c'e' solo se il coach ne ha impostato uno. -->
+<ng-container *ngIf="hasGoal()">
+  <p class="sectiontitle">Questa settimana · {{ weekLabel }}</p>
+
+  <div class="infocard runcard">
+    <div class="rungoal" *ngIf="(state.goal()?.weeklyKm ?? 0) > 0">
+      <div class="rungoal-head">
+        <span class="rungoal-lbl">Chilometri</span>
+        <span class="rungoal-val">{{ kmDone }}<span class="of">/{{ kmTarget }} km</span></span>
+      </div>
+      <div class="runbar"><div class="runbar-fill" [style.width.%]="kmPct"></div></div>
+    </div>
+
+    <div class="rungoal" *ngIf="(state.goal()?.weeklyRuns ?? 0) > 0">
+      <div class="rungoal-head">
+        <span class="rungoal-lbl">Uscite</span>
+        <span class="rungoal-val">{{ state.thisWeek().runs }}<span class="of">/{{ state.goal()?.weeklyRuns }}</span></span>
+      </div>
+      <div class="runbar"><div class="runbar-fill" [style.width.%]="runsPct"></div></div>
+    </div>
+
+    <div class="runstats">
+      <div class="runstat">
+        <span class="k">Tempo</span>
+        <span class="v">{{ weekTime }}</span>
+      </div>
+      <div class="runstat">
+        <span class="k">Passo medio</span>
+        <span class="v">{{ weekPace }}</span>
+      </div>
+    </div>
+
+    <p class="rungoal-note" *ngIf="state.goal()?.note">{{ state.goal()?.note }}</p>
+  </div>
+</ng-container>
+
+<!-- Senza obiettivo la sezione resta un registro: i totali della settimana ci sono lo stesso. -->
+<ng-container *ngIf="!hasGoal()">
+  <p class="sectiontitle">Questa settimana · {{ weekLabel }}</p>
+  <div class="infocard runcard">
+    <div class="runstats runstats-3">
+      <div class="runstat">
+        <span class="k">Distanza</span>
+        <span class="v">{{ kmDone }} km</span>
+      </div>
+      <div class="runstat">
+        <span class="k">Uscite</span>
+        <span class="v">{{ state.thisWeek().runs }}</span>
+      </div>
+      <div class="runstat">
+        <span class="k">Passo medio</span>
+        <span class="v">{{ weekPace }}</span>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<button class="runadd tap44 press-fx" (click)="addRun()">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+    <path d="M12 5v14M5 12h14"/>
+  </svg>
+  Registra un'uscita
+</button>
+
+<ng-container *ngIf="weekRows().length">
+  <p class="sectiontitle">Uscite della settimana</p>
+  <div class="grouplist">
+    <div class="daycard runrow press-fx" *ngFor="let r of weekRows()" (click)="editRun(r.id)">
+      <div class="badge runbadge">{{ r.km }}</div>
+      <div class="info">
+        <div class="lbl">{{ r.dayLabel }}<span class="runtype">{{ r.typeLabel }}</span></div>
+        <div class="meta">{{ r.duration }} · {{ r.pace }} /km · {{ r.effortLabel }}</div>
+      </div>
+      <button class="rundel tap44" (click)="removeRun(r, $event)" aria-label="Elimina uscita">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M4 7h16M9 7V5h6v2M7 7l1 13h8l1-13"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</ng-container>
+
+<div class="history-empty" *ngIf="state.loaded() && !state.runs().length">
+  Nessuna uscita registrata. Il primo chilometro parte da qui.
+</div>
+
+<ng-container *ngIf="pastRows().length">
+  <p class="sectiontitle mt-5">Prima di questa settimana</p>
+  <div class="grouplist">
+    <div class="daycard runrow press-fx" *ngFor="let r of pastRows()" (click)="editRun(r.id)">
+      <div class="badge runbadge">{{ r.km }}</div>
+      <div class="info">
+        <div class="lbl">{{ r.dayLabel }}<span class="runtype">{{ r.typeLabel }}</span></div>
+        <div class="meta">{{ r.duration }} · {{ r.pace }} /km · {{ r.effortLabel }}</div>
+      </div>
+      <button class="rundel tap44" (click)="removeRun(r, $event)" aria-label="Elimina uscita">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M4 7h16M9 7V5h6v2M7 7l1 13h8l1-13"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</ng-container>

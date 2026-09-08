@@ -1,5 +1,6 @@
 import { Day, WeekPlan } from './workout.model';
 import { Diet } from './diet.model';
+import { RunGoal, emptyRunGoal } from './run.model';
 import { todayLocalISO } from '../core/utils/date.util';
 
 export type ProtocolStatus = 'draft' | 'active' | 'archived';
@@ -20,6 +21,10 @@ export interface Protocol {
   source: ProtocolSource;
   workout: WorkoutProtocol;
   diet: Diet;
+  /** Obiettivo di corsa settimanale. Facoltativo: i protocolli creati prima
+   *  che la sezione Corsa esistesse non ce l'hanno, e non tutti i clienti
+   *  corrono. Assente = sezione Corsa senza obiettivi, solo registro. */
+  running?: RunGoal;
   infoNote: string;
   /** Ultima estrazione da extractDietNotes(dietaText): permette di ricaricare
    *  solo l'integrazione senza perdere le note gia' derivate dalla dieta. */
@@ -53,6 +58,7 @@ export function emptyProtocol(clientId: string, coachId: string): Omit<Protocol,
     source: 'manual',
     workout: emptyWorkoutProtocol(),
     diet: emptyDiet(),
+    running: emptyRunGoal(),
     infoNote: '',
     createdAt: now,
     updatedAt: now
