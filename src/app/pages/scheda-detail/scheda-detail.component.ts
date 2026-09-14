@@ -342,6 +342,9 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onSetCheck(vm: ExerciseVM, rowIdx: number): void {
+    // La spunta e' un div, non un <button>: "disabilitato" non esiste per lui e
+    // il click arriva comunque. Il controllo vero sta qui.
+    if (this.setsLocked) return;
     const row = vm.rows[rowIdx];
     row.done = !row.done;
 
@@ -480,6 +483,23 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     // raggiungibile, l'unica uscita e' annullarla.
     if (this.hasOtherSession) return 'Da chiudere';
     return 'Sessione';
+  }
+
+  /**
+   * I campi della scheda (ripetizioni, carico, spunta della serie) si
+   * compilano solo a sessione avviata su QUESTO giorno.
+   *
+   * Prima erano sempre aperti, e questo permetteva di registrare un
+   * allenamento senza mai far partire il cronometro: la seduta finiva nello
+   * storico con una durata che non era mai stata misurata. Vale anche quando
+   * la sessione e' aperta su un altro giorno — quei numeri appartengono a
+   * quell'allenamento, non a questo.
+   *
+   * In pausa NON si blocca: una sessione in pausa e' comunque avviata, e
+   * bloccare i campi mentre si riprende fiato sarebbe solo un intralcio.
+   */
+  get setsLocked(): boolean {
+    return !this.isSessionOnThisDay;
   }
 
   get isSessionRunning(): boolean {
