@@ -8,6 +8,15 @@
 <ng-template #exDetail let-vm="vm">
   <p class="note" *ngIf="vm.ex.note">{{ vm.ex.note }}</p>
 
+  <!-- Finche' la sessione non parte i campi sono spenti: senza una riga che lo
+       dica, sembrerebbero rotti. -->
+  <p class="setslocked-hint" *ngIf="setsLocked">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M8 5.5v13l11-6.5z"/>
+    </svg>
+    Avvia la sessione per registrare ripetizioni e carichi.
+  </p>
+
   <div class="settable-head">
     <span>Serie</span>
     <span>Rip.</span>
@@ -20,12 +29,16 @@
     <input class="rip-input" type="text" inputmode="decimal"
       [(ngModel)]="row.reps"
       [placeholder]="row.ripPlaceholder"
+      [disabled]="setsLocked"
       (input)="onInput()" />
     <input class="load-input" type="text" inputmode="decimal"
       [(ngModel)]="row.load"
       [placeholder]="row.loadPlaceholder || '0'"
+      [disabled]="setsLocked"
       (input)="onInput()" />
-    <div class="set-check" [class.done]="row.done" (click)="onSetCheck(vm, j)">✓</div>
+    <div class="set-check" [class.done]="row.done" [class.locked]="setsLocked"
+      [attr.aria-disabled]="setsLocked ? 'true' : null"
+      (click)="onSetCheck(vm, j)">✓</div>
   </div>
 
   <!-- Insights -->

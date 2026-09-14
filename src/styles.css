@@ -299,6 +299,14 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .rip-input::placeholder,.load-input::placeholder{color:var(--label-3);font-weight:500;}
 .set-check{width:28px;height:28px;border-radius:50%;border:2px solid var(--label-3);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:transparent;font-size:var(--text-md);font-weight:700;transition:background .18s ease,border-color .18s ease;flex-shrink:0;}
 .set-check.done{background:var(--accent);border-color:var(--accent);color:var(--accent-contrast);}
+
+/* Scheda bloccata finche' la sessione non e' avviata. I campi restano LEGGIBILI
+   (i suggerimenti del protocollo servono a decidere se iniziare): cambia il
+   contorno, non il contenuto. */
+.rip-input:disabled,.load-input:disabled{opacity:.55;cursor:not-allowed;background:transparent;border-style:dashed;}
+.set-check.locked{opacity:.35;cursor:not-allowed;border-style:dashed;}
+.setslocked-hint{display:flex;align-items:center;gap:7px;margin-top:12px;padding:9px 11px;border:1px solid var(--content-glass-border);border-radius:var(--r-sm);background:var(--surface-raise);font-size:var(--text-xs);line-height:1.35;color:var(--label-2);}
+.setslocked-hint svg{flex-shrink:0;color:var(--accent);}
 .meal-check{width:18px;height:18px;border-radius:50%;border:2px solid var(--label-3);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:transparent;font-size:var(--text-2xs);font-weight:700;transition:background .18s ease,border-color .18s ease;flex-shrink:0;}
 .meal-check.done{background:var(--accent);border-color:var(--accent);color:var(--accent-contrast);}
 .lastsession{font-size:var(--text-xs);color:var(--label-3);margin-top:10px;font-family:'IBM Plex Mono',monospace;line-height:1.5;}
