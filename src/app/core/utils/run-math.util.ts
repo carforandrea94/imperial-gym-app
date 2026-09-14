@@ -95,6 +95,12 @@ export function weekTotals(runs: readonly Run[], weekMondayISO: string): WeekTot
   return { km, runs: count, durationSec, paceSecPerKm: paceSecPerKm(km, durationSec) };
 }
 
+/** Minuti corsi, arrotondati: e' l'unita' in cui il coach prescrive il lavoro. */
+export function minutesFromSec(durationSec: number): number {
+  if (!isFinite(durationSec) || durationSec <= 0) return 0;
+  return Math.round(durationSec / 60);
+}
+
 /** Percentuale di completamento di un obiettivo, limitata a 100: la barra non deve straripare. */
 export function goalPct(done: number, target: number): number {
   if (!isFinite(target) || target <= 0) return 0;

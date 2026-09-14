@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   paceSecPerKm, formatPace, formatDuration, parseDuration, parseDistance, formatKm,
-  weekTotals, goalPct
+  weekTotals, goalPct, minutesFromSec
 } from './run-math.util';
 import { Run } from '../../models/run.model';
 
@@ -120,5 +120,17 @@ describe('goalPct', () => {
 
   it('senza obiettivo non c\'e\' percentuale', () => {
     expect(goalPct(15, 0)).toBe(0);
+  });
+});
+
+describe('minutesFromSec', () => {
+  it('arrotonda al minuto piu' + "'" + ' vicino', () => {
+    expect(minutesFromSec(47 * 60 + 12)).toBe(47);
+    expect(minutesFromSec(47 * 60 + 40)).toBe(48);
+  });
+
+  it('senza tempo non ci sono minuti', () => {
+    expect(minutesFromSec(0)).toBe(0);
+    expect(minutesFromSec(-10)).toBe(0);
   });
 });

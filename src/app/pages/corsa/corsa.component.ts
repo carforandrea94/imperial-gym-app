@@ -6,7 +6,7 @@ import { RunsService } from '../../services/runs.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { ToastService } from '../../services/toast.service';
 import { RUN_TYPE_LABELS, RUN_EFFORT_LABELS, hasRunGoal, Run } from '../../models/run.model';
-import { formatKm, formatPace, formatDuration, goalPct, paceSecPerKm } from '../../core/utils/run-math.util';
+import { formatKm, formatPace, formatDuration, goalPct, paceSecPerKm, minutesFromSec } from '../../core/utils/run-math.util';
 import { mondayISO, todayLocalISO } from '../../core/utils/date.util';
 
 /** Una riga dell'elenco: l'uscita piu' quello che serve a disegnarla, gia' pronto. */
@@ -65,11 +65,13 @@ export class CorsaComponent implements OnInit {
 
   // --- Obiettivo settimanale -------------------------------------------------
 
-  get kmPct(): number { return goalPct(this.state.thisWeek().km, this.state.goal()?.weeklyKm ?? 0); }
+  get minutesPct(): number { return goalPct(this.minutesDone, this.state.goal()?.weeklyMinutes ?? 0); }
   get runsPct(): number { return goalPct(this.state.thisWeek().runs, this.state.goal()?.weeklyRuns ?? 0); }
 
+  /** Minuti corsi questa settimana: e' il numero confrontato con l'obiettivo. */
+  get minutesDone(): number { return minutesFromSec(this.state.thisWeek().durationSec); }
+
   get kmDone(): string { return formatKm(this.state.thisWeek().km); }
-  get kmTarget(): string { return formatKm(this.state.goal()?.weeklyKm ?? 0); }
 
   get weekPace(): string {
     const pace = formatPace(this.state.thisWeek().paceSecPerKm);

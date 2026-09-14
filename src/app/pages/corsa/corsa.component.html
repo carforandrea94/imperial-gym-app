@@ -3,12 +3,12 @@
   <p class="sectiontitle">Questa settimana · {{ weekLabel }}</p>
 
   <div class="infocard runcard">
-    <div class="rungoal" *ngIf="(state.goal()?.weeklyKm ?? 0) > 0">
+    <div class="rungoal" *ngIf="(state.goal()?.weeklyMinutes ?? 0) > 0">
       <div class="rungoal-head">
-        <span class="rungoal-lbl">Chilometri</span>
-        <span class="rungoal-val">{{ kmDone }}<span class="of">/{{ kmTarget }} km</span></span>
+        <span class="rungoal-lbl">Minuti</span>
+        <span class="rungoal-val">{{ minutesDone }}<span class="of">/{{ state.goal()?.weeklyMinutes }} min</span></span>
       </div>
-      <div class="runbar"><div class="runbar-fill" [style.width.%]="kmPct"></div></div>
+      <div class="runbar"><div class="runbar-fill" [style.width.%]="minutesPct"></div></div>
     </div>
 
     <div class="rungoal" *ngIf="(state.goal()?.weeklyRuns ?? 0) > 0">
@@ -21,8 +21,8 @@
 
     <div class="runstats">
       <div class="runstat">
-        <span class="k">Tempo</span>
-        <span class="v">{{ weekTime }}</span>
+        <span class="k">Distanza</span>
+        <span class="v">{{ kmDone }} km</span>
       </div>
       <div class="runstat">
         <span class="k">Passo medio</span>
@@ -40,12 +40,12 @@
   <div class="infocard runcard">
     <div class="runstats runstats-3">
       <div class="runstat">
-        <span class="k">Distanza</span>
-        <span class="v">{{ kmDone }} km</span>
+        <span class="k">Tempo</span>
+        <span class="v">{{ weekTime }}</span>
       </div>
       <div class="runstat">
-        <span class="k">Uscite</span>
-        <span class="v">{{ state.thisWeek().runs }}</span>
+        <span class="k">Distanza</span>
+        <span class="v">{{ kmDone }} km</span>
       </div>
       <div class="runstat">
         <span class="k">Passo medio</span>
