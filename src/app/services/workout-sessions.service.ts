@@ -12,7 +12,7 @@ import {
 } from 'firebase/firestore';
 import { FirebaseService } from '../core/services/firebase.service';
 import { AuthService } from '../core/services/auth.service';
-import { WorkoutSession } from '../models/workout.model';
+import { WorkoutSession, normalizeSession } from '../models/workout.model';
 import { ZoneFixService } from '../core/utils/zone.util';
 import { sanitizeForFirestore } from '../core/utils/sanitize.util';
 
@@ -50,7 +50,7 @@ export class WorkoutSessionsService {
   get(id: string): Promise<WorkoutSession | null> {
     return this.zoneFix.run((async () => {
       const snap = await getDoc(doc(this.col(), id));
-      return snap.exists() ? (snap.data() as WorkoutSession) : null;
+      return snap.exists() ? normalizeSession(snap.data()) : null;
     })());
   }
 
@@ -99,12 +99,22 @@ export class WorkoutSessionsService {
     })());
   }
 
+  /** Scarta i documenti che non descrivono una seduta e ricostruisce gli altri:
+   *  un documento rotto non deve portarsi dietro l'intero elenco. */
+  private normalizeRows(docs: readonly { id: string; data: () => unknown }[]): { id: string; session: WorkoutSession }[] {
+    const rows: { id: string; session: WorkoutSession }[] = [];
+    for (const d of docs) {
+      const session = normalizeSession(d.data());
+      if (session) rows.push({ id: d.id, session });
+    }
+    return rows;
+  }
+
   /** Tutte le sessioni salvate (storico completo), piu' recenti prima. */
   listAll(): Promise<{ id: string; session: WorkoutSession }[]> {
     return this.zoneFix.run((async () => {
       const snap = await getDocs(this.col());
-      return snap.docs
-        .map(d => ({ id: d.id, session: d.data() as WorkoutSession }))
+      return this.normalizeRows(snap.docs)
         .sort((a, b) => b.session.date.localeCompare(a.session.date));
     })());
   }
@@ -114,8 +124,7 @@ export class WorkoutSessionsService {
     return this.zoneFix.run((async () => {
       const q = query(this.col(), where('dayId', '==', dayId));
       const snap = await getDocs(q);
-      return snap.docs
-        .map(d => ({ id: d.id, session: d.data() as WorkoutSession }))
+      return this.normalizeRows(snap.docs)
         .sort((a, b) => a.session.date.localeCompare(b.session.date));
     })());
   }
