@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeRunGoal, hasRunGoal, emptyRunGoal } from './run.model';
+import { normalizeRunGoal, hasRunGoal, emptyRunGoal, normalizeRun } from './run.model';
 
 describe('normalizeRunGoal', () => {
   it('tiene i valori validi', () => {
@@ -37,5 +37,35 @@ describe('hasRunGoal', () => {
   it('con entrambi a zero la sezione resta un semplice registro', () => {
     expect(hasRunGoal(emptyRunGoal())).toBe(false);
     expect(hasRunGoal(null)).toBe(false);
+  });
+});
+
+describe('normalizeRun', () => {
+  const base = { date: '2026-09-14', durationMin: 40, type: 'medio', effort: 'dura' };
+
+  it('tiene un\'uscita gia\' in minuti', () => {
+    expect(normalizeRun({ ...base, note: 'tappeto' }))
+      .toEqual({ date: '2026-09-14', durationMin: 40, type: 'medio', effort: 'dura', note: 'tappeto' });
+  });
+
+  it('un\'uscita salvata col tempo in secondi si riporta a minuti', () => {
+    const legacy = { date: '2026-09-14', durationSec: 47 * 60 + 12, distanceKm: 8.2, type: 'lento', effort: 'giusta' };
+
+    const run = normalizeRun(legacy)!;
+
+    expect(run.durationMin).toBe(47);
+    // La distanza non descrive piu' la seduta: non entra nel modello.
+    expect((run as any).distanceKm).toBeUndefined();
+  });
+
+  it('scarta un documento senza data: non direbbe in che settimana cade', () => {
+    expect(normalizeRun({ durationMin: 40 })).toBeNull();
+    expect(normalizeRun(null)).toBeNull();
+  });
+
+  it('un tipo o uno sforzo sconosciuto ricade sul valore piu\' comune', () => {
+    const run = normalizeRun({ date: '2026-09-14', durationMin: 30, type: 'boh', effort: 'boh' })!;
+    expect(run.type).toBe('lento');
+    expect(run.effort).toBe('giusta');
   });
 });

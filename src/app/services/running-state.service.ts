@@ -57,7 +57,7 @@ export class RunningStateService {
     if (this.inFlight) return this.inFlight;
     this.inFlight = this.runsSvc.listAll()
       .then(rows => {
-        this.runs.set(rows.filter(r => !!r.run?.date));
+        this.runs.set(rows);
         this.loaded.set(true);
       })
       .catch(e => {

@@ -4,14 +4,43 @@ export type RunType = 'lento' | 'medio' | 'ripetute';
 /** Come e' andata, dal punto di vista di chi corre. */
 export type RunEffort = 'facile' | 'giusta' | 'dura';
 
+/**
+ * Un'uscita di corsa. Si registra il TEMPO e basta: e' cosi' che il coach
+ * assegna il lavoro ("40 minuti sul tappeto") ed e' l'unico numero che il
+ * cliente conosce con certezza appena sceso. La distanza, su un tappeto o a
+ * sensazione, e' una stima — e il passo che se ne ricava eredita quella stima
+ * senza dichiararla.
+ */
 export interface Run {
   /** ISO yyyy-mm-dd, giorno dell'uscita. */
   date: string;
-  distanceKm: number;
-  durationSec: number;
+  /** Minuti corsi. E' il dato della seduta. */
+  durationMin: number;
   type: RunType;
   effort: RunEffort;
   note?: string;
+}
+
+/**
+ * Uscita utilizzabile a partire dal documento cosi' com'e' su Firestore.
+ *
+ * Le uscite salvate prima tenevano il tempo in secondi (`durationSec`) e la
+ * distanza in chilometri: i secondi si riportano a minuti senza perdere niente,
+ * la distanza invece non viene piu' letta. Restare su Firestore non le fa
+ * male — semplicemente non descrivono piu' la seduta.
+ */
+export function normalizeRun(raw: any): Run | null {
+  if (!raw || typeof raw.date !== 'string' || !raw.date) return null;
+  const min = typeof raw.durationMin === 'number' && raw.durationMin > 0
+    ? Math.round(raw.durationMin)
+    : (typeof raw.durationSec === 'number' && raw.durationSec > 0 ? Math.round(raw.durationSec / 60) : 0);
+  return {
+    date: raw.date,
+    durationMin: min,
+    type: raw.type === 'medio' || raw.type === 'ripetute' ? raw.type : 'lento',
+    effort: raw.effort === 'facile' || raw.effort === 'dura' ? raw.effort : 'giusta',
+    note: typeof raw.note === 'string' && raw.note ? raw.note : undefined
+  };
 }
 
 export const RUN_TYPE_LABELS: Record<RunType, string> = {
