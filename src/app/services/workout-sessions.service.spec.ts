@@ -65,3 +65,45 @@ describe('WorkoutSessionsService.moveSession', () => {
     expect(mockDocs.get('day1_2026-07-05')).toMatchObject({ exercises: [] });
   });
 });
+
+describe('WorkoutSessionsService.listAll', () => {
+  let service: WorkoutSessionsService;
+
+  beforeEach(async () => {
+    mockDocs.clear();
+    vi.resetModules();
+    const { WorkoutSessionsService } = await import('./workout-sessions.service');
+    service = new WorkoutSessionsService(
+      { db: {} } as any,
+      { currentUser: () => ({ uid: 'u1' }) } as any,
+      { run: (p: Promise<any>) => p } as any
+    );
+  });
+
+  it('un documento estraneo nella collezione non porta giu\' tutto lo storico', async () => {
+    // E' successo davvero: un documento senza `exercises` faceva esplodere la
+    // reduce che conta le serie, e la pagina mostrava "Errore nel caricamento"
+    // come se non ci fosse piu' niente salvato.
+    mockDocs.set('day1_2026-09-14', {
+      dayId: 'day1', dayLabel: 'Petto', date: '2026-09-14',
+      exercises: [{ name: 'Panca', sets: [{ load: '36', reps: '10', done: true }] }]
+    });
+    mockDocs.set('zz_probe', { probe: true });
+
+    const rows = await service.listAll();
+
+    expect(rows.map(r => r.id)).toEqual(['day1_2026-09-14']);
+    expect(() => rows[0].session.exercises.reduce((n, ex) => n + ex.sets.length, 0)).not.toThrow();
+  });
+
+  it('una seduta incompleta ma datata resta nell\'elenco, vuota', async () => {
+    // Con la data si puo' collocare e mostrare: meglio visibile e cancellabile
+    // che nascosta senza spiegazioni.
+    mockDocs.set('day9_2026-09-10', { date: '2026-09-10' });
+
+    const rows = await service.listAll();
+
+    expect(rows.length).toBe(1);
+    expect(rows[0].session.exercises).toEqual([]);
+  });
+});
