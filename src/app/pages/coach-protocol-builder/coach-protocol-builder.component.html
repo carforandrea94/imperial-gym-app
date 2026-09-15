@@ -427,10 +427,10 @@
     <div class="infocard mb-4">
       <div class="measure-grid cols-2">
         <div class="measure-field">
-          <label>Chilometri a settimana</label>
+          <label>Minuti a settimana</label>
           <div class="measure-input-wrap">
-            <input type="number" inputmode="decimal" min="0" step="0.5" [(ngModel)]="runGoal.weeklyKm" placeholder="0" />
-            <span class="unit">km</span>
+            <input type="number" inputmode="numeric" min="0" step="5" [(ngModel)]="runGoal.weeklyMinutes" placeholder="0" />
+            <span class="unit">min</span>
           </div>
         </div>
         <div class="measure-field">

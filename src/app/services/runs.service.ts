@@ -4,7 +4,7 @@ import { FirebaseService } from '../core/services/firebase.service';
 import { AuthService } from '../core/services/auth.service';
 import { ZoneFixService } from '../core/utils/zone.util';
 import { sanitizeForFirestore } from '../core/utils/sanitize.util';
-import { Run } from '../models/run.model';
+import { Run, normalizeRun } from '../models/run.model';
 
 /**
  * Registro delle uscite di corsa: users/{uid}/runs/{id}.
@@ -33,9 +33,14 @@ export class RunsService {
   listAll(): Promise<{ id: string; run: Run }[]> {
     return this.zoneFix.run((async () => {
       const snap = await getDocs(this.col());
-      return snap.docs
-        .map(d => ({ id: d.id, run: d.data() as Run }))
-        .sort((a, b) => b.run.date.localeCompare(a.run.date) || b.id.localeCompare(a.id));
+      // Normalizzate qui, in un punto solo: chi legge piu' avanti non deve
+      // sapere che esistono uscite salvate col tempo in secondi.
+      const rows: { id: string; run: Run }[] = [];
+      for (const d of snap.docs) {
+        const run = normalizeRun(d.data());
+        if (run) rows.push({ id: d.id, run });
+      }
+      return rows.sort((a, b) => b.run.date.localeCompare(a.run.date) || b.id.localeCompare(a.id));
     })());
   }
 

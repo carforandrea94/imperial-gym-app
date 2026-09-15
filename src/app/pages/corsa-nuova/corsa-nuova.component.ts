@@ -9,7 +9,7 @@ import { ToastService } from '../../services/toast.service';
 import {
   Run, RunType, RunEffort, RUN_TYPE_LABELS, RUN_EFFORT_LABELS
 } from '../../models/run.model';
-import { parseDistance, parseDuration, formatPace, paceSecPerKm, formatKm } from '../../core/utils/run-math.util';
+import { parseMinutes, formatMinutes } from '../../core/utils/run-math.util';
 import { todayLocalISO } from '../../core/utils/date.util';
 
 @Component({
@@ -26,8 +26,7 @@ export class CorsaNuovaComponent implements OnInit, OnDestroy {
   readonly maxDate = todayLocalISO();
 
   date = todayLocalISO();
-  distance = '';
-  duration = '';
+  minutes = '';
   type: RunType = 'lento';
   effort: RunEffort = 'giusta';
   note = '';
@@ -79,22 +78,20 @@ export class CorsaNuovaComponent implements OnInit, OnDestroy {
     return this.editId ? 'Modifica uscita' : 'Nuova uscita';
   }
 
-  /** Passo calcolato mentre si scrive: e' il numero che dice se i dati inseriti hanno senso. */
-  get livePace(): string {
-    const pace = formatPace(paceSecPerKm(parseDistance(this.distance), parseDuration(this.duration)));
-    return pace ? `${pace} /km` : '—';
+  /** Come verra' letto il tempo digitato: `1:20` non e' un'ora e venti per tutti. */
+  get liveMinutes(): string {
+    const min = parseMinutes(this.minutes);
+    return min > 0 ? formatMinutes(min) : '—';
   }
 
   get canSave(): boolean {
-    return parseDistance(this.distance) > 0 && parseDuration(this.duration) > 0 && !this.saving;
+    return parseMinutes(this.minutes) > 0 && !this.saving;
   }
 
   async save(): Promise<void> {
-    const distanceKm = parseDistance(this.distance);
-    const durationSec = parseDuration(this.duration);
+    const durationMin = parseMinutes(this.minutes);
 
-    if (distanceKm <= 0) { this.errorMsg = 'Inserisci la distanza in chilometri (es. 8,5).'; return; }
-    if (durationSec <= 0) { this.errorMsg = 'Inserisci il tempo (es. 47:12 oppure 47).'; return; }
+    if (durationMin <= 0) { this.errorMsg = 'Inserisci i minuti corsi (es. 40 oppure 1:20).'; return; }
     if (!this.date) { this.errorMsg = 'Inserisci la data dell\'uscita.'; return; }
 
     this.errorMsg = '';
@@ -102,8 +99,7 @@ export class CorsaNuovaComponent implements OnInit, OnDestroy {
 
     const run: Run = {
       date: this.date,
-      distanceKm,
-      durationSec,
+      durationMin,
       type: this.type,
       effort: this.effort,
       note: this.note.trim() || undefined
@@ -128,7 +124,7 @@ export class CorsaNuovaComponent implements OnInit, OnDestroy {
     }
 
     await this.state.refresh();
-    this.toast.success(this.editId ? 'Uscita aggiornata' : `Registrati ${formatKm(distanceKm)} km`);
+    this.toast.success(this.editId ? 'Uscita aggiornata' : `Registrati ${formatMinutes(durationMin)}`);
     this.router.navigate(['/corsa']);
   }
 
@@ -137,8 +133,7 @@ export class CorsaNuovaComponent implements OnInit, OnDestroy {
     if (!found) return;
     const run = found.run;
     this.date = run.date;
-    this.distance = formatKm(run.distanceKm);
-    this.duration = this.durationInput(run.durationSec);
+    this.minutes = String(run.durationMin);
     this.type = run.type;
     this.effort = run.effort;
     this.note = run.note ?? '';
@@ -149,13 +144,4 @@ export class CorsaNuovaComponent implements OnInit, OnDestroy {
     if (redraw) this.cdr.detectChanges();
   }
 
-  /** Il tempo torna nel campo nella stessa forma in cui si scrive: `m:ss` o `h:mm:ss`. */
-  private durationInput(sec: number): string {
-    const total = Math.round(sec);
-    const h = Math.floor(total / 3600);
-    const m = Math.floor((total % 3600) / 60);
-    const s = total % 60;
-    const ss = s.toString().padStart(2, '0');
-    return h > 0 ? `${h}:${m.toString().padStart(2, '0')}:${ss}` : `${m}:${ss}`;
-  }
 }

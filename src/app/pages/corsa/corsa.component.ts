@@ -6,7 +6,7 @@ import { RunsService } from '../../services/runs.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { ToastService } from '../../services/toast.service';
 import { RUN_TYPE_LABELS, RUN_EFFORT_LABELS, hasRunGoal, Run } from '../../models/run.model';
-import { formatKm, formatPace, formatDuration, goalPct, paceSecPerKm } from '../../core/utils/run-math.util';
+import { formatMinutes, goalPct } from '../../core/utils/run-math.util';
 import { mondayISO, todayLocalISO } from '../../core/utils/date.util';
 
 /** Una riga dell'elenco: l'uscita piu' quello che serve a disegnarla, gia' pronto. */
@@ -14,9 +14,7 @@ interface RunRow {
   id: string;
   run: Run;
   dayLabel: string;
-  km: string;
-  duration: string;
-  pace: string;
+  minutes: string;
   typeLabel: string;
   effortLabel: string;
 }
@@ -65,21 +63,13 @@ export class CorsaComponent implements OnInit {
 
   // --- Obiettivo settimanale -------------------------------------------------
 
-  get kmPct(): number { return goalPct(this.state.thisWeek().km, this.state.goal()?.weeklyKm ?? 0); }
+  get minutesPct(): number { return goalPct(this.minutesDone, this.state.goal()?.weeklyMinutes ?? 0); }
   get runsPct(): number { return goalPct(this.state.thisWeek().runs, this.state.goal()?.weeklyRuns ?? 0); }
 
-  get kmDone(): string { return formatKm(this.state.thisWeek().km); }
-  get kmTarget(): string { return formatKm(this.state.goal()?.weeklyKm ?? 0); }
+  /** Minuti corsi questa settimana: e' il numero confrontato con l'obiettivo. */
+  get minutesDone(): number { return this.state.thisWeek().minutes; }
 
-  get weekPace(): string {
-    const pace = formatPace(this.state.thisWeek().paceSecPerKm);
-    return pace ? `${pace} /km` : '—';
-  }
-
-  get weekTime(): string {
-    const sec = this.state.thisWeek().durationSec;
-    return sec > 0 ? formatDuration(sec) : '—';
-  }
+  get weekTime(): string { return formatMinutes(this.state.thisWeek().minutes); }
 
   /** Intervallo della settimana in corso, es. "8 – 14 set". */
   get weekLabel(): string {
@@ -103,7 +93,7 @@ export class CorsaComponent implements OnInit {
 
   async removeRun(row: RunRow, event: Event): Promise<void> {
     event.stopPropagation();
-    const ok = await this.confirm.confirm(`Eliminare l'uscita di ${row.dayLabel} (${row.km} km)?`);
+    const ok = await this.confirm.confirm(`Eliminare l'uscita di ${row.dayLabel} (${row.minutes})?`);
     if (!ok) return;
 
     if (await this.runsSvc.delete(row.id)) {
@@ -121,9 +111,7 @@ export class CorsaComponent implements OnInit {
       id,
       run,
       dayLabel: this.dayLabel(run.date),
-      km: formatKm(run.distanceKm),
-      duration: formatDuration(run.durationSec),
-      pace: formatPace(paceSecPerKm(run.distanceKm, run.durationSec)),
+      minutes: formatMinutes(run.durationMin),
       typeLabel: RUN_TYPE_LABELS[run.type] ?? '',
       effortLabel: RUN_EFFORT_LABELS[run.effort] ?? ''
     };

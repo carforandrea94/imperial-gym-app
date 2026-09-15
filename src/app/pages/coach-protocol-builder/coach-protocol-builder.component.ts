@@ -7,7 +7,7 @@ import { ProtocolService } from '../../services/protocol.service';
 import { WorkoutDataService } from '../../services/workout-data.service';
 import { Protocol } from '../../models/protocol.model';
 import { Day, Exercise } from '../../models/workout.model';
-import { RunGoal, emptyRunGoal } from '../../models/run.model';
+import { RunGoal, normalizeRunGoal } from '../../models/run.model';
 import { FoodItem, DietPlan, NamedMeal, MealCombination, SupplementItem, newDietPlan, newNamedMeal, newCombination, FoodCategory, FOOD_CATEGORIES, FOOD_CATEGORY_LABELS } from '../../models/diet.model';
 import { ProtocolBuilderStateService } from '../../services/protocol-builder-state.service';
 import { ToastService } from '../../services/toast.service';
@@ -89,10 +89,11 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.protocol = await this.protocolSvc.get(this.clientId, this.protocolId);
     if (!this.protocol) { this.router.navigate(['/coach/clienti', this.clientId]); return; }
-    // I protocolli creati prima della sezione Corsa non hanno l'obiettivo: si
-    // riempie qui, vuoto, cosi' il form ha sempre qualcosa a cui legarsi. Un
-    // obiettivo a zero vale come "non impostato" e il cliente non vede barre.
-    if (!this.protocol.running) this.protocol.running = emptyRunGoal();
+    // Il form ha sempre qualcosa a cui legarsi: i protocolli creati prima della
+    // sezione Corsa non hanno l'obiettivo, quelli salvati quando era in
+    // chilometri hanno un campo che non esiste piu'. Un obiettivo a zero vale
+    // come "non impostato" e il cliente non vede barre.
+    this.protocol.running = normalizeRunGoal(this.protocol.running);
     this.loading = false;
     this.cdr.detectChanges();
   }

@@ -1,6 +1,6 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { RunsService } from './runs.service';
-import { Run, RunGoal } from '../models/run.model';
+import { Run, RunGoal, normalizeRunGoal } from '../models/run.model';
 import { weekTotals, WeekTotals } from '../core/utils/run-math.util';
 import { todayLocalISO, mondayISO } from '../core/utils/date.util';
 
@@ -42,8 +42,10 @@ export class RunningStateService {
 
   constructor(private runsSvc: RunsService) {}
 
-  applyGoal(goal: RunGoal | null | undefined): void {
-    this.goal.set(goal ?? null);
+  applyGoal(goal: Partial<RunGoal> | null | undefined): void {
+    // Normalizzato qui, una volta sola: il resto dell'app non deve sapere che
+    // esistono protocolli salvati con l'obiettivo in chilometri.
+    this.goal.set(goal ? normalizeRunGoal(goal) : null);
   }
 
   /**
@@ -55,7 +57,7 @@ export class RunningStateService {
     if (this.inFlight) return this.inFlight;
     this.inFlight = this.runsSvc.listAll()
       .then(rows => {
-        this.runs.set(rows.filter(r => !!r.run?.date));
+        this.runs.set(rows);
         this.loaded.set(true);
       })
       .catch(e => {
