@@ -19,15 +19,19 @@
   --restwave-off:rgba(255,255,255,0.16); /* tacchetta gia' consumata nel timer di recupero */
   --accent: var(--brand);
   --accent-dim: var(--brand-dim);
-  /* Non esiste un verde nella palette: la conferma parla con l'accento.
-     Resta un token a se' perche' il significato e' diverso da --accent, non il colore. */
-  --state-success: var(--brand);
-  --state-success-rgb: 164,194,246;
-  --state-success-deep: #5A6A87;
+  /* La conferma parla con il verde secondario, non con l'accento.
+     Prima era --brand, cioe' lo stesso identico blu di tutto il resto: un
+     allenamento salvato aveva lo stesso colore di un bottone qualsiasi, e il
+     verde della palette veniva usato in un punto solo di tutta l'app
+     (l'etichetta "Grassi"). Ora il verde ha un mestiere e la conferma si
+     riconosce a colpo d'occhio. */
+  --state-success: var(--brand-2);
+  --state-success-rgb: 128,208,154;
+  --state-success-deep: #4E7A62;
   --state-danger: #5C2B39;
   --state-danger-rgb: 92,43,57;
   --state-danger-deep-rgb: 51,24,31;
-  --state-danger-text: #C4657F;  /* tinta chiara del vino scuro: 4,87:1 su card scura, il precedente #A64D67 bastava solo per le icone */
+  --state-danger-text: #C97190;  /* tinta chiara del vino scuro. Il precedente #C4657F si fermava a 4,36:1 sulla card composita sopra il fondo: sotto la soglia. Questo sta a 4,94:1. */
   --glass-bg: rgba(20,24,32,0.30);
   --content-glass-bg: rgba(22,26,34,0.46);
   --content-glass-border: rgba(255,255,255,0.12);
@@ -38,7 +42,11 @@
   --surface-raise-2: rgba(255,255,255,0.10);
   --surface-press: rgba(255,255,255,0.04);
   --press-brightness: 1.08;
-  --accent-contrast:#04140D; /* testo su sfondo derivato da --accent: scuro finche' l'accento resta un blu pastello chiaro */
+  /* Inchiostro sugli sfondi pieni e accesi: accento blu E verde di conferma.
+     Era #04140D, un nero verde ereditato da una palette precedente, che sul blu
+     stonava. Questo e' un nero bluastro, coerente con entrambi: 10,6:1
+     sull'accento, 10,4:1 sul verde. */
+  --accent-contrast:#061018;
   --safe-t: max(env(safe-area-inset-top, 0px), 24px);
   --safe-b: max(env(safe-area-inset-bottom, 0px), 14px);
   --tabbar-h: 54px;
@@ -83,14 +91,19 @@
   --label-3:rgba(20,23,28,0.62);   /* 5,04:1 su card bianca: sotto 0,58 il testo piccolo non arriva a 4,5:1 */
   --brand:#3E63E0;
   --brand-dim:rgba(62,99,224,0.12);
-  --brand-2:#2E9A5C;
-  --macro-carb:#B8862A;
-  --macro-protein:#C85C52;
+  /* I tre colori dei macro sono testo da 10px su card bianca, quindi devono
+     stare a 4,5:1. I valori precedenti non ci arrivavano — #2E9A5C 3,56:1,
+     #B8862A 3,24:1, #C85C52 4,11:1 — ed erano in uso davvero, sulle etichette
+     della dieta. Scuriti a tinta e saturazione invariate, cosi' restano
+     riconoscibili: verde, ambra, corallo. */
+  --brand-2:#1E7A47;               /* 5,34:1 */
+  --macro-carb:#8F6820;            /* 5,04:1 */
+  --macro-protein:#B8463C;         /* 5,28:1 */
   --sys-cyan:#0B6E97;              /* 5,69:1 su bianco: il precedente #0A8FC4 si fermava a 3,66:1 */
   --restwave-off:rgba(20,23,28,0.16);
   --accent-contrast:#FFFFFF;
-  --state-success-rgb: 62,99,224;
-  --state-success-deep: #9FB0D9;
+  --state-success-rgb: 30,122,71;
+  --state-success-deep: #9CC4AC;
   --state-danger: #A32E3E;
   --state-danger-rgb: 163,46,62;
   --state-danger-deep-rgb: 110,31,41;
@@ -109,9 +122,9 @@
    di chiaro invece di un blob quasi nero che intorbidirebbe le card bianche. */
 :root[data-theme="light"] body::before {
   background: linear-gradient(200deg,
-    #EAF0FF 0%,
-    #F5F3FF 40%,
-    #FAFBFD 75%,
+    #E6F4EC 0%,
+    #E9EFFF 42%,
+    #F7F8FC 76%,
     #F6F7FA 100%);
 }
 
@@ -135,10 +148,16 @@ body::before {
   inset: -20%;
   pointer-events: none;
   z-index: 0;
+  /* Il fondo fa da ponte fra i due colori del marchio: parte dal verde
+     secondario e scivola nell'indaco dell'accento, prima di spegnersi nel
+     fondo pagina. Prima partiva dal verde e passava per un blu-grigio neutro
+     (#16202A) che non apparteneva a nessuno dei due: il vetro delle card
+     rifrangeva una tinta estranea all'accento, ed e' da li' che veniva la
+     sensazione che sfondo e accento non si parlassero. */
   background: linear-gradient(200deg,
-    #1C2A22 0%,
-    #16202A 40%,
-    #10131C 75%,
+    #142B26 0%,
+    #132338 42%,
+    #0F1220 76%,
     #0C0D14 100%);
   filter: blur(16px) saturate(108%);
   animation: bgDrift 26s var(--spring-soft) infinite alternate;
