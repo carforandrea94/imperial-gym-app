@@ -40,7 +40,7 @@ export class WorkoutDataService {
   };
 
   /* Icone lineari monocrome (stile SF Symbols / Lucide, tratto currentColor)
-     in linea con lo stile liquid glass — niente emoji colorate. */
+     in linea con il resto dell'interfaccia — niente emoji colorate. */
   private readonly ICON_ATTRS =
     'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"';
 

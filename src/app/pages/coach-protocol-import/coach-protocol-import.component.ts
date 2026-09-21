@@ -27,26 +27,24 @@ const STEP_TIMEOUT_MS = 25000;
       position: fixed; inset: 0; z-index: 1000;
       display: flex; align-items: center; justify-content: center;
       background: rgba(4, 10, 8, 0.72);
-      backdrop-filter: blur(6px) saturate(120%);
-      -webkit-backdrop-filter: blur(6px) saturate(120%);
       animation: fade .25s var(--spring-soft);
     }
     .pdf-overlay-card {
       width: min(340px, 86vw);
       padding: 28px 24px;
       border-radius: var(--r-xl);
-      background: var(--content-glass-bg, rgba(20,26,24,0.9));
-      border: 1px solid var(--content-glass-border, rgba(255,255,255,.12));
-      box-shadow: 0 20px 50px rgba(0,0,0,.45);
+      background: var(--surface-card);
+      border: 1px solid var(--border-line);
+      box-shadow: var(--shadow-float);
       text-align: center;
     }
     .pdf-overlay-stage {
       font-family: 'Inter', sans-serif; font-weight: 600; font-size: var(--text-md);
-      color: #fff; margin-bottom: 18px;
+      color: var(--label); margin-bottom: 18px;
     }
     .pdf-progress-track {
       width: 100%; height: 8px; border-radius: var(--r-pill);
-      background: rgba(255,255,255,.12); overflow: hidden;
+      background: var(--surface-raise-2); overflow: hidden;
     }
     .pdf-progress-fill {
       height: 100%; border-radius: var(--r-pill);
@@ -55,7 +53,7 @@ const STEP_TIMEOUT_MS = 25000;
     }
     .pdf-progress-pct {
       margin-top: 10px; font-family: 'IBM Plex Mono', monospace;
-      font-size: var(--text-sm); color: var(--label-2, rgba(255,255,255,.6));
+      font-size: var(--text-sm); color: var(--label-2);
     }
   `]
 })
