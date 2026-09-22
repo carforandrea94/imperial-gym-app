@@ -1,7 +1,10 @@
 <div class="authscreen">
   <div class="authcard infocard">
-    <div class="authtitle">Imperial Gym</div>
-    <div class="authsub">Accedi al tuo account</div>
+    <div class="authhead">
+      <app-logo class="authlogo"></app-logo>
+      <div class="authtitle">Imperial Gym</div>
+      <div class="authsub">Accedi al tuo account</div>
+    </div>
 
     <form #f="ngForm" (ngSubmit)="submit(f)" novalidate>
 

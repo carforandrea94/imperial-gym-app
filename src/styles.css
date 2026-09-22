@@ -27,6 +27,13 @@
      nemmeno lui: un token che si ridefinisce in chiaro li renderebbe
      illeggibili meta' delle volte. */
   --ink-on-vivid:#08131A;
+  /* Inchiostro di secondo piano per la grafica, non per il testo: la parte di
+     un segno che deve stare sotto all'accento senza sparire. Vale 3,4:1 sulla
+     card in entrambi i temi — la soglia degli elementi non testuali — mentre
+     l'accento sta a 8,6:1, cosi' la gerarchia si vede. Non puo' essere
+     un'opacita' sola: quella che va bene sul fondo scuro (0,34) in chiaro
+     scende a 2,2:1. */
+  --ink-subdued:#6B6E72;
   --restwave-off:rgba(255,255,255,0.16); /* tacchetta gia' consumata nel timer di recupero */
   --accent: var(--brand);
   --accent-dim: var(--brand-dim);
@@ -119,6 +126,7 @@
   --macro-fat:#5F4818;             /* 8,65:1 */
   --macro-supp:#6B3FA0;
   --restwave-off:rgba(22,26,28,0.16);
+  --ink-subdued:#8A8C8E;
   --accent-contrast:#FFFFFF;
   --state-success-deep: #A8CDB8;
   --state-danger: #A32E3E;
@@ -401,6 +409,12 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 /* ===================== AUTH (login / registrazione coach) ===================== */
 .authscreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
 .authcard{width:100%;max-width:380px;}
+/* Testata dell'accesso: marchio, nome e sottotitolo centrati. I campi sotto
+   restano allineati a sinistra (si leggono in colonna) e i link in fondo erano
+   gia' centrati, quindi la card si chiude come si apre. */
+.authhead{text-align:center;}
+.authlogo{display:block;width:72px;height:72px;margin:0 auto 16px;}
+app-logo svg{display:block;width:100%;height:100%;}
 .authtitle{font-weight:800;font-size:var(--text-3xl);color:var(--label);margin-bottom:4px;}
 .authsub{font-size:var(--text-sm);color:var(--label-3);margin-bottom:22px;}
 .authfield{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
