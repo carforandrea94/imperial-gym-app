@@ -2,7 +2,6 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { LucideAngularModule } from 'lucide-angular';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { WorkoutSessionsService } from '../../services/workout-sessions.service';
@@ -44,19 +43,11 @@ export class HistoryDetailComponent implements OnInit, OnDestroy {
     private sessionsSvc: WorkoutSessionsService,
     private confirm: ConfirmDialogService,
     public workoutData: WorkoutDataService,
-    private sanitizer: DomSanitizer,
     private cdr: ChangeDetectorRef,
     private historyEditState: HistoryEditStateService,
     private toast: ToastService,
     public sessionState: WorkoutSessionStateService
   ) {}
-
-  getMuscleIcon(name: string): SafeHtml {
-    const muscle = this.getMuscle(name);
-    return this.sanitizer.bypassSecurityTrustHtml(
-      this.workoutData.MUSCLE_ICONS[muscle] ?? this.workoutData.MUSCLE_ICONS['Core']
-    );
-  }
 
   ngOnInit(): void {
     this.historyEditState.registerSaveHandler(() => this.saveEdit());

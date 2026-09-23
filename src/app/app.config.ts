@@ -15,9 +15,8 @@ export const appConfig: ApplicationConfig = {
     importProvidersFrom(LucideAngularModule.pick(APP_ICONS)),
     // Il tratto delle icone, in un posto solo invece che su cinquantasette
     // elementi. Vale 2, che e' anche il default di Lucide: lo fissiamo lo
-    // stesso perche' le icone disegnate a mano (i gruppi muscolari, in
-    // workout-data.service.ts) devono restare su questo valore, e un cambio
-    // di default a monte le lascerebbe indietro in silenzio.
+    // stesso perche' e' il registro dell'app, e un cambio di default a monte
+    // lo sposterebbe senza che nessuno se ne accorga.
     { provide: LucideIconConfig, useValue: Object.assign(new LucideIconConfig(), { strokeWidth: 2 }) },
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),

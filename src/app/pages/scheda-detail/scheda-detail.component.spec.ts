@@ -29,7 +29,6 @@ function makeComponent(opts: { sessionSuQuestoGiorno: boolean; inPausa?: boolean
     { patchField } as any,           // AppStateService
     {} as any,                       // WorkoutSessionsService
     {} as any,                       // ConfirmDialogService
-    {} as any,                       // DomSanitizer
     { detectChanges: () => {} } as any,
     {} as any,                       // ToastService
     {} as any,                       // Renderer2
