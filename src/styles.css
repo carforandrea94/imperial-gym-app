@@ -75,6 +75,13 @@
   --safe-t: max(env(safe-area-inset-top, 0px), 24px);
   --safe-b: max(env(safe-area-inset-bottom, 0px), 14px);
   --tabbar-h: 54px;
+  /* Quanto la tabbar sta staccata dal fondo. Non e' --safe-b: quella tiene
+     tutta l'area riservata al gesto di home, e con la barra galleggiante
+     lasciava un vuoto di 36 px sotto la pillola. Qui ne togliamo 12, cosi' la
+     barra scende ma il suo bordo inferiore resta appena sopra l'indicatore di
+     home (21 pt), che e' dove il sistema si prende lo swipe. Sui dispositivi
+     senza indicatore vale il minimo di 10. */
+  --tabbar-gap: max(calc(env(safe-area-inset-bottom, 0px) - 12px), 10px);
   --nav-h: calc(var(--safe-t) + 86px);
   /* Altezza della navbar dopo lo shrink (body.scrolled), gradiente pieno
      incluso: e' il punto sotto cui un elemento sticky resta visibile. */
@@ -172,7 +179,7 @@ a { color: inherit; text-decoration: none; }
 
 /* ===== NAV BAR ===== */
 .navbar{position:fixed;top:0;left:0;right:0;z-index:50;padding-top:calc(var(--safe-t) + 6px);background:transparent;border-bottom:none;box-shadow:none;}
-.navbar::before{content:"";position:absolute;left:0;right:0;top:0;height:calc(100% + 56px);z-index:0;pointer-events:none;background:linear-gradient(to bottom, var(--bg) 0%, var(--bg) 55%, rgba(10,13,19,0) 100%);}
+.navbar::before{content:"";position:absolute;left:0;right:0;top:0;height:calc(100% + 56px);z-index:0;pointer-events:none;background:linear-gradient(to bottom, var(--bg) 0%, var(--bg) 55%, transparent 100%);}
 .navbar .inner{position:relative;z-index:2;padding:10px 18px 12px;max-width:640px;margin:0 auto;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:10px;transition:padding .25s ease;}
 .navbar .titleblock{min-width:0;flex:1;}
 .navbar h1{font-weight:800;font-size:var(--text-3xl);letter-spacing:-.01em;line-height:1.1;margin-top:3px;transition:font-size .25s ease;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -196,12 +203,21 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
    misura arrivi. Si usa l'altezza A RIPOSO e non quella corrente: seguire la
    navbar che si rimpicciolisce farebbe saltare il contenuto verso l'alto
    proprio mentre si sta scorrendo. */
-.content{padding-top:calc(var(--nav-h-rest, var(--nav-h)) + 10px);padding-bottom:calc(var(--tabbar-h) + var(--safe-b) + 28px);transition:padding-top .15s ease;}
+.content{padding-top:calc(var(--nav-h-rest, var(--nav-h)) + 10px);padding-bottom:calc(var(--tabbar-h) + var(--tabbar-gap) + 28px);transition:padding-top .15s ease;}
 .content.no-chrome{padding-top:0;padding-bottom:0;}
 .wrap{position:relative;z-index:1;max-width:640px;margin:0 auto;padding:0 16px;}
 
 /* ===== BOTTOM TAB BAR ===== */
-.tabbar{position:fixed;left:16px;right:16px;bottom:calc(var(--safe-b) + 2px);z-index:60;height:var(--tabbar-h);background:var(--surface-chrome);border:1px solid var(--border-line);border-radius:var(--r-pill);box-shadow:var(--shadow-float);display:flex;align-items:center;padding:5px;max-width:608px;margin:0 auto;}
+.tabbar{position:fixed;left:16px;right:16px;bottom:var(--tabbar-gap);z-index:60;height:var(--tabbar-h);background:var(--surface-chrome);border:1px solid var(--border-line);border-radius:var(--r-pill);box-shadow:var(--shadow-float);display:flex;align-items:center;padding:5px;max-width:608px;margin:0 auto;}
+/* Sfumatura in fondo, speculare a quella della navbar: cio' che scorre non si
+   taglia di netto contro la pillola, si spegne nel fondo della pagina.
+   E' uno pseudo-elemento della tabbar e non un <div> nel template perche' le
+   tabbar sono due (cliente e coach) e cosi' la sfumatura c'e' esattamente
+   quando c'e' una barra, senza ripetere la condizione.
+   position:fixed lo aggancia alla finestra invece che alla pillola, e
+   z-index:-1 lo mette dietro al fondo della pillola restando pero' dentro il
+   contesto di impilamento della tabbar, quindi sopra al contenuto. */
+.tabbar::before{content:"";position:fixed;left:0;right:0;bottom:0;height:calc(var(--tabbar-h) + var(--tabbar-gap) + 70px);z-index:-1;pointer-events:none;background:linear-gradient(to top, var(--bg) 0%, var(--bg) 55%, transparent 100%);}
 .tabbar .tabbtn{flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:transparent;color:var(--label-3);cursor:pointer;border-radius:var(--r-pill);position:relative;-webkit-user-select:none;user-select:none;transition:color .18s ease;}
 .tabbar .tabbtn .ic{display:block;color:currentColor;}
 .tabbar .tabbtn.active{color:var(--accent);}
@@ -770,5 +786,5 @@ app-logo svg{display:block;width:100%;height:100%;}
   border-color: var(--state-danger-soft-border);
 }
 
-.apptoast{position:fixed;left:50%;bottom:calc(var(--tabbar-h) + var(--safe-b) + 12px);transform:translateX(-50%);z-index:65;padding:10px 20px;border-radius:var(--r-pill);background:var(--accent);color:var(--accent-contrast);font-weight:600;font-size:var(--text-md);box-shadow:var(--shadow-float);animation:fade .2s ease;white-space:nowrap;max-width:calc(100vw - 32px);text-overflow:ellipsis;overflow:hidden;}
+.apptoast{position:fixed;left:50%;bottom:calc(var(--tabbar-h) + var(--tabbar-gap) + 12px);transform:translateX(-50%);z-index:65;padding:10px 20px;border-radius:var(--r-pill);background:var(--accent);color:var(--accent-contrast);font-weight:600;font-size:var(--text-md);box-shadow:var(--shadow-float);animation:fade .2s ease;white-space:nowrap;max-width:calc(100vw - 32px);text-overflow:ellipsis;overflow:hidden;}
 .apptoast.error{background:var(--state-danger);color:#fff;}
