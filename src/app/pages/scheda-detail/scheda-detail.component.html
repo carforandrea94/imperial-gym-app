@@ -81,8 +81,8 @@
   <!-- Avvia / metti in pausa / riprendi: un solo tasto, l'icona dice cosa fara'. -->
   <button class="session-bar-btn tap44 tap44-v" [disabled]="hasOtherSession"
     (click)="onPlayPause()" [attr.aria-label]="playPauseLabel">
-    <lucide-icon name="play" [size]="18"></lucide-icon>
-    <lucide-icon name="pause" [size]="18"></lucide-icon>
+    <lucide-icon *ngIf="!isSessionRunning" name="play" [size]="18" class="filled"></lucide-icon>
+    <lucide-icon *ngIf="isSessionRunning" name="pause" [size]="18" class="filled"></lucide-icon>
   </button>
 
   <button class="session-bar-btn ghost tap44 tap44-v"

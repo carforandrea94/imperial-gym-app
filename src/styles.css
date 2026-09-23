@@ -74,7 +74,16 @@
   --accent-contrast:#031620;
   --safe-t: max(env(safe-area-inset-top, 0px), 24px);
   --safe-b: max(env(safe-area-inset-bottom, 0px), 14px);
-  --tabbar-h: 54px;
+  /* Le HIG non danno un'altezza per la tab bar iOS: la sezione iOS descrive
+     solo il comportamento, e l'altezza in UIKit non si imposta. L'unico
+     numero da rispettare e' la dimensione del bersaglio (vedi .tabbtn), che
+     da qui si ricava come --tabbar-h meno due volte --tabbar-pad. Sotto
+     56 px il bersaglio scende sotto i 44 pt predefiniti. */
+  --tabbar-h: 60px;
+  /* Aria fra il bordo della barra e i tasti. La pastiglia che scorre ci si
+     appoggia: era ripetuta a mano in quattro punti (5 qui, 10 nelle larghezze)
+     e bastava cambiarne uno per vederla sbordare. */
+  --tabbar-pad: 6px;
   /* Quanto la tabbar sta staccata dal fondo. Non e' --safe-b: quella tiene
      tutta l'area riservata al gesto di home, e con la barra galleggiante
      lasciava un vuoto di 36 px sotto la pillola. Qui ne togliamo 12, cosi' la
@@ -208,7 +217,7 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .wrap{position:relative;z-index:1;max-width:640px;margin:0 auto;padding:0 16px;}
 
 /* ===== BOTTOM TAB BAR ===== */
-.tabbar{position:fixed;left:16px;right:16px;bottom:var(--tabbar-gap);z-index:60;height:var(--tabbar-h);background:var(--surface-chrome);border:1px solid var(--border-line);border-radius:var(--r-pill);box-shadow:var(--shadow-float);display:flex;align-items:center;padding:5px;max-width:608px;margin:0 auto;}
+.tabbar{position:fixed;left:16px;right:16px;bottom:var(--tabbar-gap);z-index:60;height:var(--tabbar-h);background:var(--surface-chrome);border:1px solid var(--border-line);border-radius:var(--r-pill);box-shadow:var(--shadow-float);display:flex;align-items:center;padding:var(--tabbar-pad);max-width:608px;margin:0 auto;}
 /* Sfumatura in fondo, speculare a quella della navbar: cio' che scorre non si
    taglia di netto contro la pillola, si spegne nel fondo della pagina.
    Deve stare FRA il contenuto (z-index 1) e la tabbar (60), quindi e' un
@@ -218,19 +227,28 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
    i figli negativi vengono subito dopo — la sfumatura finiva sopra la
    pillola e la cancellava. */
 .tabfade{position:fixed;left:0;right:0;bottom:0;z-index:55;height:calc(var(--tabbar-h) + var(--tabbar-gap) + 70px);pointer-events:none;background:linear-gradient(to top, var(--bg) 0%, var(--bg) 55%, transparent 100%);}
-.tabbar .tabbtn{flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:transparent;color:var(--label-3);cursor:pointer;border-radius:var(--r-pill);position:relative;-webkit-user-select:none;user-select:none;transition:color .18s ease;}
+/* HIG iOS, Accessibility: dimensione predefinita dei controlli 44x44 pt,
+   minimo assoluto 28x28. Oggi il bersaglio e' 48x119, ma nasce dalla
+   sottrazione fra due token: senza questo pavimento, abbassare --tabbar-h o
+   allargare --tabbar-pad lo porterebbe sotto i 44 senza che si veda. */
+.tabbar .tabbtn{flex:1;height:100%;min-height:44px;min-width:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:transparent;color:var(--label-3);cursor:pointer;border-radius:var(--r-pill);position:relative;-webkit-user-select:none;user-select:none;transition:color .18s ease;}
 .tabbar .tabbtn .ic{display:block;color:currentColor;}
+/* L'etichetta sotto l'icona, come chiedono le HIG ("Include tab labels to
+   help with navigation... Use single words whenever possible"). Prende il
+   colore dal tasto, quindi segue da sola lo stato attivo. Il piu' stretto dei
+   quattro casi e' 4,63:1, sopra la soglia 4,5 del testo piccolo. */
+.tabbar .tablabel{font-size:var(--text-2xs);font-weight:600;letter-spacing:.01em;line-height:1.1;white-space:nowrap;}
 .tabbar .tabbtn.active{color:var(--accent);}
-.tabbar .pill{position:absolute;top:5px;left:5px;height:calc(100% - 10px);width:calc(50% - 5px);background:var(--bg-card-2);border:1px solid var(--border-line);border-radius:var(--r-pill);z-index:0;transition:transform .4s var(--spring);}
+.tabbar .pill{position:absolute;top:var(--tabbar-pad);left:var(--tabbar-pad);height:calc(100% - var(--tabbar-pad) * 2);width:calc(50% - var(--tabbar-pad));background:var(--bg-card-2);border:1px solid var(--border-line);border-radius:var(--r-pill);z-index:0;transition:transform .4s var(--spring);}
 .tabbar .pill.p1{transform:translateX(100%);}
-.tabbar-3 .pill{width:calc((100% - 10px) / 3);}
+.tabbar-3 .pill{width:calc((100% - var(--tabbar-pad) * 2) / 3);}
 .tabbar-3 .pill.p1{transform:translateX(100%);}
 .tabbar-3 .pill.p2{transform:translateX(200%);}
-.tabbar-4 .pill{width:calc((100% - 10px) / 4);}
+.tabbar-4 .pill{width:calc((100% - var(--tabbar-pad) * 2) / 4);}
 .tabbar-4 .pill.p1{transform:translateX(100%);}
 .tabbar-4 .pill.p2{transform:translateX(200%);}
 .tabbar-4 .pill.p3{transform:translateX(300%);}
-.tabbar-5 .pill{width:calc((100% - 10px) / 5);}
+.tabbar-5 .pill{width:calc((100% - var(--tabbar-pad) * 2) / 5);}
 .tabbar-5 .pill.p1{transform:translateX(100%);}
 .tabbar-5 .pill.p2{transform:translateX(200%);}
 .tabbar-5 .pill.p3{transform:translateX(300%);}
@@ -435,6 +453,13 @@ app-logo svg{display:block;width:100%;height:100%;}
    Lasciato in linea si porta dietro lo spazio della riga di testo, che e'
    esattamente cio' che i display:block qui sopra tolgono all'svg. */
 lucide-icon{display:inline-flex;flex-shrink:0;}
+/* Play e pausa erano pieni prima di passare a Lucide, che disegna a contorno.
+   Riempire il tracciato e tenere anche il tratto mantiene l'ingombro esterno
+   uguale alle altre icone: togliendo il tratto la forma rimpicciolirebbe di
+   un paio di px rispetto alla spunta e alla X che le stanno accanto.
+   Il selettore e' svg.filled e non lucide-icon.filled: `class` e' un input
+   del componente, che la applica all'<svg> che genera, non al proprio host. */
+lucide-icon svg.filled{fill:currentColor;}
 .authtitle{font-weight:800;font-size:var(--text-3xl);color:var(--label);margin-bottom:4px;}
 .authsub{font-size:var(--text-sm);color:var(--label-3);margin-bottom:22px;}
 .authfield{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
