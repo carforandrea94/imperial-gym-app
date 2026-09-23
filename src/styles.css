@@ -74,7 +74,11 @@
   --accent-contrast:#031620;
   --safe-t: max(env(safe-area-inset-top, 0px), 24px);
   --safe-b: max(env(safe-area-inset-bottom, 0px), 14px);
-  --tabbar-h: 54px;
+  --tabbar-h: 60px;
+  /* Aria fra il bordo della barra e i tasti. La pastiglia che scorre ci si
+     appoggia: era ripetuta a mano in quattro punti (5 qui, 10 nelle larghezze)
+     e bastava cambiarne uno per vederla sbordare. */
+  --tabbar-pad: 6px;
   /* Quanto la tabbar sta staccata dal fondo. Non e' --safe-b: quella tiene
      tutta l'area riservata al gesto di home, e con la barra galleggiante
      lasciava un vuoto di 36 px sotto la pillola. Qui ne togliamo 12, cosi' la
@@ -208,7 +212,7 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .wrap{position:relative;z-index:1;max-width:640px;margin:0 auto;padding:0 16px;}
 
 /* ===== BOTTOM TAB BAR ===== */
-.tabbar{position:fixed;left:16px;right:16px;bottom:var(--tabbar-gap);z-index:60;height:var(--tabbar-h);background:var(--surface-chrome);border:1px solid var(--border-line);border-radius:var(--r-pill);box-shadow:var(--shadow-float);display:flex;align-items:center;padding:5px;max-width:608px;margin:0 auto;}
+.tabbar{position:fixed;left:16px;right:16px;bottom:var(--tabbar-gap);z-index:60;height:var(--tabbar-h);background:var(--surface-chrome);border:1px solid var(--border-line);border-radius:var(--r-pill);box-shadow:var(--shadow-float);display:flex;align-items:center;padding:var(--tabbar-pad);max-width:608px;margin:0 auto;}
 /* Sfumatura in fondo, speculare a quella della navbar: cio' che scorre non si
    taglia di netto contro la pillola, si spegne nel fondo della pagina.
    Deve stare FRA il contenuto (z-index 1) e la tabbar (60), quindi e' un
@@ -221,16 +225,16 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .tabbar .tabbtn{flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:transparent;color:var(--label-3);cursor:pointer;border-radius:var(--r-pill);position:relative;-webkit-user-select:none;user-select:none;transition:color .18s ease;}
 .tabbar .tabbtn .ic{display:block;color:currentColor;}
 .tabbar .tabbtn.active{color:var(--accent);}
-.tabbar .pill{position:absolute;top:5px;left:5px;height:calc(100% - 10px);width:calc(50% - 5px);background:var(--bg-card-2);border:1px solid var(--border-line);border-radius:var(--r-pill);z-index:0;transition:transform .4s var(--spring);}
+.tabbar .pill{position:absolute;top:var(--tabbar-pad);left:var(--tabbar-pad);height:calc(100% - var(--tabbar-pad) * 2);width:calc(50% - var(--tabbar-pad));background:var(--bg-card-2);border:1px solid var(--border-line);border-radius:var(--r-pill);z-index:0;transition:transform .4s var(--spring);}
 .tabbar .pill.p1{transform:translateX(100%);}
-.tabbar-3 .pill{width:calc((100% - 10px) / 3);}
+.tabbar-3 .pill{width:calc((100% - var(--tabbar-pad) * 2) / 3);}
 .tabbar-3 .pill.p1{transform:translateX(100%);}
 .tabbar-3 .pill.p2{transform:translateX(200%);}
-.tabbar-4 .pill{width:calc((100% - 10px) / 4);}
+.tabbar-4 .pill{width:calc((100% - var(--tabbar-pad) * 2) / 4);}
 .tabbar-4 .pill.p1{transform:translateX(100%);}
 .tabbar-4 .pill.p2{transform:translateX(200%);}
 .tabbar-4 .pill.p3{transform:translateX(300%);}
-.tabbar-5 .pill{width:calc((100% - 10px) / 5);}
+.tabbar-5 .pill{width:calc((100% - var(--tabbar-pad) * 2) / 5);}
 .tabbar-5 .pill.p1{transform:translateX(100%);}
 .tabbar-5 .pill.p2{transform:translateX(200%);}
 .tabbar-5 .pill.p3{transform:translateX(300%);}
