@@ -74,6 +74,11 @@
   --accent-contrast:#031620;
   --safe-t: max(env(safe-area-inset-top, 0px), 24px);
   --safe-b: max(env(safe-area-inset-bottom, 0px), 14px);
+  /* Le HIG non danno un'altezza per la tab bar iOS: la sezione iOS descrive
+     solo il comportamento, e l'altezza in UIKit non si imposta. L'unico
+     numero da rispettare e' la dimensione del bersaglio (vedi .tabbtn), che
+     da qui si ricava come --tabbar-h meno due volte --tabbar-pad. Sotto
+     56 px il bersaglio scende sotto i 44 pt predefiniti. */
   --tabbar-h: 60px;
   /* Aria fra il bordo della barra e i tasti. La pastiglia che scorre ci si
      appoggia: era ripetuta a mano in quattro punti (5 qui, 10 nelle larghezze)
@@ -222,7 +227,11 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
    i figli negativi vengono subito dopo — la sfumatura finiva sopra la
    pillola e la cancellava. */
 .tabfade{position:fixed;left:0;right:0;bottom:0;z-index:55;height:calc(var(--tabbar-h) + var(--tabbar-gap) + 70px);pointer-events:none;background:linear-gradient(to top, var(--bg) 0%, var(--bg) 55%, transparent 100%);}
-.tabbar .tabbtn{flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:transparent;color:var(--label-3);cursor:pointer;border-radius:var(--r-pill);position:relative;-webkit-user-select:none;user-select:none;transition:color .18s ease;}
+/* HIG iOS, Accessibility: dimensione predefinita dei controlli 44x44 pt,
+   minimo assoluto 28x28. Oggi il bersaglio e' 48x119, ma nasce dalla
+   sottrazione fra due token: senza questo pavimento, abbassare --tabbar-h o
+   allargare --tabbar-pad lo porterebbe sotto i 44 senza che si veda. */
+.tabbar .tabbtn{flex:1;height:100%;min-height:44px;min-width:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:transparent;color:var(--label-3);cursor:pointer;border-radius:var(--r-pill);position:relative;-webkit-user-select:none;user-select:none;transition:color .18s ease;}
 .tabbar .tabbtn .ic{display:block;color:currentColor;}
 .tabbar .tabbtn.active{color:var(--accent);}
 .tabbar .pill{position:absolute;top:var(--tabbar-pad);left:var(--tabbar-pad);height:calc(100% - var(--tabbar-pad) * 2);width:calc(50% - var(--tabbar-pad));background:var(--bg-card-2);border:1px solid var(--border-line);border-radius:var(--r-pill);z-index:0;transition:transform .4s var(--spring);}
