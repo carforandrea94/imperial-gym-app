@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { LucideAngularModule } from 'lucide-angular';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -13,7 +14,7 @@ import { Protocol } from '../../models/protocol.model';
 @Component({
   selector: 'app-coach-client-detail',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, LucideAngularModule],
   templateUrl: './coach-client-detail.component.html',
   styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
 })

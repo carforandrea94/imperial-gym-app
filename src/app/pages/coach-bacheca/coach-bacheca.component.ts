@@ -1,4 +1,5 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { LucideAngularModule } from 'lucide-angular';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AnnouncementsService } from '../../services/announcements.service';
@@ -8,7 +9,7 @@ import { Announcement } from '../../core/models/user.model';
 @Component({
   selector: 'app-coach-bacheca',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, LucideAngularModule],
   templateUrl: './coach-bacheca.component.html',
   styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
 })

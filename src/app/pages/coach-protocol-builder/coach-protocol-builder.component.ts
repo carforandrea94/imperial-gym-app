@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { LucideAngularModule } from 'lucide-angular';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -18,7 +19,7 @@ type Tab = 'scheda' | 'dieta' | 'corsa' | 'info';
 @Component({
   selector: 'app-coach-protocol-builder',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, LucideAngularModule],
   templateUrl: './coach-protocol-builder.component.html',
   styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
 })

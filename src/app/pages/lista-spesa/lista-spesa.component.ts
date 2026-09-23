@@ -1,4 +1,5 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { LucideAngularModule } from 'lucide-angular';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DietDataService } from '../../services/diet-data.service';
@@ -22,7 +23,7 @@ interface CustomShoppingItem {
 @Component({
   selector: 'app-lista-spesa',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, LucideAngularModule],
   templateUrl: './lista-spesa.component.html',
   styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
 })

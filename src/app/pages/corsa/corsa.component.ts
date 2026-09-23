@@ -1,4 +1,5 @@
 import { Component, OnInit, computed } from '@angular/core';
+import { LucideAngularModule } from 'lucide-angular';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { RunningStateService } from '../../services/running-state.service';
@@ -25,7 +26,7 @@ const MONTHS = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', '
 @Component({
   selector: 'app-corsa',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, LucideAngularModule],
   templateUrl: './corsa.component.html',
   styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
 })

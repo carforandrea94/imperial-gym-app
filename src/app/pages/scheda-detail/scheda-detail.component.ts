@@ -1,6 +1,6 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectorRef, ElementRef, Renderer2, ViewChild, effect } from '@angular/core';
+import { LucideAngularModule } from 'lucide-angular';
 import { CommonModule } from '@angular/common';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -42,7 +42,7 @@ interface ExerciseVM {
 @Component({
   selector: 'app-scheda-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RestWaveComponent],
+  imports: [CommonModule, FormsModule, RestWaveComponent, LucideAngularModule],
   templateUrl: './scheda-detail.component.html',
   styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
 })
@@ -79,7 +79,6 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     private appState: AppStateService,
     private sessions: WorkoutSessionsService,
     private confirm: ConfirmDialogService,
-    private sanitizer: DomSanitizer,
     private cdr: ChangeDetectorRef,
     private toast: ToastService,
     private renderer: Renderer2,
@@ -388,12 +387,6 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   getMuscleInfo(muscle: string) {
     return this.workoutData.MUSCLES[muscle] ?? { color: '#64D2FF', dim: 'rgba(100,210,255,0.16)' };
-  }
-
-  getMuscleIcon(muscle: string): SafeHtml {
-    return this.sanitizer.bypassSecurityTrustHtml(
-      this.workoutData.MUSCLE_ICONS[muscle] ?? this.workoutData.MUSCLE_ICONS['Core']
-    );
   }
 
   openRestModal(vm: ExerciseVM, event: Event): void {

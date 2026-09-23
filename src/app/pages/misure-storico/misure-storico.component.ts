@@ -1,4 +1,5 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { LucideAngularModule } from 'lucide-angular';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MeasurementDataService } from '../../services/measurement-data.service';
@@ -15,7 +16,7 @@ interface EntryRow {
 @Component({
   selector: 'app-misure-storico',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, LucideAngularModule],
   templateUrl: './misure-storico.component.html',
   styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
 })

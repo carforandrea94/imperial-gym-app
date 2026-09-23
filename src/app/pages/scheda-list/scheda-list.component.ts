@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { LucideAngularModule } from 'lucide-angular';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { WorkoutDataService } from '../../services/workout-data.service';
@@ -9,7 +10,7 @@ import { WeeklyProgressService } from '../../services/weekly-progress.service';
 @Component({
   selector: 'app-scheda-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, LucideAngularModule],
   templateUrl: './scheda-list.component.html',
   styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
 })

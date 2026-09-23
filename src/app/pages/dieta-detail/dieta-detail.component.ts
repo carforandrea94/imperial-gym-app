@@ -1,4 +1,5 @@
 import { Component, OnInit, ChangeDetectorRef, ElementRef, ViewChild, effect } from '@angular/core';
+import { LucideAngularModule } from 'lucide-angular';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DietDataService } from '../../services/diet-data.service';
@@ -19,7 +20,7 @@ interface MealVM {
 @Component({
   selector: 'app-dieta-detail',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, LucideAngularModule],
   templateUrl: './dieta-detail.component.html',
   styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
 })

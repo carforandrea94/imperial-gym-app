@@ -27,12 +27,10 @@
       </div>
     </div>
     <button class="delete-btn" (click)="deleteEntry(r.entry.date, $event)" title="Elimina">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
-      </svg>
+      <lucide-icon name="trash-2" [size]="14"></lucide-icon>
     </button>
     <span class="chev">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      <lucide-icon name="chevron-right" [size]="13"></lucide-icon>
     </span>
   </div>
 </div>
