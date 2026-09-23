@@ -431,6 +431,10 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .authhead{text-align:center;}
 .authlogo{display:block;width:72px;height:72px;margin:0 auto 16px;}
 app-logo svg{display:block;width:100%;height:100%;}
+/* Il componente di Lucide infila un elemento host fra il contenitore e l'svg.
+   Lasciato in linea si porta dietro lo spazio della riga di testo, che e'
+   esattamente cio' che i display:block qui sopra tolgono all'svg. */
+lucide-icon{display:inline-flex;flex-shrink:0;}
 .authtitle{font-weight:800;font-size:var(--text-3xl);color:var(--label);margin-bottom:4px;}
 .authsub{font-size:var(--text-sm);color:var(--label-3);margin-bottom:22px;}
 .authfield{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}

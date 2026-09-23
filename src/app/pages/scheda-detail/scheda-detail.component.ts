@@ -1,4 +1,5 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectorRef, ElementRef, Renderer2, ViewChild, effect } from '@angular/core';
+import { LucideAngularModule } from 'lucide-angular';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
@@ -42,7 +43,7 @@ interface ExerciseVM {
 @Component({
   selector: 'app-scheda-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RestWaveComponent],
+  imports: [CommonModule, FormsModule, RestWaveComponent, LucideAngularModule],
   templateUrl: './scheda-detail.component.html',
   styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
 })

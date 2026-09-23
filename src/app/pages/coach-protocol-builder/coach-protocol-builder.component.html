@@ -59,7 +59,7 @@
             <div class="meta">{{ ex.muscle }} &nbsp;·&nbsp; {{ exerciseSummary(ex) }}</div>
           </div>
           <span class="chev">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+            <lucide-icon name="chevron-right" [size]="13"></lucide-icon>
           </span>
         </div>
       </div>
@@ -177,12 +177,10 @@
             <div class="meta">{{ countPlanItems(plan) }} alimenti</div>
           </div>
           <button class="delete-btn" (click)="removePlan(plan, $event)" title="Elimina">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
-            </svg>
+            <lucide-icon name="trash-2" [size]="14"></lucide-icon>
           </button>
           <span class="chev">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+            <lucide-icon name="chevron-right" [size]="13"></lucide-icon>
           </span>
         </div>
       </div>
@@ -213,9 +211,7 @@
         <div class="meal-preview-header">
           <div class="lbl">{{ meal.name || 'Pasto senza nome' }}</div>
           <button class="delete-btn" (click)="removeMeal(meal, $event)" title="Elimina pasto">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
-            </svg>
+            <lucide-icon name="trash-2" [size]="14"></lucide-icon>
           </button>
         </div>
 
@@ -242,7 +238,7 @@
               <div class="altwrap-header" (click)="toggleItemAltExpanded(getActiveCombo(meal), cat, $event)">
                 <span>Alternative ({{ itemAlt(it).length }})</span>
                 <span class="chevron">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                  <lucide-icon name="chevron-down" [size]="10"></lucide-icon>
                 </span>
               </div>
               <div class="altlist" *ngIf="isItemAltExpanded(getActiveCombo(meal), cat)" (click)="$event.stopPropagation()">
@@ -270,7 +266,7 @@
           <div class="altwrap-header" (click)="toggleAltExpanded(meal, $event)">
             <span>Alternative ({{ totalAlternatives(meal) }})</span>
             <span class="chevron">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+              <lucide-icon name="chevron-down" [size]="10"></lucide-icon>
             </span>
           </div>
           <div class="altlist" *ngIf="isAltExpanded(meal)" (click)="$event.stopPropagation()">
@@ -342,7 +338,7 @@
             <div class="altwrap-header mt-3" (click)="toggleItemAltExpanded(getActiveCombo(em), cat)">
               <span>Alternative per questo alimento ({{ itemAlt(item2).length }})</span>
               <span class="chevron">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                <lucide-icon name="chevron-down" [size]="10"></lucide-icon>
               </span>
             </div>
             <ng-container *ngIf="isItemAltExpanded(getActiveCombo(em), cat)">
@@ -379,7 +375,7 @@
         <div class="altwrap-header" (click)="toggleAltExpanded(em)" style="padding:0 0 8px">
           <span>Alternative ({{ totalAlternatives(em) }})</span>
           <span class="chevron">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            <lucide-icon name="chevron-down" [size]="12"></lucide-icon>
           </span>
         </div>
         <ng-container *ngIf="isAltExpanded(em)">

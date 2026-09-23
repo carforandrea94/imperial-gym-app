@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { LucideAngularModule } from 'lucide-angular';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { DietDataService } from '../../services/diet-data.service';
@@ -12,7 +13,7 @@ interface DietPlanCard {
 @Component({
   selector: 'app-dieta',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, LucideAngularModule],
   templateUrl: './dieta.component.html',
   styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
 })

@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { LucideAngularModule } from 'lucide-angular';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -9,7 +10,7 @@ type CoachTab = 'bacheca' | 'clienti' | 'account';
 @Component({
   selector: 'app-tabbar',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, LucideAngularModule],
   templateUrl: './tabbar.component.html'
 })
 export class TabbarComponent {

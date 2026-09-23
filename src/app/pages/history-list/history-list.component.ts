@@ -1,4 +1,5 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { LucideAngularModule } from 'lucide-angular';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { WorkoutSessionsService } from '../../services/workout-sessions.service';
@@ -23,7 +24,7 @@ interface WeekGroup {
 @Component({
   selector: 'app-history-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, LucideAngularModule],
   templateUrl: './history-list.component.html',
   styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
 })

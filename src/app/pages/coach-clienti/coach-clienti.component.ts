@@ -1,4 +1,5 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { LucideAngularModule } from 'lucide-angular';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -7,7 +8,7 @@ import { UserProfile } from '../../core/models/user.model';
 @Component({
   selector: 'app-coach-clienti',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, LucideAngularModule],
   templateUrl: './coach-clienti.component.html',
   styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
 })

@@ -12,82 +12,44 @@
     <div class="navactions" [class.hide]="!showHistory && !showInfo && !showAnalytics && !showShoppingList && !showViewToggle && !showSettings && !showSaveEdit && !showProtocolSave && !showSaveMeasure">
       <div class="viewtoggle" *ngIf="showViewToggle">
         <button class="viewtogglebtn tap44 tap44-v" [class.active]="viewMode === 'list'" (click)="viewModeChange.emit('list')" aria-label="Vista elenco" title="Elenco">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="8" y1="6" x2="21" y2="6"/>
-            <line x1="8" y1="12" x2="21" y2="12"/>
-            <line x1="8" y1="18" x2="21" y2="18"/>
-            <line x1="3" y1="6" x2="3.01" y2="6"/>
-            <line x1="3" y1="12" x2="3.01" y2="12"/>
-            <line x1="3" y1="18" x2="3.01" y2="18"/>
-          </svg>
+          <lucide-icon name="list" [size]="16"></lucide-icon>
         </button>
         <button class="viewtogglebtn tap44 tap44-v" [class.active]="viewMode === 'slider'" (click)="viewModeChange.emit('slider')" aria-label="Vista slider" title="Slider">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="4" width="14" height="16" rx="2"/>
-            <path d="M19 8v8"/>
-            <path d="M22 9v6"/>
-          </svg>
+          <lucide-icon name="gallery-horizontal" [size]="16"></lucide-icon>
         </button>
       </div>
       <button class="navicon" *ngIf="showSaveEdit" [disabled]="saveEditSaving"
         (click)="saveEditClick.emit()" aria-label="Salva modifiche" title="Salva modifiche">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 6L9 17l-5-5"/>
-        </svg>
+        <lucide-icon name="check" [size]="18"></lucide-icon>
       </button>
       <button class="navicon" *ngIf="showSaveMeasure" [disabled]="measureSaving"
         (click)="saveMeasureClick.emit()" aria-label="Salva misurazione" title="Salva misurazione">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 6L9 17l-5-5"/>
-        </svg>
+        <lucide-icon name="check" [size]="18"></lucide-icon>
       </button>
       <div class="protocolsave" *ngIf="showProtocolSave">
         <button class="navicon" [disabled]="protocolSaving" (click)="saveDraftClick.emit()"
           aria-label="Salva bozza" title="Salva bozza">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-            <polyline points="17 21 17 13 7 13 7 21"/>
-            <polyline points="7 3 7 8 15 8"/>
-          </svg>
+          <lucide-icon name="save" [size]="18"></lucide-icon>
         </button>
         <button class="navicon" [disabled]="protocolSaving" (click)="saveActivateClick.emit()"
           aria-label="Salva e attiva" title="Salva e attiva">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 6L9 17l-5-5"/>
-          </svg>
+          <lucide-icon name="check" [size]="18"></lucide-icon>
         </button>
       </div>
       <button class="navicon" *ngIf="showShoppingList" (click)="shoppingListClick.emit()" title="Lista della spesa">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="9" cy="21" r="1"/>
-          <circle cx="20" cy="21" r="1"/>
-          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-        </svg>
+        <lucide-icon name="shopping-cart" [size]="18"></lucide-icon>
       </button>
       <button class="navicon" *ngIf="showAnalytics" (click)="analyticsClick.emit()" title="Andamento">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 3v18h18"/>
-          <path d="M18.7 8l-5.1 5.1-3-3L4.7 16"/>
-        </svg>
+        <lucide-icon name="chart-line" [size]="18"></lucide-icon>
       </button>
       <button class="navicon" *ngIf="showHistory" (click)="historyClick.emit()" title="Storico">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <polyline points="12 6 12 12 16 14"/>
-        </svg>
+        <lucide-icon name="history" [size]="18"></lucide-icon>
       </button>
       <button class="navicon" *ngIf="showInfo" (click)="infoClick.emit()" title="Info">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="12" y1="16" x2="12" y2="12"/>
-          <line x1="12" y1="8" x2="12.01" y2="8"/>
-        </svg>
+        <lucide-icon name="info" [size]="18"></lucide-icon>
       </button>
       <button class="navicon" *ngIf="showSettings" (click)="settingsClick.emit()" title="Aggiorna da PDF">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="3"/>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-        </svg>
+        <lucide-icon name="settings" [size]="18"></lucide-icon>
       </button>
     </div>
   </div>
