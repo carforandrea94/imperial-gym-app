@@ -233,6 +233,11 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
    allargare --tabbar-pad lo porterebbe sotto i 44 senza che si veda. */
 .tabbar .tabbtn{flex:1;height:100%;min-height:44px;min-width:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:transparent;color:var(--label-3);cursor:pointer;border-radius:var(--r-pill);position:relative;-webkit-user-select:none;user-select:none;transition:color .18s ease;}
 .tabbar .tabbtn .ic{display:block;color:currentColor;}
+/* L'etichetta sotto l'icona, come chiedono le HIG ("Include tab labels to
+   help with navigation... Use single words whenever possible"). Prende il
+   colore dal tasto, quindi segue da sola lo stato attivo. Il piu' stretto dei
+   quattro casi e' 4,63:1, sopra la soglia 4,5 del testo piccolo. */
+.tabbar .tablabel{font-size:var(--text-2xs);font-weight:600;letter-spacing:.01em;line-height:1.1;white-space:nowrap;}
 .tabbar .tabbtn.active{color:var(--accent);}
 .tabbar .pill{position:absolute;top:var(--tabbar-pad);left:var(--tabbar-pad);height:calc(100% - var(--tabbar-pad) * 2);width:calc(50% - var(--tabbar-pad));background:var(--bg-card-2);border:1px solid var(--border-line);border-radius:var(--r-pill);z-index:0;transition:transform .4s var(--spring);}
 .tabbar .pill.p1{transform:translateX(100%);}

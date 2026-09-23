@@ -12,42 +12,47 @@
     [class.p3]="activeTab === 'misure'"
     [class.p4]="activeTab === 'account'"></div>
 
-  <button class="tabbtn" [class.active]="activeTab === 'scheda'" (click)="navigate('scheda')" aria-label="Scheda">
+  <button class="tabbtn" [class.active]="activeTab === 'scheda'" (click)="navigate('scheda')">
     <span class="ic">
       <!-- Manubrio a tratto: era l'unica icona piena della fila e a 21 px
            diventava una macchia accanto a quattro contorni. -->
       <lucide-icon name="dumbbell" [size]="23"></lucide-icon>
     </span>
+    <span class="tablabel">Scheda</span>
   </button>
 
-  <button class="tabbtn" [class.active]="activeTab === 'dieta'" (click)="navigate('dieta')" aria-label="Dieta">
+  <button class="tabbtn" [class.active]="activeTab === 'dieta'" (click)="navigate('dieta')">
     <span class="ic">
       <!-- Forchetta e coltello. Prima era un cerchio con un piu' dentro, che
            di questa sezione non diceva niente: leggeva "aggiungi". -->
       <lucide-icon name="utensils" [size]="23"></lucide-icon>
     </span>
+    <span class="tablabel">Dieta</span>
   </button>
 
-  <button class="tabbtn" [class.active]="activeTab === 'corsa'" (click)="navigate('corsa')" aria-label="Corsa">
+  <button class="tabbtn" [class.active]="activeTab === 'corsa'" (click)="navigate('corsa')">
     <span class="ic">
       <!-- Scarpa da corsa vista di lato: leggibile a 21px, e non e' la solita
            sagoma di podista che a questa dimensione diventa una macchia. -->
       <lucide-icon name="sport-shoe" [size]="23"></lucide-icon>
     </span>
+    <span class="tablabel">Corsa</span>
   </button>
 
-  <button class="tabbtn" [class.active]="activeTab === 'misure'" (click)="navigate('misure')" aria-label="Misure">
+  <button class="tabbtn" [class.active]="activeTab === 'misure'" (click)="navigate('misure')">
     <span class="ic">
       <!-- Righello. Prima era una cornice con una riga in mezzo, cioe' il
            simbolo universale di "inquadra e scansiona". -->
       <lucide-icon name="ruler" [size]="23"></lucide-icon>
     </span>
+    <span class="tablabel">Misure</span>
   </button>
 
-  <button class="tabbtn" [class.active]="activeTab === 'account'" (click)="navigate('account')" aria-label="Account">
+  <button class="tabbtn" [class.active]="activeTab === 'account'" (click)="navigate('account')">
     <span class="ic">
       <lucide-icon name="user" [size]="23"></lucide-icon>
     </span>
+    <span class="tablabel">Account</span>
   </button>
 </nav>
 
@@ -55,21 +60,24 @@
 <nav class="tabbar tabbar-3" *ngIf="isCoach && auth.authReady()">
   <div class="pill" [class.p1]="activeCoachTab === 'clienti'" [class.p2]="activeCoachTab === 'account'"></div>
 
-  <button class="tabbtn" [class.active]="activeCoachTab === 'bacheca'" (click)="navigateCoach('bacheca')" aria-label="Bacheca">
+  <button class="tabbtn" [class.active]="activeCoachTab === 'bacheca'" (click)="navigateCoach('bacheca')">
     <span class="ic">
       <lucide-icon name="megaphone" [size]="23"></lucide-icon>
     </span>
+    <span class="tablabel">Bacheca</span>
   </button>
 
-  <button class="tabbtn" [class.active]="activeCoachTab === 'clienti'" (click)="navigateCoach('clienti')" aria-label="Clienti">
+  <button class="tabbtn" [class.active]="activeCoachTab === 'clienti'" (click)="navigateCoach('clienti')">
     <span class="ic">
       <lucide-icon name="users" [size]="23"></lucide-icon>
     </span>
+    <span class="tablabel">Clienti</span>
   </button>
 
-  <button class="tabbtn" [class.active]="activeCoachTab === 'account'" (click)="navigateCoach('account')" aria-label="Account">
+  <button class="tabbtn" [class.active]="activeCoachTab === 'account'" (click)="navigateCoach('account')">
     <span class="ic">
       <lucide-icon name="user" [size]="23"></lucide-icon>
     </span>
+    <span class="tablabel">Account</span>
   </button>
 </nav>
