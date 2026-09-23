@@ -453,6 +453,13 @@ app-logo svg{display:block;width:100%;height:100%;}
    Lasciato in linea si porta dietro lo spazio della riga di testo, che e'
    esattamente cio' che i display:block qui sopra tolgono all'svg. */
 lucide-icon{display:inline-flex;flex-shrink:0;}
+/* Play e pausa erano pieni prima di passare a Lucide, che disegna a contorno.
+   Riempire il tracciato e tenere anche il tratto mantiene l'ingombro esterno
+   uguale alle altre icone: togliendo il tratto la forma rimpicciolirebbe di
+   un paio di px rispetto alla spunta e alla X che le stanno accanto.
+   Il selettore e' svg.filled e non lucide-icon.filled: `class` e' un input
+   del componente, che la applica all'<svg> che genera, non al proprio host. */
+lucide-icon svg.filled{fill:currentColor;}
 .authtitle{font-weight:800;font-size:var(--text-3xl);color:var(--label);margin-bottom:4px;}
 .authsub{font-size:var(--text-sm);color:var(--label-3);margin-bottom:22px;}
 .authfield{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}

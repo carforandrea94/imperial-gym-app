@@ -24,7 +24,7 @@
   <div *ngIf="items.length > 0" class="grouplist">
     <div class="daycard press-fx shop-item" [class.checked]="item.checked" *ngFor="let item of items" (click)="toggle(item)">
       <div class="shop-check" [class.on]="item.checked">
-        <lucide-icon name="check" [size]="13"></lucide-icon>
+        <lucide-icon *ngIf="item.checked" name="check" [size]="13" [strokeWidth]="3"></lucide-icon>
       </div>
       <div class="info">
         <div class="lbl">{{ item.name }}</div>
@@ -40,7 +40,7 @@
     <div class="grouplist">
       <div class="daycard press-fx shop-item" [class.checked]="item.checked" *ngFor="let item of customItems" (click)="toggleCustom(item)">
         <div class="shop-check" [class.on]="item.checked">
-          <lucide-icon name="check" [size]="13"></lucide-icon>
+          <lucide-icon *ngIf="item.checked" name="check" [size]="13" [strokeWidth]="3"></lucide-icon>
         </div>
         <div class="info">
           <div class="lbl">{{ item.name }}</div>
