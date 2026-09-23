@@ -1,3 +1,9 @@
+<!-- Sfumatura che spegne nel fondo il contenuto in arrivo sotto la barra.
+     Sta qui e non nelle due <nav> perche' le tabbar sono due, cliente e
+     coach: cosi' la condizione resta una sola e la sfumatura c'e' esattamente
+     quando c'e' una barra. -->
+<div class="tabfade" *ngIf="auth.authReady()"></div>
+
 <!-- Tabbar CLIENT: Scheda / Dieta / Corsa / Misure / Account -->
 <nav class="tabbar tabbar-5" *ngIf="!isCoach && auth.authReady()">
   <div class="pill"

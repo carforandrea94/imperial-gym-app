@@ -211,13 +211,13 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .tabbar{position:fixed;left:16px;right:16px;bottom:var(--tabbar-gap);z-index:60;height:var(--tabbar-h);background:var(--surface-chrome);border:1px solid var(--border-line);border-radius:var(--r-pill);box-shadow:var(--shadow-float);display:flex;align-items:center;padding:5px;max-width:608px;margin:0 auto;}
 /* Sfumatura in fondo, speculare a quella della navbar: cio' che scorre non si
    taglia di netto contro la pillola, si spegne nel fondo della pagina.
-   E' uno pseudo-elemento della tabbar e non un <div> nel template perche' le
-   tabbar sono due (cliente e coach) e cosi' la sfumatura c'e' esattamente
-   quando c'e' una barra, senza ripetere la condizione.
-   position:fixed lo aggancia alla finestra invece che alla pillola, e
-   z-index:-1 lo mette dietro al fondo della pillola restando pero' dentro il
-   contesto di impilamento della tabbar, quindi sopra al contenuto. */
-.tabbar::before{content:"";position:fixed;left:0;right:0;bottom:0;height:calc(var(--tabbar-h) + var(--tabbar-gap) + 70px);z-index:-1;pointer-events:none;background:linear-gradient(to top, var(--bg) 0%, var(--bg) 55%, transparent 100%);}
+   Deve stare FRA il contenuto (z-index 1) e la tabbar (60), quindi e' un
+   elemento a se' e non uno pseudo-elemento della tabbar: dentro la tabbar
+   nemmeno z-index:-1 la manderebbe dietro, perche' lo sfondo e il bordo
+   dell'elemento che apre il contesto di impilamento si dipingono per primi e
+   i figli negativi vengono subito dopo — la sfumatura finiva sopra la
+   pillola e la cancellava. */
+.tabfade{position:fixed;left:0;right:0;bottom:0;z-index:55;height:calc(var(--tabbar-h) + var(--tabbar-gap) + 70px);pointer-events:none;background:linear-gradient(to top, var(--bg) 0%, var(--bg) 55%, transparent 100%);}
 .tabbar .tabbtn{flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:transparent;color:var(--label-3);cursor:pointer;border-radius:var(--r-pill);position:relative;-webkit-user-select:none;user-select:none;transition:color .18s ease;}
 .tabbar .tabbtn .ic{display:block;color:currentColor;}
 .tabbar .tabbtn.active{color:var(--accent);}
