@@ -1,7 +1,7 @@
 import {
   ChartLine, Check, ChevronDown, ChevronRight, CirclePlus, Dumbbell, FileText,
-  GalleryHorizontal, History, Info, List, Megaphone, Pause, Play, Plus, Ruler,
-  Save, Settings, ShoppingCart, SquarePen, Trash2, User, Users, Utensils, X
+  FileUp, GalleryHorizontal, History, Info, List, Megaphone, Pause, Play, Plus,
+  Ruler, Save, ShoppingCart, SquarePen, Timer, Trash2, User, Users, Utensils, X
 } from 'lucide-angular';
 
 /**
@@ -27,7 +27,7 @@ const SportShoe = [
  */
 export const APP_ICONS = {
   ChartLine, Check, ChevronDown, ChevronRight, CirclePlus, Dumbbell, FileText,
-  GalleryHorizontal, History, Info, List, Megaphone, Pause, Play, Plus, Ruler,
-  Save, Settings, ShoppingCart, SportShoe, SquarePen, Trash2, User, Users,
+  FileUp, GalleryHorizontal, History, Info, List, Megaphone, Pause, Play, Plus,
+  Ruler, Save, ShoppingCart, SportShoe, SquarePen, Timer, Trash2, User, Users,
   Utensils, X
 };

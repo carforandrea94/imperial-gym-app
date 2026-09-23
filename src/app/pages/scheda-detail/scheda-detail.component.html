@@ -51,7 +51,7 @@
 
 <ng-template #exMeta let-vm="vm">
   <button class="ex-restbtn" (click)="openRestModal(vm, $event)" aria-label="Imposta tempo di recupero">
-    <lucide-icon name="settings" [size]="16"></lucide-icon>
+    <lucide-icon name="timer" [size]="16"></lucide-icon>
   </button>
   <span class="ex-schemebadge">{{ vm.ex.scheme === 'wave' ? 'WAVE' : 'FISSO' }}</span>
   <span class="ex-counter" [class.complete]="isComplete(vm)">
