@@ -1,69 +1,82 @@
-import { parseHeightCm, formatHeightCm, HEIGHT_MIN_CM, HEIGHT_MAX_CM } from './height.util';
+import {
+  heightOptions, toWheelValue, wheelValueAt, wheelOffsetOf, formatHeightCm,
+  HEIGHT_MIN_CM, HEIGHT_MAX_CM, HEIGHT_DEFAULT_CM, WHEEL_ITEM_H
+} from './height.util';
 
-describe('parseHeightCm', () => {
-  it('legge un intero', () => {
-    expect(parseHeightCm('180')).toEqual({ ok: true, value: 180 });
+describe('heightOptions', () => {
+  it('copre la forbice per intero, estremi compresi', () => {
+    const opts = heightOptions();
+    expect(opts[0]).toBe(HEIGHT_MIN_CM);
+    expect(opts[opts.length - 1]).toBe(HEIGHT_MAX_CM);
+    expect(opts.length).toBe(HEIGHT_MAX_CM - HEIGHT_MIN_CM + 1);
   });
 
-  it('legge la virgola italiana senza perdere il decimale', () => {
-    expect(parseHeightCm('180,5')).toEqual({ ok: true, value: 180.5 });
+  it('va di centimetro in centimetro, senza buchi', () => {
+    const opts = heightOptions();
+    opts.forEach((cm, i) => expect(cm).toBe(HEIGHT_MIN_CM + i));
+  });
+});
+
+describe('toWheelValue', () => {
+  it('lascia stare un valore gia\' buono', () => {
+    expect(toWheelValue(180)).toBe(180);
   });
 
-  it('accetta anche il punto', () => {
-    expect(parseHeightCm('180.5')).toEqual({ ok: true, value: 180.5 });
+  // I profili salvati prima della ruota possono avere un decimale.
+  it('arrotonda al centimetro', () => {
+    expect(toWheelValue(180.5)).toBe(181);
+    expect(toWheelValue(180.4)).toBe(180);
   });
 
-  it('ignora gli spazi intorno', () => {
-    expect(parseHeightCm('  178  ')).toEqual({ ok: true, value: 178 });
+  it('apre sul valore di partenza quando l\'altezza non c\'e\'', () => {
+    expect(toWheelValue(null)).toBe(HEIGHT_DEFAULT_CM);
+    expect(toWheelValue(undefined)).toBe(HEIGHT_DEFAULT_CM);
   });
 
-  it('tratta il campo vuoto come "non impostata", non come errore', () => {
-    expect(parseHeightCm('')).toEqual({ ok: true, value: null });
-    expect(parseHeightCm('   ')).toEqual({ ok: true, value: null });
-    expect(parseHeightCm(null)).toEqual({ ok: true, value: null });
-    expect(parseHeightCm(undefined)).toEqual({ ok: true, value: null });
+  it('taglia agli estremi invece di uscire dalla ruota', () => {
+    expect(toWheelValue(40)).toBe(HEIGHT_MIN_CM);
+    expect(toWheelValue(320)).toBe(HEIGHT_MAX_CM);
+  });
+});
+
+describe('la ruota, avanti e indietro', () => {
+  it('il primo valore sta a scorrimento zero', () => {
+    expect(wheelValueAt(0)).toBe(HEIGHT_MIN_CM);
+    expect(wheelOffsetOf(HEIGHT_MIN_CM)).toBe(0);
   });
 
-  it('rifiuta cio\' che non e\' un numero', () => {
-    expect(parseHeightCm('alto')).toEqual({ ok: false, reason: 'nan' });
+  it('ogni tacca vale WHEEL_ITEM_H di scorrimento', () => {
+    expect(wheelValueAt(WHEEL_ITEM_H * 80)).toBe(HEIGHT_MIN_CM + 80);
+    expect(wheelOffsetOf(180)).toBe((180 - HEIGHT_MIN_CM) * WHEEL_ITEM_H);
   });
 
-  // Il caso che la forbice esiste per prendere: chi scrive i metri.
-  it('rifiuta i metri invece dei centimetri', () => {
-    expect(parseHeightCm('1,80')).toEqual({ ok: false, reason: 'range' });
+  it('a meta\' fra due tacche sceglie la piu\' vicina', () => {
+    expect(wheelValueAt(WHEEL_ITEM_H * 80 + 5)).toBe(HEIGHT_MIN_CM + 80);
+    expect(wheelValueAt(WHEEL_ITEM_H * 81 - 5)).toBe(HEIGHT_MIN_CM + 81);
   });
 
-  it('rifiuta i valori fuori dalla forbice', () => {
-    expect(parseHeightCm('99')).toEqual({ ok: false, reason: 'range' });
-    expect(parseHeightCm('251')).toEqual({ ok: false, reason: 'range' });
+  // Lo slancio del dito puo' portare lo scorrimento oltre il contenuto.
+  it('regge uno scorrimento oltre gli estremi', () => {
+    expect(wheelValueAt(-40)).toBe(HEIGHT_MIN_CM);
+    expect(wheelValueAt(WHEEL_ITEM_H * 5000)).toBe(HEIGHT_MAX_CM);
   });
 
-  it('accetta gli estremi della forbice', () => {
-    expect(parseHeightCm(String(HEIGHT_MIN_CM))).toEqual({ ok: true, value: HEIGHT_MIN_CM });
-    expect(parseHeightCm(String(HEIGHT_MAX_CM))).toEqual({ ok: true, value: HEIGHT_MAX_CM });
-  });
-
-  it('arrotonda al decimo', () => {
-    expect(parseHeightCm('180,44')).toEqual({ ok: true, value: 180.4 });
+  it('andata e ritorno restituiscono lo stesso valore', () => {
+    heightOptions().forEach(cm => expect(wheelValueAt(wheelOffsetOf(cm))).toBe(cm));
   });
 });
 
 describe('formatHeightCm', () => {
-  it('scrive con la virgola', () => {
-    expect(formatHeightCm(180.5)).toBe('180,5');
-  });
-
   it('non mette decimali dove non servono', () => {
     expect(formatHeightCm(180)).toBe('180');
+  });
+
+  it('scrive con la virgola un valore vecchio col decimale', () => {
+    expect(formatHeightCm(180.5)).toBe('180,5');
   });
 
   it('rende il vuoto per un\'altezza non impostata', () => {
     expect(formatHeightCm(null)).toBe('');
     expect(formatHeightCm(undefined)).toBe('');
-  });
-
-  it('torna indietro da quello che parseHeightCm ha letto', () => {
-    const parsed = parseHeightCm('180,5');
-    expect(parsed.ok && formatHeightCm(parsed.value)).toBe('180,5');
   });
 });

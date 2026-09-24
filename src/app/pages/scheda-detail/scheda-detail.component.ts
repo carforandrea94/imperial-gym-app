@@ -408,7 +408,7 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onRestOverlayClick(event: MouseEvent): void {
-    if ((event.target as HTMLElement).classList.contains('resttimer-sheet-overlay')) {
+    if ((event.target as HTMLElement).classList.contains('bottomsheet-overlay')) {
       this.closeRestModal();
     }
   }
