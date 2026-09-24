@@ -769,13 +769,22 @@ lucide-icon svg.filled{fill:currentColor;}
    =================================================================== */
 
 /* Icone muscolo SVG lineari dentro il badge esercizio */
-.ex-icon svg { width: 22px; height: 22px; display: block; }
 /* Badge numerico esercizio (al posto dell'icona) */
 /* Il numero prende l'inchiostro del tema, non il colore del gruppo muscolare.
    Quel colore resta nella tinta del riquadro e nel bordo, dove fa da codice
    senza doversi leggere: come TESTO non reggeva il tema chiaro — sette casi su
    sette sotto contrasto, "Core" a 1,32:1 su fondo quasi bianco. */
 .ex-num { font-weight: 800; font-size:var(--text-lg); color: var(--label); }
+/* Il badge col numero fa anche da indicatore: il bordo CSS lascia il posto
+   all'anello, cosi' traccia e avanzamento sono lo stesso tracciato e non si
+   disallineano. La percentuale si scrive tale e quale perche' pathLength=100
+   normalizza la lunghezza: nessun perimetro da ricalcolare se un domani
+   cambia la misura del badge o il suo raggio. Il badge dello storico resta
+   senza anello — li' la seduta e' chiusa, sarebbe pieno sempre. */
+.ex-num.ring{position:relative;border-color:transparent;}
+.ex-ring{position:absolute;inset:0;width:100%;height:100%;fill:none;stroke-width:3;}
+.ex-ring .done{stroke:var(--accent);transition:stroke-dasharray .4s var(--spring-soft);}
+.ex-num.ring > span{position:relative;}
 
 /* I tab stanno SOPRA la pastiglia che scorre (.pill, z-index 0): senza questo
    la pastiglia coprirebbe l'icona del tab attivo. Non e' una regola di stile,
