@@ -1,0 +1,46 @@
+<p class="sectiontitle mt-0">Aspetto</p>
+<div class="infocard">
+  <div class="account-row">
+    <span class="account-row-label">Tema</span>
+    <div class="viewtoggle theme-toggle">
+      <button class="viewtogglebtn tap44 tap44-v" [class.active]="theme.mode() === 'dark'"
+              (click)="theme.setMode('dark')">Notte</button>
+      <button class="viewtogglebtn tap44 tap44-v" [class.active]="theme.mode() === 'light'"
+              (click)="theme.setMode('light')">Giorno</button>
+    </div>
+  </div>
+</div>
+
+<div class="infocard mb-3" *ngIf="showIosNotificationHint">
+  <p class="bacheca-text">
+    📲 Su iPhone le notifiche (es. fine recupero) funzionano solo se l'app è installata sulla schermata Home:
+    da Safari tocca <b>Condividi</b> e poi <b>Aggiungi a Home</b>.
+  </p>
+</div>
+
+<p class="sectiontitle">Il tuo account</p>
+<div class="infocard">
+  <div class="account-row">
+    <span class="account-row-label">Email</span>
+    <span class="account-row-value">{{ auth.currentUser()?.email }}</span>
+  </div>
+  <div class="account-row" *ngIf="memberSince">
+    <span class="account-row-label">Membro dal</span>
+    <span class="account-row-value">{{ memberSince }}</span>
+  </div>
+</div>
+
+<ng-container *ngIf="auth.isCoach">
+  <p class="sectiontitle">Il tuo codice</p>
+  <div class="infocard mycode-card">
+    <p class="bacheca-text mb-3">
+      Comunica questo codice ai tuoi clienti: lo useranno in fase di registrazione per accoppiarsi a te.
+    </p>
+    <div class="mycode-row">
+      <span class="mycode-value">{{ auth.currentUser()?.pairingCode }}</span>
+      <button class="confirmbtn cancel mycode-copybtn" (click)="copyCode()">
+        {{ copied ? 'Copiato ✓' : 'Copia' }}
+      </button>
+    </div>
+  </div>
+</ng-container>
