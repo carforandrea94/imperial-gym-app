@@ -16,7 +16,7 @@ import {
   getDocs
 } from 'firebase/firestore';
 import { FirebaseService } from './firebase.service';
-import { UserProfile } from '../models/user.model';
+import { UserProfile, Sex } from '../models/user.model';
 import { ZoneFixService } from '../utils/zone.util';
 
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // esclusi 0/O/1/I/L per leggibilita'
@@ -180,21 +180,27 @@ export class AuthService {
    * la ricrea. Idempotente, sicuro da richiamare ad ogni apertura pagina.
    */
   /**
-   * Salva l'altezza sul profilo. `null` la toglie.
+   * Salva i dati del corpo sul profilo: altezza, sesso, o entrambi. `null`
+   * toglie il valore.
+   *
+   * Sono gli unici campi del profilo che l'utente cambia da solo, e stanno qui
+   * e non fra le misurazioni perche' si dichiarano una volta e restano: in
+   * `MeasurementEntry` l'app li richiederebbe a ogni controllo, accanto a peso
+   * e pliche, che invece cambiano ogni volta.
    *
    * Scrive in merge invece che rimpiazzare il documento: il profilo porta
-   * campi che questa schermata non conosce (pairingCode, coachId, paired) e
+   * campi che quella schermata non conosce (pairingCode, coachId, paired) e
    * una scrittura piena li azzererebbe.
    *
    * Aggiorna anche il signal, altrimenti il valore resterebbe quello vecchio
    * fino al prossimo accesso: `currentUser` non rilegge da solo.
    */
-  updateHeight(heightCm: number | null): Promise<void> {
+  patchBody(patch: { heightCm?: number | null; sex?: Sex | null }): Promise<void> {
     return this.zoneFix.run((async () => {
       const user = this.currentUser();
       if (!user) throw new Error('Nessun utente collegato.');
-      await setDoc(doc(this.fb.db, 'users', user.uid), { heightCm }, { merge: true });
-      this.currentUser.set({ ...user, heightCm });
+      await setDoc(doc(this.fb.db, 'users', user.uid), patch, { merge: true });
+      this.currentUser.set({ ...user, ...patch });
     })());
   }
 

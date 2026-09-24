@@ -1,5 +1,13 @@
 export type UserRole = 'coach' | 'client';
 
+/**
+ * Sesso biologico. Due soli valori perche' e' l'ingresso delle formule di
+ * composizione corporea (Jackson-Pollock sulle pliche, Deurenberg), che hanno
+ * un coefficiente per l'uno e uno per l'altro e non sanno farne altri. Non
+ * entra invece nel BMI, che e' peso diviso altezza al quadrato per chiunque.
+ */
+export type Sex = 'm' | 'f';
+
 export interface UserProfile {
   uid: string;
   email: string;
@@ -19,6 +27,8 @@ export interface UserProfile {
    * l'utente non l'ha ancora messa: chi la legge deve reggere entrambi.
    */
   heightCm?: number | null;
+  /** Assente sui profili creati prima del campo, null se non l'ha scelto. */
+  sex?: Sex | null;
   createdAt: string;
 }
 

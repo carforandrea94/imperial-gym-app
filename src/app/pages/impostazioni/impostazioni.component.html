@@ -2,7 +2,7 @@
 <div class="infocard">
   <div class="account-row">
     <span class="account-row-label">Tema</span>
-    <div class="viewtoggle theme-toggle">
+    <div class="viewtoggle labeltoggle">
       <button class="viewtogglebtn tap44 tap44-v" [class.active]="theme.mode() === 'dark'"
               (click)="theme.setMode('dark')">Notte</button>
       <button class="viewtogglebtn tap44 tap44-v" [class.active]="theme.mode() === 'light'"
@@ -18,18 +18,30 @@
   </p>
 </div>
 
-<p class="sectiontitle">Altezza</p>
+<p class="sectiontitle">Corpo</p>
 <div class="infocard">
-  <button type="button" class="account-row heightrow" (click)="openHeightModal()">
-    <span class="account-row-label">Quanto sei alto</span>
-    <span class="heightrow-right">
-      <span class="account-row-value" [class.unset]="!heightSet">{{ heightLabel }}</span>
-      <lucide-icon name="chevron-right" [size]="13"></lucide-icon>
-    </span>
-  </button>
+  <div class="rows">
+    <div class="account-row">
+      <span class="account-row-label" id="sesso-lbl">Sesso</span>
+      <div class="viewtoggle labeltoggle" role="group" aria-labelledby="sesso-lbl">
+        <button class="viewtogglebtn tap44 tap44-v" [class.active]="sex === 'm'"
+                [attr.aria-pressed]="sex === 'm'" (click)="setSex('m')">Uomo</button>
+        <button class="viewtogglebtn tap44 tap44-v" [class.active]="sex === 'f'"
+                [attr.aria-pressed]="sex === 'f'" (click)="setSex('f')">Donna</button>
+      </div>
+    </div>
+
+    <button type="button" class="account-row heightrow" (click)="openHeightModal()">
+      <span class="account-row-label">Altezza</span>
+      <span class="heightrow-right">
+        <span class="account-row-value" [class.unset]="!heightSet">{{ heightLabel }}</span>
+        <lucide-icon name="chevron-right" [size]="13"></lucide-icon>
+      </span>
+    </button>
+  </div>
   <p class="settings-hint">
-    Si misura una volta e resta qui, non fra le rilevazioni: peso e pliche cambiano a ogni
-    controllo, l'altezza no.
+    Si dichiarano una volta e restano qui, non fra le rilevazioni: peso e pliche cambiano a
+    ogni controllo, questi no.
   </p>
 </div>
 

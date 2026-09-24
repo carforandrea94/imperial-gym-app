@@ -11,6 +11,23 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
+    // I soli campi del profilo che l'utente cambia da solo: altezza e sesso.
+    // Si dichiarano una volta e restano, quindi vivono sul profilo e non fra
+    // le misurazioni. La forbice dell'altezza e i due valori del sesso sono
+    // ripetuti qui e non solo nel client perche' la validazione dell'app e' un
+    // suggerimento: a scrivere sul documento e' il dispositivo, non l'app.
+    function bodyFieldsOnly() {
+      let keys = request.resource.data.diff(resource.data).affectedKeys();
+      return keys.hasOnly(['heightCm', 'sex']) &&
+        (!keys.hasAny(['heightCm']) || request.resource.data.heightCm == null || (
+          request.resource.data.heightCm is number &&
+          request.resource.data.heightCm >= 100 &&
+          request.resource.data.heightCm <= 250
+        )) &&
+        (!keys.hasAny(['sex']) || request.resource.data.sex == null ||
+          request.resource.data.sex in ['m', 'f']);
+    }
+
     match /users/{uid} {
       // Un utente legge il proprio profilo; un coach legge i profili dei propri client.
       allow read: if isSignedIn() && (
@@ -29,25 +46,13 @@ service cloud.firestore {
         );
 
       // Update: il client puo' completare l'accoppiamento (paired false -> true)
-      // e mettere la propria altezza; il coach puo' aggiornare i documenti dei
+      // e dichiarare altezza e sesso; il coach puo' aggiornare i documenti dei
       // propri client (usi futuri).
-      //
-      // L'altezza e' l'unico campo del profilo che l'utente cambia da solo:
-      // sta qui e non fra le misurazioni perche' si misura una volta e resta.
-      // La forbice e' ripetuta anche qui, e non solo nel client, perche' la
-      // validazione dell'app e' un suggerimento: a scrivere sul documento e'
-      // il dispositivo, non l'app.
       allow update: if isSignedIn() && (
         (request.auth.uid == uid &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['paired']) &&
           resource.data.paired == false && request.resource.data.paired == true) ||
-        (request.auth.uid == uid &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['heightCm']) &&
-          (request.resource.data.heightCm == null || (
-            request.resource.data.heightCm is number &&
-            request.resource.data.heightCm >= 100 &&
-            request.resource.data.heightCm <= 250
-          ))) ||
+        (request.auth.uid == uid && bodyFieldsOnly()) ||
         (resource.data.coachId == request.auth.uid)
       );
 

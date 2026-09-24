@@ -5,6 +5,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { LucideAngularModule } from 'lucide-angular';
 import { AuthService } from '../../core/services/auth.service';
+import { Sex } from '../../core/models/user.model';
 import { ThemeService } from '../../services/theme.service';
 import { ToastService } from '../../services/toast.service';
 import { isIosSafariNotStandalone } from '../../core/utils/platform.util';
@@ -24,6 +25,10 @@ import {
       padding: 10px 0; border-bottom: 1px solid var(--separator);
     }
     .account-row:last-child { border-bottom: none; }
+    /* Il suggerimento in fondo alla card non e' una riga: senza questo
+       involucro sarebbe lui l'ultimo figlio, e l'ultima riga vera terrebbe
+       un separatore appeso al nulla. */
+    .rows { display: flex; flex-direction: column; }
     .account-row-label {
       font-family: 'Inter', sans-serif; font-size: 13.5px; color: var(--label-2);
     }
@@ -104,6 +109,32 @@ export class ImpostazioniComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.heightSet ? `${formatHeightCm(cm)} cm` : 'Da impostare';
   }
 
+  get sex(): Sex | null {
+    return this.auth.currentUser()?.sex ?? null;
+  }
+
+  /**
+   * Il sesso si salva al tocco, senza conferma: e' un segmentato, e la tacca
+   * accesa e' gia' il riscontro. Toccare quella gia' accesa non scrive niente.
+   *
+   * La tacca si accende PRIMA della scrittura, cosi' il comando risponde
+   * subito; se la scrittura fallisce torna dov'era, perche' una tacca accesa
+   * su un valore mai salvato e' una bugia che si scopre al prossimo accesso.
+   */
+  async setSex(value: Sex): Promise<void> {
+    const before = this.sex;
+    if (before === value) return;
+    this.auth.currentUser.set({ ...this.auth.currentUser()!, sex: value });
+    try {
+      await this.auth.patchBody({ sex: value });
+    } catch (e) {
+      console.error('Salvataggio del sesso fallito:', e);
+      this.auth.currentUser.set({ ...this.auth.currentUser()!, sex: before });
+      this.toast.error('Non sono riuscito a salvare. Riprova.');
+    }
+    this.cdr.detectChanges();
+  }
+
   openHeightModal(): void {
     this.pick.set(toWheelValue(this.auth.currentUser()?.heightCm));
     this.heightModalOpen = true;
@@ -151,7 +182,7 @@ export class ImpostazioniComponent implements OnInit, AfterViewInit, OnDestroy {
     this.saving = true;
     this.cdr.detectChanges();
     try {
-      await this.auth.updateHeight(cm);
+      await this.auth.patchBody({ heightCm: cm });
       this.toast.success('Altezza salvata.');
       this.closeHeightModal();
     } catch (e) {

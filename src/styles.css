@@ -287,7 +287,9 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 /* Variante del toggle lista/slider per l'impostazione Notte/Giorno in
    Account: due etichette di testo invece di due icone strette, quindi
    larghezza automatica con padding orizzontale al posto dei 30px fissi. */
-.theme-toggle .viewtogglebtn{width:auto;padding:6px 14px;font-family:'IBM Plex Mono',monospace;font-size:var(--text-xs);font-weight:600;}
+/* Variante a parole del segmentato: le tacche portano un'etichetta invece
+   di un'icona, quindi si allargano sul testo. */
+.labeltoggle .viewtogglebtn{width:auto;padding:6px 14px;font-family:'IBM Plex Mono',monospace;font-size:var(--text-xs);font-weight:600;}
 .exlist{display:flex;flex-direction:column;gap:12px;}
 .exslider-wrap{display:flex;flex-direction:column;}
 .exslider{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px;}
