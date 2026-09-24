@@ -99,7 +99,9 @@ describe('SchedaDetailComponent — scheda bloccata finche\' la sessione non par
     // I suggerimenti del protocollo diventano valori veri solo alla spunta.
     expect(vm.rows[0].reps).toBe('10');
     expect(vm.rows[0].load).toBe('36');
-    expect(startRestTimer).toHaveBeenCalledWith(90, 'day1:Panca piana');
+    // Nome ed esercizio viaggiano separati: il nome lo mostra la fascia del
+    // recupero, il giorno le serve per spegnersi quando si cambia allenamento.
+    expect(startRestTimer).toHaveBeenCalledWith(90, 'Panca piana', 'day1');
     expect(patchField).toHaveBeenCalled();
   });
 });

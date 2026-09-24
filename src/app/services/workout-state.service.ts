@@ -9,8 +9,14 @@ export interface RestTimerState {
   remaining: number;
   finished: boolean;
   fillPct: number;
-  /** Esercizio da cui e' partito il recupero: decide in quale card viene disegnato il timer. */
-  exKey: string | null;
+  /** Nome dell'esercizio da cui e' partito il recupero, come lo si legge nella
+   *  scheda: la fascia in fondo lo mostra, cosi' a meta' allenamento si sa da
+   *  cosa si sta recuperando senza tornare a cercarlo. */
+  exName: string | null;
+  /** Giorno da cui e' partito il recupero. La fascia si vede solo dentro
+   *  l'allenamento in corso: un timer di un altro giorno resterebbe acceso
+   *  senza essere disegnato da nessuna parte, e senza modo di fermarlo. */
+  dayId: string | null;
 }
 
 export type WorkoutViewMode = 'list' | 'slider';
@@ -42,7 +48,7 @@ export class WorkoutStateService {
   }
 
   restTimer = signal<RestTimerState>({
-    show: false, remaining: REST_DURATION, finished: false, fillPct: 100, exKey: null
+    show: false, remaining: REST_DURATION, finished: false, fillPct: 100, exName: null, dayId: null
   });
 
   /**
@@ -65,7 +71,8 @@ export class WorkoutStateService {
   private restEndAt = 0;
   private restDuration = REST_DURATION;
   private restFinishedHandled = false;
-  private restExKey: string | null = null;
+  private restExName: string | null = null;
+  private restDayId: string | null = null;
 
   constructor(private appState: AppStateService, private auth: AuthService) {
 
@@ -130,11 +137,11 @@ export class WorkoutStateService {
     return Math.min(Math.max(week, 1), maxWeeks);
   }
 
-  /** `exKey` identifica l'esercizio in cui il timer va disegnato (vedi RestWaveComponent). */
-  startRestTimer(durationSeconds?: number, exKey: string | null = null): void {
+  startRestTimer(durationSeconds?: number, exName: string | null = null, dayId: string | null = null): void {
     this.stopRestTimer();
     this.requestNotificationPermission();
-    this.restExKey = exKey;
+    this.restExName = exName;
+    this.restDayId = dayId;
     this.restDuration = durationSeconds && durationSeconds > 0 ? durationSeconds : REST_DURATION;
     this.restEndAt = Date.now() + this.restDuration * 1000;
     this.restFinishedHandled = false;
@@ -146,7 +153,10 @@ export class WorkoutStateService {
   private restTick(): void {
     const remaining = Math.max(0, Math.ceil((this.restEndAt - Date.now()) / 1000));
     const fillPct = Math.max((remaining / this.restDuration) * 100, 0);
-    this.restTimer.set({ show: true, remaining, finished: remaining <= 0, fillPct, exKey: this.restExKey });
+    this.restTimer.set({
+      show: true, remaining, finished: remaining <= 0, fillPct,
+      exName: this.restExName, dayId: this.restDayId
+    });
 
     if (remaining <= 0 && !this.restFinishedHandled) {
       this.restFinishedHandled = true;
@@ -198,8 +208,11 @@ export class WorkoutStateService {
       this.closeTimeout = null;
     }
     this.restFinishedHandled = false;
-    this.restExKey = null;
-    this.restTimer.set({ show: false, remaining: REST_DURATION, finished: false, fillPct: 100, exKey: null });
+    this.restExName = null;
+    this.restDayId = null;
+    this.restTimer.set({
+      show: false, remaining: REST_DURATION, finished: false, fillPct: 100, exName: null, dayId: null
+    });
   }
 
   formatTime(s: number): string {
