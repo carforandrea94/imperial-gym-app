@@ -179,6 +179,25 @@ export class AuthService {
    * pubblica coachCodes: se manca la voce di lookup per il proprio codice,
    * la ricrea. Idempotente, sicuro da richiamare ad ogni apertura pagina.
    */
+  /**
+   * Salva l'altezza sul profilo. `null` la toglie.
+   *
+   * Scrive in merge invece che rimpiazzare il documento: il profilo porta
+   * campi che questa schermata non conosce (pairingCode, coachId, paired) e
+   * una scrittura piena li azzererebbe.
+   *
+   * Aggiorna anche il signal, altrimenti il valore resterebbe quello vecchio
+   * fino al prossimo accesso: `currentUser` non rilegge da solo.
+   */
+  updateHeight(heightCm: number | null): Promise<void> {
+    return this.zoneFix.run((async () => {
+      const user = this.currentUser();
+      if (!user) throw new Error('Nessun utente collegato.');
+      await setDoc(doc(this.fb.db, 'users', user.uid), { heightCm }, { merge: true });
+      this.currentUser.set({ ...user, heightCm });
+    })());
+  }
+
   ensureCoachCode(): Promise<void> {
     return this.zoneFix.run((async () => {
       const coach = this.currentUser();

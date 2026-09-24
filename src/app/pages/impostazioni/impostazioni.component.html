@@ -18,6 +18,22 @@
   </p>
 </div>
 
+<p class="sectiontitle">Altezza</p>
+<div class="infocard">
+  <div class="measure-field">
+    <label for="altezza">In centimetri</label>
+    <div class="measure-input-wrap">
+      <input id="altezza" type="text" inputmode="decimal" placeholder="180"
+             [(ngModel)]="heightInput" (blur)="saveHeight()" [disabled]="savingHeight" />
+      <span class="unit">cm</span>
+    </div>
+  </div>
+  <p class="settings-hint">
+    Si misura una volta e resta qui, non fra le rilevazioni: peso e pliche cambiano a ogni
+    controllo, l'altezza no. Lascia il campo vuoto per toglierla.
+  </p>
+</div>
+
 <p class="sectiontitle">Il tuo account</p>
 <div class="infocard">
   <div class="account-row">

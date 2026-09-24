@@ -10,6 +10,15 @@ export interface UserProfile {
   coachId: string | null;
   /** Solo per i client: true dopo il primo accesso completato con successo (email+password+codice). */
   paired: boolean;
+  /**
+   * Altezza in centimetri. Sta sul profilo e non fra le misurazioni perche' si
+   * misura una volta e resta: in `MeasurementEntry` l'app la richiederebbe a
+   * ogni rilevazione, accanto a peso e pliche, che invece cambiano ogni volta.
+   *
+   * Assente sui profili creati prima che il campo esistesse, e null quando
+   * l'utente non l'ha ancora messa: chi la legge deve reggere entrambi.
+   */
+  heightCm?: number | null;
   createdAt: string;
 }
 
