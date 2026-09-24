@@ -34,7 +34,7 @@
      un'opacita' sola: quella che va bene sul fondo scuro (0,34) in chiaro
      scende a 2,2:1. */
   --ink-subdued:#6B6E72;
-  --restwave-off:rgba(255,255,255,0.16); /* tacchetta gia' consumata nel timer di recupero */
+  --restbar-off:rgba(255,255,255,0.16); /* tacchetta gia' consumata nella fascia del recupero */
   --accent: var(--brand);
   --accent-dim: var(--brand-dim);
   /* La conferma parla con il verde secondario, non con l'accento.
@@ -141,7 +141,7 @@
   --macro-protein:#8A6A28;         /* 5,03:1 */
   --macro-fat:#5F4818;             /* 8,65:1 */
   --macro-supp:#6B3FA0;
-  --restwave-off:rgba(22,26,28,0.16);
+  --restbar-off:rgba(22,26,28,0.16);
   --ink-subdued:#8A8C8E;
   --accent-contrast:#FFFFFF;
   --state-success-deep: #A8CDB8;
@@ -689,29 +689,27 @@ lucide-icon svg.filled{fill:currentColor;}
    e' `space-between` a distribuire l'aria sulla larghezza disponibile. Le
    altezze arrivano dal componente e non cambiano mai durante il recupero:
    scorre solo la soglia fra tacchette accese e spente. */
-.restwave{padding:0 16px 11px;animation:fade .25s ease;}
-/* Due file identiche sovrapposte: quella spenta sotto, quella accesa sopra
-   ritagliata da destra. Il taglio si sposta con una transizione lineare di 1s,
-   la stessa cadenza del timer, cosi' il bordo scorre in modo continuo. */
-.restwave-bars{position:relative;height:20px;}
-.restwave-track{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;}
-.restwave-track span{display:block;flex:none;width:1.5px;border-radius:var(--r-pill);background:var(--restwave-off);}
-.restwave-track.lit{transition:clip-path 1s linear;}
-/* Il ciano di sistema non esiste piu' come token a se': l'accento E' ciano,
-   e due ciani vicini sullo stesso schermo si confondono. Il timer in corso usa
-   direttamente l'accento — sta segnalando un'azione in corso, che e' proprio
-   cio' che l'accento significa — e a fine recupero passa al verde. */
-.restwave-track.lit span{background:var(--accent);}
-/* A recupero finito resta accesa tutta la fila, senza far tornare indietro il
-   taglio: lo strato acceso sparisce e a colorarsi e' quello sotto. */
-.restwave.finished .restwave-track.lit{display:none;}
-.restwave.finished .restwave-track span{background:var(--state-success);}
-.restwave-row{display:flex;align-items:center;gap:10px;padding-top:7px;}
-.restwave-label{font-size:var(--text-xs);color:var(--label-3);}
-.restwave-time{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:var(--text-md);color:var(--accent);font-variant-numeric:tabular-nums;}
-.restwave.finished .restwave-time{color:var(--state-success);}
-.restwave-x{width:26px;height:26px;border-radius:50%;border:1px solid var(--border-line);background:var(--surface-raise);color:var(--label-2);font-size:var(--text-xs);line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .18s ease;}
-.restwave-x:active{transform:scale(0.9);}
+/* La fascia del recupero prende la sagoma e il posto della tabbar: stessa
+   altezza, stessi margini, stesso raggio, cosi' l'imbottitura in fondo al
+   contenuto (--tabbar-h) resta buona e niente si sposta quando una sostituisce
+   l'altra. */
+.restbar{position:fixed;left:16px;right:16px;bottom:var(--tabbar-gap);z-index:60;height:var(--tabbar-h);background:var(--surface-chrome);border:1px solid var(--border-line);border-radius:var(--r-pill);box-shadow:var(--shadow-float);max-width:608px;margin:0 auto;padding:9px 18px;display:flex;flex-direction:column;justify-content:center;gap:6px;animation:fade .25s ease;}
+.restbar-row{display:flex;align-items:center;gap:10px;}
+.restbar-label{font-size:var(--text-xs);color:var(--label-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.restbar.running .restbar-label{color:var(--label-2);}
+.restbar-time{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:var(--text-md);color:var(--accent);font-variant-numeric:tabular-nums;flex-shrink:0;}
+.restbar.finished .restbar-time{color:var(--state-success);}
+.restbar-x{width:24px;height:24px;border-radius:50%;border:1px solid var(--border-line);background:var(--surface-raise);color:var(--label-2);font-size:var(--text-xs);line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .18s ease;}
+.restbar-x:active{transform:scale(0.9);}
+.restbar-bars{position:relative;height:16px;}
+.restbar-track{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;}
+.restbar-track span{display:block;flex:none;width:1.5px;border-radius:var(--r-pill);background:var(--restbar-off);}
+.restbar-track.lit{transition:clip-path 1s linear;}
+.restbar-track.lit span{background:var(--accent);}
+/* A recupero finito l'onda e' tutta verde: lo strato acceso sparisce e a
+   cambiare colore e' la traccia, che a quel punto e' rimasta sola. */
+.restbar.finished .restbar-track.lit{display:none;}
+.restbar.finished .restbar-track span{background:var(--state-success);}
 
 /* ===== CONFIRM DIALOG ===== */
 .confirmoverlay{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);padding:24px;}

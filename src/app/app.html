@@ -37,4 +37,5 @@
 
 <app-confirm-dialog></app-confirm-dialog>
 <app-toast></app-toast>
-<app-tabbar *ngIf="showChrome && auth.authReady()"></app-tabbar>
+<app-tabbar *ngIf="showChrome && auth.authReady() && !showRestBar"></app-tabbar>
+<app-rest-bar *ngIf="showChrome && auth.authReady() && showRestBar"></app-rest-bar>

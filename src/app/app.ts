@@ -6,6 +6,8 @@ import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { NavbarComponent } from './components/navbar/navbar.component';
 import { TabbarComponent } from './components/tabbar/tabbar.component';
+import { RestBarComponent } from './components/rest-bar/rest-bar.component';
+import { WorkoutSessionStateService } from './services/workout-session-state.service';
 import { ConfirmDialogComponent } from './components/confirm-dialog/confirm-dialog.component';
 import { ToastComponent } from './components/toast/toast.component';
 import { WorkoutDataService } from './services/workout-data.service';
@@ -21,7 +23,7 @@ import { ThemeService } from './services/theme.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, NavbarComponent, TabbarComponent, ConfirmDialogComponent, ToastComponent],
+  imports: [CommonModule, RouterOutlet, NavbarComponent, TabbarComponent, RestBarComponent, ConfirmDialogComponent, ToastComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
@@ -36,6 +38,27 @@ export class App implements OnInit, OnDestroy {
   showViewToggle = false;
   viewToggleTarget: 'scheda' | 'dieta' = 'scheda';
   showSettings = false;
+
+  /**
+   * Il giorno che si sta guardando, quando si e' dentro un allenamento. Vale
+   * null altrove, ed e' quello che decide se la tabbar lascia il posto alla
+   * fascia del recupero.
+   */
+  private dayIdOnScreen: string | null = null;
+
+  /**
+   * Dentro l'allenamento del giorno in corso, il fondo dello schermo passa
+   * alla fascia del recupero: li' non serve spostarsi fra le sezioni — si sta
+   * fermi a recuperare — e serve invece sapere quanto manca. La via d'uscita
+   * resta la freccia della navbar, che su questa schermata c'e' sempre.
+   *
+   * Solo sul giorno che si sta ALLENANDO: con una sessione aperta su un altro
+   * giorno questa schermata e' in sola lettura, e togliere la navigazione a
+   * chi sta solo guardando sarebbe un dispetto.
+   */
+  get showRestBar(): boolean {
+    return this.dayIdOnScreen !== null && this.sessionState.isActiveForDay(this.dayIdOnScreen);
+  }
   showSaveMeasure = false;
   showChrome = false;
 
@@ -55,7 +78,8 @@ export class App implements OnInit, OnDestroy {
     public historyEditState: HistoryEditStateService,
     public protocolBuilderState: ProtocolBuilderStateService,
     public measureState: MeasureCategoryStateService,
-    private theme: ThemeService
+    private theme: ThemeService,
+    private sessionState: WorkoutSessionStateService
   ) {}
 
   ngOnInit(): void {
@@ -115,6 +139,7 @@ export class App implements OnInit, OnDestroy {
     this.showViewToggle = false;
     this.showSettings = false;
     this.showSaveMeasure = false;
+    this.dayIdOnScreen = null;
 
     if (u === '/account') {
       this.navTitle = 'Account';
@@ -317,6 +342,7 @@ export class App implements OnInit, OnDestroy {
     if (dayMatch) {
       const idx = parseInt(dayMatch[1], 10);
       const day = this.workoutData.days[idx];
+      this.dayIdOnScreen = day?.id ?? null;
       this.navTitle = day ? `Giorno ${idx + 1}` : 'Allenamento';
       this.navSubtitle = day ? `${day.label} · rec ${day.rec}` : '';
       this.showBack = true;

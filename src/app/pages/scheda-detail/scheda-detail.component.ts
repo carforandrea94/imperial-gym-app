@@ -15,7 +15,6 @@ import { todayLocalISO } from '../../core/utils/date.util';
 import { findClosestSlideIndex, scrollToSlide } from '../../core/utils/horizontal-slider.util';
 import { PerformedSet, suggestLoad } from '../../core/utils/load-estimate.util';
 import { ToastService } from '../../services/toast.service';
-import { RestWaveComponent } from '../../components/rest-wave/rest-wave.component';
 
 /** Passo di arrotondamento del carico consigliato: i dischi da 2,5 kg per lato. */
 const LOAD_STEP_KG = 5;
@@ -42,7 +41,7 @@ interface ExerciseVM {
 @Component({
   selector: 'app-scheda-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RestWaveComponent, LucideAngularModule],
+  imports: [CommonModule, FormsModule, LucideAngularModule],
   templateUrl: './scheda-detail.component.html',
   styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
 })
@@ -116,11 +115,11 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       // se resta aperto mostra l'esercizio sbagliato sotto la pagina nuova.
       this.closeRestModal();
       this.restModalVm = null;
-      // Il timer di recupero vive dentro la card dell'esercizio da cui e'
-      // partito: se quell'esercizio appartiene a un altro giorno resterebbe in
-      // corso senza essere disegnato da nessuna parte, e senza modo di fermarlo.
+      // La fascia del recupero si vede solo dentro l'allenamento in corso: un
+      // timer partito su un altro giorno resterebbe acceso senza essere
+      // disegnato da nessuna parte, e senza modo di fermarlo.
       const timer = this.state.restTimer();
-      if (timer.show && !timer.exKey?.startsWith(`${this.day.id}:`)) this.state.stopRestTimer();
+      if (timer.show && timer.dayId !== this.day.id) this.state.stopRestTimer();
       this.loadAll();
     });
   }
@@ -216,8 +215,8 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     return Math.round((nums[0] + nums[1]) / 2);
   }
 
-  /** Chiave stabile dell'esercizio nel giorno: usata sia per l'override del
-   *  recupero salvato sull'account sia per sapere in quale card disegnare il timer. */
+  /** Chiave stabile dell'esercizio nel giorno, per l'override del recupero
+   *  salvato sull'account. */
   restKey(exName: string): string {
     return `${this.day.id}:${exName}`;
   }
@@ -359,7 +358,7 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.scheduleDraft();
     if (row.done) {
-      this.state.startRestTimer(vm.restSeconds, this.restKey(vm.ex.name));
+      this.state.startRestTimer(vm.restSeconds, vm.ex.name, this.day.id);
     }
   }
 
