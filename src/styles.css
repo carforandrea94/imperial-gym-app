@@ -312,19 +312,35 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 /* Inchiostro scuro, non bianco: i colori dei gruppi muscolari sono chiari e
    saturi, e col bianco sopra sei pastiglie su sette stavano sotto contrasto —
    "Core" arrivava a 1,41:1. Col nero bluastro la peggiore e' a 5,05:1. */
-.ex-muscle{font-family:'IBM Plex Mono',monospace;font-size:var(--text-2xs);font-weight:600;letter-spacing:.04em;color:var(--ink-on-vivid);display:inline-block;padding:3px 8px;border-radius:var(--r-xs);align-self:flex-start;}
-.ex-chip{font-family:'IBM Plex Mono',monospace;font-size:var(--text-xs);font-weight:600;color:var(--label);align-self:flex-start;background:var(--surface-raise);border:1px solid var(--border-line);border-radius:var(--r-xs);padding:4px 8px;}
+/* I quattro distintivi della testata erano quattro geometrie diverse: due
+   corpi di carattere (10 e 11,5), tre imbottiture, e la pastiglia del muscolo
+   senza bordo — quindi piu' bassa di 2 px delle altre a parita' di padding.
+   Qui la forma si fissa una volta sola e ogni regola qui sotto tiene soltanto
+   il proprio colore. L'altezza e' dichiarata invece che risultare dalla
+   somma di imbottitura, interlinea e bordo: cosi' resta la stessa anche se
+   un domani cambia il corpo del carattere o il bordo di una sola di loro. */
+.ex-muscle,.ex-chip,.ex-schemebadge,.ex-counter{
+  display:inline-flex;align-items:center;min-height:24px;padding:0 8px;
+  font-family:'IBM Plex Mono',monospace;font-size:var(--text-xs);font-weight:600;
+  border-radius:var(--r-xs);white-space:nowrap;}
+.ex-muscle{letter-spacing:.04em;color:var(--ink-on-vivid);}
+.ex-chip{color:var(--label);background:var(--surface-raise);border:1px solid var(--border-line);}
 .ex-meta{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;}
-.ex-schemebadge{font-family:'IBM Plex Mono',monospace;font-size:var(--text-2xs);font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--label-2);background:var(--surface-raise);border:1px solid var(--border-line);border-radius:var(--r-xs);padding:4px 8px;white-space:nowrap;}
+.ex-schemebadge{letter-spacing:.06em;text-transform:uppercase;color:var(--label-2);background:var(--surface-raise);border:1px solid var(--border-line);}
 .ex-chevron{display:flex;align-items:center;justify-content:center;color:var(--label-3);transition:transform .35s var(--spring);}
 .ex-chevron svg{display:block;}
 .ex.open .ex-chevron{transform:rotate(180deg);color:var(--accent);}
-.ex-counter{font-family:'IBM Plex Mono',monospace;font-size:var(--text-xs);font-weight:600;color:var(--label-2);background:var(--surface-raise);border:1px solid var(--border-line);border-radius:var(--r-pill);padding:3px 9px;transition:color .2s ease,border-color .2s ease;}
+/* Unica differenza di forma che resta, e voluta: la pastiglia distingue lo
+   stato vivo dalle etichette, che sono proprieta' dell'esercizio. */
+.ex-counter{color:var(--label-2);background:var(--surface-raise);border:1px solid var(--border-line);border-radius:var(--r-pill);transition:color .2s ease,border-color .2s ease;}
 .ex-counter.complete{color:var(--accent-contrast);background:var(--accent);border-color:var(--accent);}
-.ex-chip.rest{color:var(--label-2);}
-.ex-restbtn{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;border:1px solid var(--border-line);background:var(--surface-raise);color:var(--label-2);cursor:pointer;transition:color .18s ease,background .18s ease,transform .18s ease;flex-shrink:0;}
-.ex-restbtn:active{transform:scale(0.9);}
-.ex-restbtn:hover{color:var(--label);background:var(--surface-raise-2);}
+/* Il chip del recupero e' un bottone, non un'etichetta: mostra il valore e lo
+   apre in modifica. Prima l'emoji ⏱ lo disegnava il sistema operativo, quindi
+   non seguiva ne' il colore ne' il tratto delle altre icone — ora e' Lucide
+   come tutto il resto. */
+.ex-chip.rest{color:var(--label-2);gap:5px;cursor:pointer;}
+.ex-chip.rest:active{transform:scale(0.95);}
+.ex-chip.rest:hover{color:var(--label);background:var(--surface-raise-2);}
 .restmodal-title{font-weight:700;margin-bottom:16px;}
 .rest-stepper{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:14px;}
 .rest-stepbtn{width:44px;height:44px;border-radius:var(--r-lg);border:1px solid var(--border-line);background:var(--surface-raise);color:var(--label);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:var(--text-sm);cursor:pointer;}
@@ -753,13 +769,22 @@ lucide-icon svg.filled{fill:currentColor;}
    =================================================================== */
 
 /* Icone muscolo SVG lineari dentro il badge esercizio */
-.ex-icon svg { width: 22px; height: 22px; display: block; }
 /* Badge numerico esercizio (al posto dell'icona) */
 /* Il numero prende l'inchiostro del tema, non il colore del gruppo muscolare.
    Quel colore resta nella tinta del riquadro e nel bordo, dove fa da codice
    senza doversi leggere: come TESTO non reggeva il tema chiaro — sette casi su
    sette sotto contrasto, "Core" a 1,32:1 su fondo quasi bianco. */
 .ex-num { font-weight: 800; font-size:var(--text-lg); color: var(--label); }
+/* Il badge col numero fa anche da indicatore: il bordo CSS lascia il posto
+   all'anello, cosi' traccia e avanzamento sono lo stesso tracciato e non si
+   disallineano. La percentuale si scrive tale e quale perche' pathLength=100
+   normalizza la lunghezza: nessun perimetro da ricalcolare se un domani
+   cambia la misura del badge o il suo raggio. Il badge dello storico resta
+   senza anello — li' la seduta e' chiusa, sarebbe pieno sempre. */
+.ex-num.ring{position:relative;border-color:transparent;}
+.ex-ring{position:absolute;inset:0;width:100%;height:100%;fill:none;stroke-width:3;}
+.ex-ring .done{stroke:var(--accent);transition:stroke-dasharray .4s var(--spring-soft);}
+.ex-num.ring > span{position:relative;}
 
 /* I tab stanno SOPRA la pastiglia che scorre (.pill, z-index 0): senza questo
    la pastiglia coprirebbe l'icona del tab attivo. Non e' una regola di stile,

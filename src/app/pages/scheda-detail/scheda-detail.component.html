@@ -49,11 +49,43 @@
   </div>
 </ng-template>
 
-<ng-template #exMeta let-vm="vm">
-  <button class="ex-restbtn" (click)="openRestModal(vm, $event)" aria-label="Imposta tempo di recupero">
-    <lucide-icon name="timer" [size]="16"></lucide-icon>
-  </button>
-  <span class="ex-schemebadge">{{ vm.ex.scheme === 'wave' ? 'WAVE' : 'FISSO' }}</span>
+<!-- La testata dell'esercizio, una sola volta per due viste: elenco e slider
+     la disegnavano identica ciascuna per conto suo, quindi potevano divergere
+     senza che niente lo segnalasse. -->
+<ng-template #exHeader let-vm="vm" let-i="i">
+  <!-- Il numero porta anche l'avanzamento: l'anello segue il contorno del
+       badge e si chiude man mano che spunti le serie. Segue la forma del
+       badge invece di essere un cerchio dentro un quadrato smussato. -->
+  <div class="ex-icon ex-num ring" [style.background]="getMuscleInfo(vm.ex.muscle).dim">
+    <svg class="ex-ring" viewBox="0 0 44 44" aria-hidden="true" focusable="false">
+      <path d="M22 1.5 H32 A10.5 10.5 0 0 1 42.5 12 V32 A10.5 10.5 0 0 1 32 42.5 H12 A10.5 10.5 0 0 1 1.5 32 V12 A10.5 10.5 0 0 1 12 1.5 H22" [style.stroke]="getMuscleInfo(vm.ex.muscle).color + '44'"></path>
+      <path class="done" d="M22 1.5 H32 A10.5 10.5 0 0 1 42.5 12 V32 A10.5 10.5 0 0 1 32 42.5 H12 A10.5 10.5 0 0 1 1.5 32 V12 A10.5 10.5 0 0 1 12 1.5 H22" pathLength="100"
+        [attr.stroke-dasharray]="donePct(vm) + ' 100'"></path>
+    </svg>
+    <span>{{ i + 1 }}</span>
+  </div>
+  <div class="ex-info">
+    <div class="ex-name">{{ vm.ex.name }}</div>
+    <div class="ex-tags">
+      <span class="ex-muscle" [style.background]="getMuscleInfo(vm.ex.muscle).color">
+        {{ vm.ex.muscle }}
+      </span>
+      <!-- Il recupero si mostra e si cambia con lo stesso elemento: prima il
+           valore stava in un chip e il bottone per modificarlo era un tondo
+           dall'altra parte dell'header, e nulla diceva che fossero la stessa
+           cosa. -->
+      <button class="ex-chip rest" (click)="openRestModal(vm, $event)"
+        [attr.aria-label]="'Recupero ' + formatRest(vm.restSeconds) + ', tocca per cambiarlo'">
+        <lucide-icon name="timer" [size]="12"></lucide-icon>{{ formatRest(vm.restSeconds) }}
+      </button>
+      <!-- Solo quando e' WAVE: "FISSO" e' il caso normale e occupava una riga
+           per non distinguere niente. -->
+      <span class="ex-schemebadge" *ngIf="vm.ex.scheme === 'wave'">WAVE</span>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #exCounter let-vm="vm">
   <span class="ex-counter" [class.complete]="isComplete(vm)">
     {{ getDoneCount(vm) }}/{{ vm.rows.length }}
   </span>
@@ -105,22 +137,9 @@
   <div class="ex" *ngFor="let vm of exercises; let i = index" [class.open]="vm.open">
 
     <div class="ex-summary" (click)="toggleEx(vm)">
-      <div class="ex-icon ex-num"
-        [style.background]="getMuscleInfo(vm.ex.muscle).dim"
-        [style.border-color]="getMuscleInfo(vm.ex.muscle).color + '44'">
-        {{ i + 1 }}
-      </div>
-      <div class="ex-info">
-        <div class="ex-name">{{ vm.ex.name }}</div>
-        <div class="ex-tags">
-          <span class="ex-muscle" [style.background]="getMuscleInfo(vm.ex.muscle).color">
-            {{ vm.ex.muscle }}
-          </span>
-          <span class="ex-chip rest">⏱ {{ formatRest(vm.restSeconds) }}</span>
-        </div>
-      </div>
+      <ng-container *ngTemplateOutlet="exHeader; context: { vm: vm, i: i }"></ng-container>
       <div class="ex-meta">
-        <ng-container *ngTemplateOutlet="exMeta; context: { vm: vm }"></ng-container>
+        <ng-container *ngTemplateOutlet="exCounter; context: { vm: vm }"></ng-container>
         <span class="ex-chevron">
           <lucide-icon name="chevron-down" [size]="13"></lucide-icon>
         </span>
@@ -148,22 +167,9 @@
   <div class="exslider" #sliderEl (scroll)="onSliderScroll()">
     <div class="ex exslide" *ngFor="let vm of exercises; let i = index">
       <div class="ex-summary noclick">
-        <div class="ex-icon ex-num"
-          [style.background]="getMuscleInfo(vm.ex.muscle).dim"
-          [style.border-color]="getMuscleInfo(vm.ex.muscle).color + '44'">
-          {{ i + 1 }}
-        </div>
-        <div class="ex-info">
-          <div class="ex-name">{{ vm.ex.name }}</div>
-          <div class="ex-tags">
-            <span class="ex-muscle" [style.background]="getMuscleInfo(vm.ex.muscle).color">
-              {{ vm.ex.muscle }}
-            </span>
-            <span class="ex-chip rest">⏱ {{ formatRest(vm.restSeconds) }}</span>
-          </div>
-        </div>
+        <ng-container *ngTemplateOutlet="exHeader; context: { vm: vm, i: i }"></ng-container>
         <div class="ex-meta">
-          <ng-container *ngTemplateOutlet="exMeta; context: { vm: vm }"></ng-container>
+          <ng-container *ngTemplateOutlet="exCounter; context: { vm: vm }"></ng-container>
         </div>
       </div>
 

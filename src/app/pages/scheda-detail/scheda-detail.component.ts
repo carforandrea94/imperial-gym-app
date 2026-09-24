@@ -381,6 +381,13 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     return vm.rows.filter(r => r.done).length;
   }
 
+  /** Quanto dell'anello del badge e' chiuso, in centesimi: il tracciato e'
+   *  normalizzato con pathLength=100, quindi qui non serve sapere quanto
+   *  misuri davvero il perimetro di un rettangolo smussato. */
+  donePct(vm: ExerciseVM): number {
+    return vm.rows.length ? (this.getDoneCount(vm) / vm.rows.length) * 100 : 0;
+  }
+
   isComplete(vm: ExerciseVM): boolean {
     return vm.rows.length > 0 && vm.rows.every(r => r.done);
   }
