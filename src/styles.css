@@ -287,7 +287,9 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 /* Variante del toggle lista/slider per l'impostazione Notte/Giorno in
    Account: due etichette di testo invece di due icone strette, quindi
    larghezza automatica con padding orizzontale al posto dei 30px fissi. */
-.theme-toggle .viewtogglebtn{width:auto;padding:6px 14px;font-family:'IBM Plex Mono',monospace;font-size:var(--text-xs);font-weight:600;}
+/* Variante a parole del segmentato: le tacche portano un'etichetta invece
+   di un'icona, quindi si allargano sul testo. */
+.labeltoggle .viewtogglebtn{width:auto;padding:6px 14px;font-family:'IBM Plex Mono',monospace;font-size:var(--text-xs);font-weight:600;}
 .exlist{display:flex;flex-direction:column;gap:12px;}
 .exslider-wrap{display:flex;flex-direction:column;}
 .exslider{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px;}
@@ -341,7 +343,7 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .ex-chip.rest{color:var(--label-2);gap:5px;cursor:pointer;}
 .ex-chip.rest:active{transform:scale(0.95);}
 .ex-chip.rest:hover{color:var(--label);background:var(--surface-raise-2);}
-.restmodal-title{font-weight:700;margin-bottom:16px;}
+.sheet-title{font-weight:700;margin-bottom:16px;}
 .rest-stepper{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:14px;}
 .rest-stepbtn{width:44px;height:44px;border-radius:var(--r-lg);border:1px solid var(--border-line);background:var(--surface-raise);color:var(--label);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:var(--text-sm);cursor:pointer;}
 .rest-stepbtn:active{transform:scale(0.92);}
@@ -720,11 +722,27 @@ lucide-icon svg.filled{fill:currentColor;}
 .confirmbtn{flex:1;padding:12px;border-radius:var(--r-lg);border:1px solid var(--border-line);font-family:'Inter',sans-serif;font-weight:700;font-size:var(--text-md);cursor:pointer;}
 
 /* ===== REST TIMER — BOTTOM SHEET ===== */
-.resttimer-sheet-overlay{position:fixed;inset:0;z-index:100;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0);pointer-events:none;transition:background-color .3s ease;}
-.resttimer-sheet-overlay.show{background:rgba(0,0,0,.55);pointer-events:auto;}
-.resttimer-sheet{position:relative;width:100%;max-width:608px;margin:0 auto;border-top-left-radius:24px;border-top-right-radius:24px;padding:10px 20px calc(var(--safe-b) + 16px);background:var(--surface-card);border:1px solid var(--border-line);border-bottom:none;box-shadow:0 -10px 28px rgba(0,0,0,.45);transform:translateY(100%);opacity:0;pointer-events:none;transition:transform .45s var(--spring),opacity .3s ease;}
-.resttimer-sheet.show{transform:translateY(0);opacity:1;pointer-events:auto;}
-.resttimer-sheet .grabber{width:36px;height:4px;border-radius:var(--r-pill);background:var(--border-line);margin:0 auto 14px;}
+.bottomsheet-overlay{position:fixed;inset:0;z-index:100;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0);pointer-events:none;transition:background-color .3s ease;}
+.bottomsheet-overlay.show{background:rgba(0,0,0,.55);pointer-events:auto;}
+.bottomsheet{position:relative;width:100%;max-width:608px;margin:0 auto;border-top-left-radius:24px;border-top-right-radius:24px;padding:10px 20px calc(var(--safe-b) + 16px);background:var(--surface-card);border:1px solid var(--border-line);border-bottom:none;box-shadow:0 -10px 28px rgba(0,0,0,.45);transform:translateY(100%);opacity:0;pointer-events:none;transition:transform .45s var(--spring),opacity .3s ease;}
+.bottomsheet.show{transform:translateY(0);opacity:1;pointer-events:auto;}
+.bottomsheet .grabber{width:36px;height:4px;border-radius:var(--r-pill);background:var(--border-line);margin:0 auto 14px;}
+/* Ruota di selezione. Il valore scelto e' quello fermo al centro: lo scorrimento
+   si aggancia (scroll-snap) cosi' non esiste una posizione a meta' fra due
+   tacche, e il valore fuori scala non e' respinto — e' irraggiungibile.
+   Le tacche sono <button> veri, alti 44px: funzionano col tocco secco e con la
+   tastiera, non solo scorrendo. L'imbottitura sopra e sotto vale mezza ruota
+   meno mezza tacca, perche' anche il primo e l'ultimo valore devono poter
+   arrivare al centro. */
+.wheel-wrap{position:relative;margin-bottom:18px;}
+.wheel-band{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:44px;border-radius:var(--r-md);background:var(--surface-raise);border:1px solid var(--border-line);display:flex;align-items:center;justify-content:flex-end;padding-right:16px;pointer-events:none;}
+.wheel-band .unit{font-family:'IBM Plex Mono',monospace;font-size:var(--text-sm);color:var(--label-3);}
+.wheel{position:relative;height:220px;overflow-y:auto;scroll-snap-type:y mandatory;padding:88px 0;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+.wheel::-webkit-scrollbar{display:none;}
+.wheel-item{display:flex;align-items:center;justify-content:center;width:100%;height:44px;scroll-snap-align:center;border:none;background:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:var(--text-lg);font-weight:600;color:var(--label-3);opacity:.45;transition:color .15s ease,opacity .15s ease;}
+.wheel-item.on{color:var(--label);opacity:1;font-size:var(--text-2xl);font-weight:700;}
+.wheel-item:focus-visible{outline:2px solid var(--accent);outline-offset:-4px;border-radius:var(--r-sm);}
+@media (prefers-reduced-motion: reduce){.wheel-item{transition:none;}}
 
 /* ===== UTILS ===== */
 /* Scala delle spaziature: gli stacchi verticali fra blocchi si prendono da qui,

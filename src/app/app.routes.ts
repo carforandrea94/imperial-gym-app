@@ -28,6 +28,11 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./pages/account/account.component').then(m => m.AccountComponent)
   },
+  {
+    path: 'account/impostazioni',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/impostazioni/impostazioni.component').then(m => m.ImpostazioniComponent)
+  },
 
   {
     path: 'coach/bacheca',

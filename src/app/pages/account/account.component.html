@@ -1,5 +1,3 @@
-<p class="sectiontitle mt-0">Il tuo profilo</p>
-
 <div class="infocard account-header">
   <div class="badge account-avatar">{{ initial }}</div>
   <div class="info">
@@ -8,51 +6,20 @@
   </div>
 </div>
 
-<p class="sectiontitle">Impostazioni</p>
-<div class="infocard">
-  <div class="account-row">
-    <span class="account-row-label">Tema</span>
-    <div class="viewtoggle theme-toggle">
-      <button class="viewtogglebtn tap44 tap44-v" [class.active]="theme.mode() === 'dark'"
-              (click)="theme.setMode('dark')">Notte</button>
-      <button class="viewtogglebtn tap44 tap44-v" [class.active]="theme.mode() === 'light'"
-              (click)="theme.setMode('light')">Giorno</button>
-    </div>
-  </div>
-</div>
+<app-forma-card *ngIf="!auth.isCoach"></app-forma-card>
 
-<div class="infocard mb-3" *ngIf="showIosNotificationHint">
-  <p class="bacheca-text">
-    📲 Su iPhone le notifiche (es. fine recupero) funzionano solo se l'app è installata sulla schermata Home:
-    da Safari tocca <b>Condividi</b> e poi <b>Aggiungi a Home</b>.
-  </p>
+<div class="infocard method-card" (click)="goToImpostazioni()">
+  <div class="method-icon">
+    <lucide-icon name="settings" [size]="24"></lucide-icon>
+  </div>
+  <div class="method-info">
+    <div class="method-title">Impostazioni</div>
+    <div class="method-sub">Tema, dati dell'account<ng-container *ngIf="auth.isCoach"> e codice coach</ng-container></div>
+  </div>
+  <span class="chev">
+    <lucide-icon name="chevron-right" [size]="13"></lucide-icon>
+  </span>
 </div>
-
-<div class="infocard">
-  <div class="account-row">
-    <span class="account-row-label">Email</span>
-    <span class="account-row-value">{{ auth.currentUser()?.email }}</span>
-  </div>
-  <div class="account-row" *ngIf="memberSince">
-    <span class="account-row-label">Membro dal</span>
-    <span class="account-row-value">{{ memberSince }}</span>
-  </div>
-</div>
-
-<ng-container *ngIf="auth.isCoach">
-  <p class="sectiontitle">Il tuo codice</p>
-  <div class="infocard mycode-card">
-    <p class="bacheca-text mb-3">
-      Comunica questo codice ai tuoi clienti: lo useranno in fase di registrazione per accoppiarsi a te.
-    </p>
-    <div class="mycode-row">
-      <span class="mycode-value">{{ auth.currentUser()?.pairingCode }}</span>
-      <button class="confirmbtn cancel mycode-copybtn" (click)="copyCode()">
-        {{ copied ? 'Copiato ✓' : 'Copia' }}
-      </button>
-    </div>
-  </div>
-</ng-container>
 
 <div class="savebar">
   <button class="confirmbtn cancel w-full" (click)="logout()">Esci</button>

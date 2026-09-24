@@ -126,6 +126,16 @@ export class App implements OnInit, OnDestroy {
       return;
     }
 
+    if (u === '/account/impostazioni') {
+      this.navTitle = 'Impostazioni';
+      this.navSubtitle = '';
+      this.showBack = true;
+      this.showHistory = false;
+      this.showInfo = false;
+      this.showAnalytics = false;
+      return;
+    }
+
     if (u === '/coach/bacheca') {
       this.navTitle = 'Bacheca';
       this.navSubtitle = this.auth.currentUser()?.displayName ?? '';
@@ -351,7 +361,11 @@ export class App implements OnInit, OnDestroy {
 
   onBack(): void {
     const u = this.router.url.split('?')[0];
-    if (u.match(/^\/scheda\/storico\/.+$/)) {
+    if (u === '/account/impostazioni') {
+      // Il ripiego in fondo alla catena e' /scheda, che per un coach non
+      // esiste nemmeno (clientGuard lo rimbalza): la risalita va scritta.
+      this.router.navigate(['/account']);
+    } else if (u.match(/^\/scheda\/storico\/.+$/)) {
       this.router.navigate(['/scheda/storico']);
     } else if (u.match(/^\/misure\/storico\/.+$/)) {
       this.router.navigate(['/misure/storico']);

@@ -1,0 +1,105 @@
+<p class="sectiontitle mt-0">Aspetto</p>
+<div class="infocard">
+  <div class="account-row">
+    <span class="account-row-label">Tema</span>
+    <div class="viewtoggle labeltoggle">
+      <button class="viewtogglebtn tap44 tap44-v" [class.active]="theme.mode() === 'dark'"
+              (click)="theme.setMode('dark')">Notte</button>
+      <button class="viewtogglebtn tap44 tap44-v" [class.active]="theme.mode() === 'light'"
+              (click)="theme.setMode('light')">Giorno</button>
+    </div>
+  </div>
+</div>
+
+<div class="infocard mb-3" *ngIf="showIosNotificationHint">
+  <p class="bacheca-text">
+    📲 Su iPhone le notifiche (es. fine recupero) funzionano solo se l'app è installata sulla schermata Home:
+    da Safari tocca <b>Condividi</b> e poi <b>Aggiungi a Home</b>.
+  </p>
+</div>
+
+<p class="sectiontitle">Corpo</p>
+<div class="infocard">
+  <div class="rows">
+    <div class="account-row">
+      <span class="account-row-label" id="sesso-lbl">Sesso</span>
+      <div class="viewtoggle labeltoggle" role="group" aria-labelledby="sesso-lbl">
+        <button class="viewtogglebtn tap44 tap44-v" [class.active]="sex === 'm'"
+                [attr.aria-pressed]="sex === 'm'" (click)="setSex('m')">Uomo</button>
+        <button class="viewtogglebtn tap44 tap44-v" [class.active]="sex === 'f'"
+                [attr.aria-pressed]="sex === 'f'" (click)="setSex('f')">Donna</button>
+      </div>
+    </div>
+
+    <div class="account-row">
+      <label class="account-row-label" for="nascita">Data di nascita</label>
+      <input id="nascita" class="daterow" type="date" [class.unset]="!birthDate"
+             [value]="birthDate ?? ''" [max]="maxBirthDate" [min]="minBirthDate"
+             (change)="setBirthDate($event)" />
+    </div>
+
+    <button type="button" class="account-row heightrow" (click)="openHeightModal()">
+      <span class="account-row-label">Altezza</span>
+      <span class="heightrow-right">
+        <span class="account-row-value" [class.unset]="!heightSet">{{ heightLabel }}</span>
+        <lucide-icon name="chevron-right" [size]="13"></lucide-icon>
+      </span>
+    </button>
+  </div>
+  <p class="settings-hint">
+    Si dichiarano una volta e restano qui, non fra le rilevazioni: peso e pliche cambiano a
+    ogni controllo, questi no.
+  </p>
+</div>
+
+<p class="sectiontitle">Il tuo account</p>
+<div class="infocard">
+  <div class="account-row">
+    <span class="account-row-label">Email</span>
+    <span class="account-row-value">{{ auth.currentUser()?.email }}</span>
+  </div>
+  <div class="account-row" *ngIf="memberSince">
+    <span class="account-row-label">Membro dal</span>
+    <span class="account-row-value">{{ memberSince }}</span>
+  </div>
+</div>
+
+<ng-container *ngIf="auth.isCoach">
+  <p class="sectiontitle">Il tuo codice</p>
+  <div class="infocard mycode-card">
+    <p class="bacheca-text mb-3">
+      Comunica questo codice ai tuoi clienti: lo useranno in fase di registrazione per accoppiarsi a te.
+    </p>
+    <div class="mycode-row">
+      <span class="mycode-value">{{ auth.currentUser()?.pairingCode }}</span>
+      <button class="confirmbtn cancel mycode-copybtn" (click)="copyCode()">
+        {{ copied ? 'Copiato ✓' : 'Copia' }}
+      </button>
+    </div>
+  </div>
+</ng-container>
+
+<div class="bottomsheet-overlay" #heightSheetOverlay [class.show]="heightModalOpen"
+     (click)="onHeightOverlayClick($event)">
+  <div class="bottomsheet" [class.show]="heightModalOpen">
+    <div class="grabber"></div>
+    <p class="confirmtext sheet-title">Quanto sei alto</p>
+
+    <div class="wheel-wrap">
+      <div class="wheel-band" aria-hidden="true"><span class="unit">cm</span></div>
+      <div class="wheel" #heightWheel (scroll)="onWheelScroll()">
+        <button type="button" class="wheel-item" *ngFor="let cm of options"
+                [class.on]="cm === pick()"
+                [attr.aria-current]="cm === pick() ? 'true' : null"
+                (click)="centreOn(cm)">{{ cm }}</button>
+      </div>
+    </div>
+
+    <div class="confirmbtns">
+      <button class="confirmbtn cancel" (click)="closeHeightModal()">Annulla</button>
+      <button class="confirmbtn confirm" (click)="saveHeightModal()" [disabled]="saving">
+        {{ saving ? 'Salvo…' : 'Salva' }}
+      </button>
+    </div>
+  </div>
+</div>
