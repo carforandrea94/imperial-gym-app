@@ -11,6 +11,11 @@ import {
   bodyFatJp7, meanSide, formatBodyFat, BodyFatResult, JP7_SITE_LABELS
 } from '../../core/utils/bodyfat.util';
 import { ageOn, todayLocalISO } from '../../core/utils/date.util';
+import { rotationTonnage, RotationTonnage, formatKg } from '../../core/utils/tonnage.util';
+import { WorkoutSessionsService } from '../../services/workout-sessions.service';
+import { WorkoutDataService } from '../../services/workout-data.service';
+import { WeeklyProgressService } from '../../services/weekly-progress.service';
+import { RunningStateService } from '../../services/running-state.service';
 
 /**
  * Le prime due tessere della scheda riepilogativa: quanto pesi e quanto vale
@@ -71,6 +76,26 @@ import { ageOn, todayLocalISO } from '../../core/utils/date.util';
       font-size: var(--text-2xs); line-height: 1.5; color: var(--label-3);
       margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--border-line);
     }
+    .tonnrows {
+      display: flex; flex-direction: column; gap: 9px;
+      padding-top: 12px; margin-top: 13px; border-top: 1px solid var(--border-line);
+    }
+    .tonnrow { display: flex; align-items: center; gap: 10px; }
+    .tonnrow-lbl { font-size: 11.5px; color: var(--label-2); width: 66px; flex-shrink: 0; }
+    .tonnrow-bar {
+      flex-grow: 1; height: 5px; border-radius: var(--r-pill);
+      background: var(--surface-raise); overflow: hidden; display: block;
+    }
+    .tonnrow-bar > span { display: block; height: 100%; border-radius: var(--r-pill); background: var(--accent); }
+    .tonnrow-kg {
+      font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 600;
+      color: var(--label); width: 76px; text-align: right; flex-shrink: 0;
+    }
+    .tonnrow-kg.empty { color: var(--label-3); }
+    .tonnrow-date {
+      font-family: 'IBM Plex Mono', monospace; font-size: var(--text-2xs);
+      color: var(--label-3); width: 36px; text-align: right; flex-shrink: 0;
+    }
     .formatile-note {
       font-family: 'IBM Plex Mono', monospace; font-size: var(--text-2xs);
       font-weight: 600; color: var(--label-3); margin-top: 6px; line-height: 1.35;
@@ -96,9 +121,18 @@ export class FormaCardComponent implements OnInit {
    *  c'e' niente con cui confrontarsi. */
   weightDelta: number | null = null;
 
+  /** Quante sedute sono state salvate in tutto. */
+  readonly sessionCount = signal<number | null>(null);
+  /** Il giro corrente del programma. null finche' le sedute non sono lette. */
+  readonly rotation = signal<RotationTonnage | null>(null);
+
   constructor(
     private auth: AuthService,
-    private measures: MeasurementDataService
+    private measures: MeasurementDataService,
+    private sessions: WorkoutSessionsService,
+    private workoutData: WorkoutDataService,
+    public weekly: WeeklyProgressService,
+    public running: RunningStateService
   ) {}
 
   ngOnInit(): void {
@@ -118,6 +152,80 @@ export class FormaCardComponent implements OnInit {
           : null;
       })
       .catch(e => console.error('Lettura delle misure per la scheda fallita:', e));
+
+    // Una lettura sola delle sedute serve a tutte e tre le tessere del lavoro.
+    this.sessions.listAll()
+      .then(rows => {
+        this.sessionCount.set(rows.length);
+        this.rotation.set(rotationTonnage(rows, this.workoutData.days));
+      })
+      .catch(e => console.error('Lettura delle sedute per la scheda fallita:', e));
+
+    // Questi due hanno gia' la loro difesa dalle chiamate ravvicinate: se la
+    // pagina corsa o la scheda li hanno gia' chiesti, qui non si rilegge.
+    this.weekly.refresh().catch(() => {});
+    this.running.refresh().catch(() => {});
+  }
+
+  // ---- Il lavoro ----
+
+  get daysPlanned(): number {
+    return this.workoutData.days.length;
+  }
+
+  get daysDone(): number {
+    return this.weekly.doneDayIds().size;
+  }
+
+  /** I giorni della settimana ancora da fare, per nome. */
+  get daysLeftLabel(): string {
+    const fatti = this.weekly.doneDayIds();
+    const restano = this.workoutData.days.filter(d => !fatti.has(d.id));
+    if (!restano.length) return 'settimana chiusa';
+    if (restano.length === 1) return `manca ${restano[0].label}`;
+    return `ne mancano ${restano.length}`;
+  }
+
+  get runMinutes(): number {
+    return this.running.thisWeek().minutes;
+  }
+
+  get runGoalMinutes(): number {
+    return this.running.goal()?.weeklyMinutes ?? 0;
+  }
+
+  get runNote(): string {
+    const goal = this.runGoalMinutes;
+    if (!goal) return `${this.running.thisWeek().runs} uscite questa settimana`;
+    const restano = goal - this.runMinutes;
+    return restano > 0 ? `obiettivo ${goal} · ne mancano ${restano}` : `obiettivo ${goal} · raggiunto`;
+  }
+
+  // ---- Il tonnellaggio ----
+
+  get tonnageTotal(): string {
+    const r = this.rotation();
+    return r ? formatKg(r.totalKg) : '';
+  }
+
+  /** La riga piu' pesante del giro: e' lei a dare la scala alle barre. */
+  get tonnageMax(): number {
+    const r = this.rotation();
+    return r ? Math.max(1, ...r.days.map(d => d.kg ?? 0)) : 1;
+  }
+
+  tonnagePct(kg: number | null): number {
+    return kg === null ? 0 : (kg / this.tonnageMax) * 100;
+  }
+
+  tonnageKg(kg: number | null): string {
+    return kg === null ? '—' : formatKg(kg) + ' kg';
+  }
+
+  tonnageDate(iso: string): string {
+    if (!iso) return '';
+    const d = new Date(iso + 'T00:00:00');
+    return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
   }
 
   get heightCm(): number | null {
