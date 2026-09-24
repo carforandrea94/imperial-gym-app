@@ -31,6 +31,13 @@
       </div>
     </div>
 
+    <div class="account-row">
+      <label class="account-row-label" for="nascita">Data di nascita</label>
+      <input id="nascita" class="daterow" type="date" [class.unset]="!birthDate"
+             [value]="birthDate ?? ''" [max]="maxBirthDate" [min]="minBirthDate"
+             (change)="setBirthDate($event)" />
+    </div>
+
     <button type="button" class="account-row heightrow" (click)="openHeightModal()">
       <span class="account-row-label">Altezza</span>
       <span class="heightrow-right">

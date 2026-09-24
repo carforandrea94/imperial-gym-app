@@ -29,6 +29,9 @@ export interface UserProfile {
   heightCm?: number | null;
   /** Assente sui profili creati prima del campo, null se non l'ha scelto. */
   sex?: Sex | null;
+  /** Data di nascita ISO yyyy-mm-dd. Serve all'eta', che e' un ingresso delle
+   *  formule di composizione corporea. Assente sui profili creati prima. */
+  birthDate?: string | null;
   createdAt: string;
 }
 

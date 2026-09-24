@@ -49,3 +49,30 @@
     <a class="formatile-link" *ngIf="sex === null" routerLink="/account/impostazioni">Dichiaralo</a>
   </div>
 </div>
+
+<div class="grassocard">
+  <div class="grassocard-head">
+    <div class="formatile-cap">Massa grassa</div>
+    <div class="formatile-val" *ngIf="bodyFat.pct !== null; else noFat">
+      <span class="n">{{ bodyFatLabel }}</span><span class="u">%</span>
+    </div>
+    <ng-template #noFat>
+      <div class="formatile-val"><span class="n empty">—</span></div>
+    </ng-template>
+  </div>
+
+  <div class="formatile-note" *ngIf="bodyFat.pct !== null">
+    Jackson-Pollock 7 siti<ng-container *ngIf="plicheDate"> · pliche del {{ plicheDate }}</ng-container>
+  </div>
+  <div class="formatile-note" *ngIf="bodyFat.pct === null">{{ bodyFatMissing }}</div>
+
+  <a class="formatile-link" *ngIf="bodyFat.pct === null && bodyFatNeedsProfile"
+     routerLink="/account/impostazioni">Completa il profilo</a>
+  <a class="formatile-link" *ngIf="bodyFat.pct === null && !bodyFatNeedsProfile"
+     routerLink="/misure/pliche">Vai alle pliche</a>
+
+  <p class="grassocard-foot" *ngIf="bodyFat.pct !== null">
+    È una stima su una popolazione di riferimento, non una misura: serve a seguire
+    l'andamento, non a dare un verdetto.
+  </p>
+</div>

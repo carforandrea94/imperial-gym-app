@@ -9,6 +9,7 @@ import { Sex } from '../../core/models/user.model';
 import { ThemeService } from '../../services/theme.service';
 import { ToastService } from '../../services/toast.service';
 import { isIosSafariNotStandalone } from '../../core/utils/platform.util';
+import { todayLocalISO } from '../../core/utils/date.util';
 import {
   heightOptions, toWheelValue, wheelValueAt, wheelOffsetOf, formatHeightCm
 } from '../../core/utils/height.util';
@@ -47,6 +48,16 @@ import {
     .heightrow-right {
       display: flex; align-items: center; gap: 8px; color: var(--label-3);
     }
+    /* Il campo data si veste da valore: e' una riga come le altre, non un
+       modulo. Il selettore lo apre il sistema. */
+    .daterow {
+      background: none; border: none; outline: none; padding: 0; margin-left: 12px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--label);
+      text-align: right; cursor: pointer; min-height: 44px;
+    }
+    .daterow.unset { color: var(--label-3); }
+    .daterow:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-xs); }
+    .daterow::-webkit-calendar-picker-indicator { opacity: .5; cursor: pointer; }
     .settings-hint {
       font-size: var(--text-xs); line-height: 1.5; color: var(--label-3);
       margin: 10px 0 0;
@@ -107,6 +118,37 @@ export class ImpostazioniComponent implements OnInit, AfterViewInit, OnDestroy {
   get heightLabel(): string {
     const cm = this.auth.currentUser()?.heightCm;
     return this.heightSet ? `${formatHeightCm(cm)} cm` : 'Da impostare';
+  }
+
+  get birthDate(): string | null {
+    return this.auth.currentUser()?.birthDate ?? null;
+  }
+
+  /** Nessuno nasce domani. */
+  readonly maxBirthDate = todayLocalISO();
+  /** Un limite inferiore che nessun vivente supera, giusto per chiudere il
+   *  campo: senza, il selettore nativo si apre sull'anno zero. */
+  readonly minBirthDate = '1920-01-01';
+
+  /**
+   * La data si salva appena il selettore nativo si chiude. Il campo `date`
+   * emette `change` solo con una data COMPLETA e gia' valida, quindi qui non
+   * arriva mai un mezzo valore da respingere — un anno scritto a meta' resta
+   * dentro il campo e non diventa un salvataggio.
+   */
+  async setBirthDate(event: Event): Promise<void> {
+    const value = (event.target as HTMLInputElement).value || null;
+    if (value === this.birthDate) return;
+    const before = this.birthDate;
+    this.auth.currentUser.set({ ...this.auth.currentUser()!, birthDate: value });
+    try {
+      await this.auth.patchBody({ birthDate: value });
+    } catch (e) {
+      console.error('Salvataggio della data di nascita fallito:', e);
+      this.auth.currentUser.set({ ...this.auth.currentUser()!, birthDate: before });
+      this.toast.error('Non sono riuscito a salvare. Riprova.');
+    }
+    this.cdr.detectChanges();
   }
 
   get sex(): Sex | null {

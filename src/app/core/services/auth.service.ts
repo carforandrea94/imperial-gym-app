@@ -180,8 +180,8 @@ export class AuthService {
    * la ricrea. Idempotente, sicuro da richiamare ad ogni apertura pagina.
    */
   /**
-   * Salva i dati del corpo sul profilo: altezza, sesso, o entrambi. `null`
-   * toglie il valore.
+   * Salva i dati del corpo sul profilo: altezza, sesso, data di nascita, o
+   * un sottoinsieme qualsiasi. `null` toglie il valore.
    *
    * Sono gli unici campi del profilo che l'utente cambia da solo, e stanno qui
    * e non fra le misurazioni perche' si dichiarano una volta e restano: in
@@ -195,7 +195,7 @@ export class AuthService {
    * Aggiorna anche il signal, altrimenti il valore resterebbe quello vecchio
    * fino al prossimo accesso: `currentUser` non rilegge da solo.
    */
-  patchBody(patch: { heightCm?: number | null; sex?: Sex | null }): Promise<void> {
+  patchBody(patch: { heightCm?: number | null; sex?: Sex | null; birthDate?: string | null }): Promise<void> {
     return this.zoneFix.run((async () => {
       const user = this.currentUser();
       if (!user) throw new Error('Nessun utente collegato.');
