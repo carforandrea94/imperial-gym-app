@@ -321,10 +321,13 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .ex.open .ex-chevron{transform:rotate(180deg);color:var(--accent);}
 .ex-counter{font-family:'IBM Plex Mono',monospace;font-size:var(--text-xs);font-weight:600;color:var(--label-2);background:var(--surface-raise);border:1px solid var(--border-line);border-radius:var(--r-pill);padding:3px 9px;transition:color .2s ease,border-color .2s ease;}
 .ex-counter.complete{color:var(--accent-contrast);background:var(--accent);border-color:var(--accent);}
-.ex-chip.rest{color:var(--label-2);}
-.ex-restbtn{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;border:1px solid var(--border-line);background:var(--surface-raise);color:var(--label-2);cursor:pointer;transition:color .18s ease,background .18s ease,transform .18s ease;flex-shrink:0;}
-.ex-restbtn:active{transform:scale(0.9);}
-.ex-restbtn:hover{color:var(--label);background:var(--surface-raise-2);}
+/* Il chip del recupero e' un bottone, non un'etichetta: mostra il valore e lo
+   apre in modifica. Prima l'emoji ⏱ lo disegnava il sistema operativo, quindi
+   non seguiva ne' il colore ne' il tratto delle altre icone — ora e' Lucide
+   come tutto il resto. */
+.ex-chip.rest{color:var(--label-2);display:inline-flex;align-items:center;gap:5px;cursor:pointer;font:inherit;font-family:'IBM Plex Mono',monospace;font-size:var(--text-xs);font-weight:600;}
+.ex-chip.rest:active{transform:scale(0.95);}
+.ex-chip.rest:hover{color:var(--label);background:var(--surface-raise-2);}
 .restmodal-title{font-weight:700;margin-bottom:16px;}
 .rest-stepper{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:14px;}
 .rest-stepbtn{width:44px;height:44px;border-radius:var(--r-lg);border:1px solid var(--border-line);background:var(--surface-raise);color:var(--label);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:var(--text-sm);cursor:pointer;}
