@@ -1,0 +1,29 @@
+<p class="sectiontitle mt-0">A che punto sei</p>
+
+<div class="formagrid">
+  <div class="formatile">
+    <div class="formatile-cap">Peso</div>
+    <div class="formatile-val" *ngIf="weightKg() !== null; else noWeight">
+      <span class="n">{{ weightLabel }}</span><span class="u">kg</span>
+    </div>
+    <ng-template #noWeight>
+      <div class="formatile-val"><span class="n empty">—</span></div>
+    </ng-template>
+    <div class="formatile-note" *ngIf="weightKg() !== null && weightDelta !== null">{{ weightDeltaLabel }}</div>
+    <div class="formatile-note" *ngIf="weightKg() !== null && weightDelta === null">prima pesata</div>
+    <a class="formatile-link" *ngIf="weightKg() === null" routerLink="/misure/peso">Pesati</a>
+  </div>
+
+  <div class="formatile">
+    <div class="formatile-cap">BMI</div>
+    <div class="formatile-val" *ngIf="bmi !== null; else noBmi">
+      <span class="n">{{ bmiLabel }}</span>
+    </div>
+    <ng-template #noBmi>
+      <div class="formatile-val"><span class="n empty">—</span></div>
+    </ng-template>
+    <div class="formatile-note" *ngIf="bmi !== null">{{ bmiNote }}</div>
+    <a class="formatile-link" *ngIf="bmi === null && !heightCm" routerLink="/account/impostazioni">Metti l'altezza</a>
+    <div class="formatile-note" *ngIf="bmi === null && heightCm">serve una pesata</div>
+  </div>
+</div>

@@ -6,6 +6,8 @@
   </div>
 </div>
 
+<app-forma-card *ngIf="!auth.isCoach"></app-forma-card>
+
 <div class="infocard method-card" (click)="goToImpostazioni()">
   <div class="method-icon">
     <lucide-icon name="settings" [size]="24"></lucide-icon>

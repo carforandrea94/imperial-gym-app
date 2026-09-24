@@ -2,13 +2,14 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { LucideAngularModule } from 'lucide-angular';
+import { FormaCardComponent } from '../../components/forma-card/forma-card.component';
 import { AuthService } from '../../core/services/auth.service';
 import { WorkoutSessionStateService } from '../../services/workout-session-state.service';
 
 @Component({
   selector: 'app-account',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule],
+  imports: [CommonModule, LucideAngularModule, FormaCardComponent],
   templateUrl: './account.component.html',
   styles: [`
     :host { display: block; animation: fade .4s var(--spring-soft); }
