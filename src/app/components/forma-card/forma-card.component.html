@@ -26,4 +26,26 @@
     <a class="formatile-link" *ngIf="bmi === null && !heightCm" routerLink="/account/impostazioni">Metti l'altezza</a>
     <div class="formatile-note" *ngIf="bmi === null && heightCm">serve una pesata</div>
   </div>
+
+  <div class="formatile">
+    <div class="formatile-cap">Altezza</div>
+    <div class="formatile-val" *ngIf="heightCm !== null; else noHeight">
+      <span class="n">{{ heightLabel }}</span><span class="u">cm</span>
+    </div>
+    <ng-template #noHeight>
+      <div class="formatile-val"><span class="n empty">—</span></div>
+    </ng-template>
+    <a class="formatile-link" *ngIf="heightCm === null" routerLink="/account/impostazioni">Dichiarala</a>
+  </div>
+
+  <div class="formatile">
+    <div class="formatile-cap">Sesso</div>
+    <div class="formatile-val" *ngIf="sex !== null; else noSex">
+      <span class="n word">{{ sexLabel }}</span>
+    </div>
+    <ng-template #noSex>
+      <div class="formatile-val"><span class="n empty">—</span></div>
+    </ng-template>
+    <a class="formatile-link" *ngIf="sex === null" routerLink="/account/impostazioni">Dichiaralo</a>
+  </div>
 </div>

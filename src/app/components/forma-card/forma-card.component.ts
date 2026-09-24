@@ -5,6 +5,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { MeasurementDataService } from '../../services/measurement-data.service';
 import { computeBmi, bmiClass, formatBmi, BMI_CLASS_LABELS } from '../../core/utils/bmi.util';
 import { formatHeightCm } from '../../core/utils/height.util';
+import { Sex } from '../../core/models/user.model';
 
 /**
  * Le prime due tessere della scheda riepilogativa: quanto pesi e quanto vale
@@ -43,6 +44,9 @@ import { formatHeightCm } from '../../core/utils/height.util';
       font-weight: 700; letter-spacing: -.02em; line-height: 1; color: var(--label);
     }
     .formatile-val .n.empty { color: var(--label-3); font-weight: 600; }
+    /* Una parola non sta alla misura di un numero: "Donna" a --text-3xl
+       sfonderebbe la colonna. */
+    .formatile-val .n.word { font-size: var(--text-xl); letter-spacing: 0; }
     .formatile-val .u {
       font-family: 'IBM Plex Mono', monospace; font-size: var(--text-xs);
       font-weight: 500; color: var(--label-3);
@@ -94,6 +98,18 @@ export class FormaCardComponent implements OnInit {
     return this.auth.currentUser()?.heightCm ?? null;
   }
 
+  get heightLabel(): string {
+    return formatHeightCm(this.heightCm);
+  }
+
+  get sex(): Sex | null {
+    return this.auth.currentUser()?.sex ?? null;
+  }
+
+  get sexLabel(): string {
+    return this.sex === 'm' ? 'Uomo' : this.sex === 'f' ? 'Donna' : '';
+  }
+
   get weightLabel(): string {
     const kg = this.weightKg();
     return kg === null ? '' : this.measures.formatMeasureNumber(kg);
@@ -118,6 +134,6 @@ export class FormaCardComponent implements OnInit {
   get bmiNote(): string {
     const b = this.bmi;
     if (b === null) return '';
-    return `${BMI_CLASS_LABELS[bmiClass(b)]} · su ${formatHeightCm(this.heightCm)} cm`;
+    return BMI_CLASS_LABELS[bmiClass(b)];
   }
 }
