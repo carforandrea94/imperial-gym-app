@@ -15,28 +15,61 @@
     Avvia la sessione per registrare ripetizioni e carichi.
   </p>
 
-  <div class="settable-head">
-    <span>Serie</span>
-    <span>Rip.</span>
-    <span>Carico (kg)</span>
-    <span>✓</span>
-  </div>
+  <div class="setlist">
+    <ng-container *ngFor="let row of vm.rows; let j = index">
 
-  <div class="settable-row" *ngFor="let row of vm.rows; let j = index">
-    <div class="serie-badge">{{ j + 1 }}</div>
-    <input class="rip-input" type="text" inputmode="decimal"
-      [(ngModel)]="row.reps"
-      [placeholder]="row.ripPlaceholder"
-      [disabled]="setsLocked"
-      (input)="onInput()" />
-    <input class="load-input" type="text" inputmode="decimal"
-      [(ngModel)]="row.load"
-      [placeholder]="row.loadPlaceholder || '0'"
-      [disabled]="setsLocked"
-      (input)="onInput()" />
-    <div class="set-check" [class.done]="row.done" [class.locked]="setsLocked"
-      [attr.aria-disabled]="setsLocked ? 'true' : null"
-      (click)="onSetCheck(vm, j)">✓</div>
+      <!-- Chiusa: una riga sola. Toccarla la riapre, che e' come si corregge. -->
+      <button type="button" class="setline" *ngIf="vm.activeRow !== j"
+        [class.done]="row.done" [disabled]="setsLocked" (click)="setActive(vm, j)">
+        <span class="setline-n">{{ j + 1 }}</span>
+        <span class="setline-val">{{ rowSummary(row) }}</span>
+        <lucide-icon *ngIf="row.done" name="check" [size]="14" class="setline-tick"></lucide-icon>
+      </button>
+
+      <!-- Aperta: l'unica coi comandi grandi. -->
+      <div class="setcard" *ngIf="vm.activeRow === j">
+        <div class="setcard-head">
+          <span class="setcard-title">Serie {{ j + 1 }} di {{ vm.rows.length }}</span>
+          <span class="setcard-hint" *ngIf="!row.load && row.loadPlaceholder">suggerito</span>
+        </div>
+
+        <div class="stepper">
+          <button type="button" class="stepbtn" [disabled]="setsLocked"
+            (click)="adjustLoad(vm, j, -loadStep)"
+            [attr.aria-label]="'Togli ' + loadStep + ' chili'">−</button>
+          <label class="stepfield">
+            <span class="sr-only">Carico della serie {{ j + 1 }}, in chili</span>
+            <input type="text" inputmode="decimal" [(ngModel)]="row.load"
+              [placeholder]="row.loadPlaceholder || '0'" [disabled]="setsLocked"
+              (input)="onInput()" />
+          </label>
+          <span class="stepunit">kg</span>
+          <button type="button" class="stepbtn" [disabled]="setsLocked"
+            (click)="adjustLoad(vm, j, loadStep)"
+            [attr.aria-label]="'Aggiungi ' + loadStep + ' chili'">+</button>
+        </div>
+
+        <div class="stepper small">
+          <button type="button" class="stepbtn" [disabled]="setsLocked"
+            (click)="adjustReps(vm, j, -1)" aria-label="Una ripetizione in meno">−</button>
+          <label class="stepfield">
+            <span class="sr-only">Ripetizioni della serie {{ j + 1 }}</span>
+            <input type="text" inputmode="numeric" [(ngModel)]="row.reps"
+              [placeholder]="row.ripPlaceholder || '0'" [disabled]="setsLocked"
+              (input)="onInput()" />
+          </label>
+          <span class="stepunit">rip.</span>
+          <button type="button" class="stepbtn" [disabled]="setsLocked"
+            (click)="adjustReps(vm, j, 1)" aria-label="Una ripetizione in più">+</button>
+        </div>
+
+        <button type="button" class="setdone" *ngIf="!row.done" [disabled]="setsLocked"
+          (click)="confirmSet(vm, j)">Fatta</button>
+        <button type="button" class="setundo" *ngIf="row.done" [disabled]="setsLocked"
+          (click)="undoSet(vm, j)">Togli la spunta</button>
+      </div>
+
+    </ng-container>
   </div>
 
   <!-- Insights -->
@@ -91,10 +124,52 @@
   </span>
 </ng-template>
 
+<!-- Il resoconto: quando c'e', ha preso il posto dell'allenamento, che e'
+     finito. Non e' una schermata a parte perche' nasce dai dati che questa
+     pagina ha gia' in mano. -->
+<ng-container *ngIf="summary as s">
+  <div class="wrapup">
+    <div class="wrapup-head">
+      <div class="wrapup-eyebrow">Allenamento salvato</div>
+      <div class="wrapup-title">{{ day?.label }}</div>
+      <div class="wrapup-sub">{{ formatDuration(s.durationSec) }} · {{ s.setsDone }} serie su {{ s.setsTotal }}</div>
+    </div>
+
+    <div class="wrapup-grid">
+      <div class="wrapup-tile">
+        <div class="wrapup-cap">Volume</div>
+        <div class="wrapup-val"><span class="n">{{ summaryVolume(s.volumeKg) }}</span><span class="u">kg</span></div>
+        <div class="wrapup-note" *ngIf="s.volumeDeltaKg !== null"
+          [class.up]="s.volumeDeltaKg > 0">{{ summaryDelta(s.volumeDeltaKg) }} sul {{ summaryPrevDate(s.previousDate) }}</div>
+        <div class="wrapup-note" *ngIf="s.volumeDeltaKg === null">prima volta su questo giorno</div>
+      </div>
+      <div class="wrapup-tile">
+        <div class="wrapup-cap">Serie</div>
+        <div class="wrapup-val"><span class="n">{{ s.setsDone }}</span><span class="u">/{{ s.setsTotal }}</span></div>
+        <div class="wrapup-note" *ngIf="s.setsDone === s.setsTotal">nessuna saltata</div>
+        <div class="wrapup-note" *ngIf="s.setsDone !== s.setsTotal">{{ s.setsTotal - s.setsDone }} lasciate indietro</div>
+      </div>
+    </div>
+
+    <div class="wrapup-card" *ngIf="s.records.length">
+      <div class="wrapup-cap">Hai alzato l'asticella</div>
+      <div class="wrapup-rec" *ngFor="let r of s.records">
+        <span class="wrapup-rec-ic"><lucide-icon name="check" [size]="16"></lucide-icon></span>
+        <span class="wrapup-rec-txt">
+          <span class="nm">{{ r.exercise }}</span>
+          <span class="dt">{{ r.now }} — prima {{ r.before }}</span>
+        </span>
+      </div>
+    </div>
+
+    <button type="button" class="confirmbtn cancel w-full" (click)="backToScheda()">Torna alla scheda</button>
+  </div>
+</ng-container>
+
 <!-- Sessione: unico posto da cui si comanda, fisso in alto sopra i pallini, cosi'
      resta visibile su qualunque slide e anche scorrendo dentro una card lunga.
      Vale per entrambe le viste; lo storico usa un altro componente e non la mostra. -->
-<div class="session-bar" *ngIf="day && !loading">
+<div class="session-bar" *ngIf="day && !loading && !summary">
   <span class="session-bar-dot" [class.live]="isSessionOnThisDay"></span>
 
   <!-- Se la sessione e' su un altro giorno l'etichetta ci porta: senza card non
@@ -110,29 +185,18 @@
     {{ isSessionOnThisDay ? sessionState.formatDuration(sessionState.elapsedSec()) : '0:00' }}
   </span>
 
-  <!-- Avvia / metti in pausa / riprendi: un solo tasto, l'icona dice cosa fara'. -->
+  <!-- Avvia / metti in pausa / riprendi: un solo tasto, l'icona dice cosa fara'.
+       Salvare e buttare via non stanno piu' qui: erano due tondi identici uno
+       accanto all'altro, e uno dei due distrugge il lavoro. -->
   <button class="session-bar-btn tap44 tap44-v" [disabled]="hasOtherSession"
     (click)="onPlayPause()" [attr.aria-label]="playPauseLabel">
     <lucide-icon *ngIf="!isSessionRunning" name="play" [size]="18" class="filled"></lucide-icon>
     <lucide-icon *ngIf="isSessionRunning" name="pause" [size]="18" class="filled"></lucide-icon>
   </button>
-
-  <button class="session-bar-btn ghost tap44 tap44-v"
-    [class.saved]="state.saveStatus() === 'saved'"
-    [class.err]="state.saveStatus() === 'err'"
-    [disabled]="!canSaveSession"
-    (click)="saveWorkout()" [attr.aria-label]="saveButtonLabel">
-    <lucide-icon name="check" [size]="18"></lucide-icon>
-  </button>
-
-  <button class="session-bar-btn ghost danger tap44 tap44-v" [disabled]="!canCancelSession"
-    (click)="cancelSession()" aria-label="Annulla la sessione senza salvarla">
-    <lucide-icon name="x" [size]="18"></lucide-icon>
-  </button>
 </div>
 
 <!-- Vista elenco (accordion) -->
-<ng-container *ngIf="day && !loading && !errorMsg && state.viewMode() === 'list'">
+<ng-container *ngIf="day && !loading && !errorMsg && !summary && state.viewMode() === 'list'">
 <div class="exlist">
   <div class="ex" *ngFor="let vm of exercises; let i = index" [class.open]="vm.open">
 
@@ -156,7 +220,7 @@
 </ng-container>
 
 <!-- Vista slider (card scorrevoli, una per volta) -->
-<div class="exslider-wrap" *ngIf="day && !loading && !errorMsg && state.viewMode() === 'slider'">
+<div class="exslider-wrap" *ngIf="day && !loading && !errorMsg && !summary && state.viewMode() === 'slider'">
   <div class="exslider-dashes" *ngIf="exercises.length > 1">
     <span *ngFor="let vm of exercises; let i = index"
       class="exslider-dash" [class.active]="i === sliderIndex" [class.done]="isComplete(vm)"
@@ -178,6 +242,36 @@
       </div>
     </div>
   </div>
+</div>
+
+<!-- Chiudere l'allenamento: un posto solo, in fondo, dove si arriva quando si
+     ha finito. Prima erano due tondi nella barra in alto, e quello che butta
+     via il lavoro stava accanto a quello che lo salva. -->
+<div class="closing" *ngIf="day && !loading && !errorMsg && !summary && isSessionOnThisDay">
+  <div class="closing-title">{{ closingTitle }}</div>
+
+  <div class="closing-stats">
+    <div class="closing-stat">
+      <span class="closing-cap">Durata</span>
+      <span class="closing-val">{{ formatDuration(sessionState.elapsedSec()) }}</span>
+    </div>
+    <div class="closing-stat">
+      <span class="closing-cap">Serie</span>
+      <span class="closing-val">{{ doneSets }}<span class="closing-of">/{{ totalSets }}</span></span>
+    </div>
+    <div class="closing-stat">
+      <span class="closing-cap">Volume</span>
+      <span class="closing-val">{{ liveVolumeKg }}<span class="closing-of">kg</span></span>
+    </div>
+  </div>
+
+  <button type="button" class="confirmbtn confirm w-full" [disabled]="!canSaveSession"
+    (click)="saveWorkout()" [attr.aria-label]="saveButtonLabel">
+    {{ state.saveStatus() === 'saving' ? 'Salvo…' : 'Chiudi e salva' }}
+  </button>
+
+  <button type="button" class="closing-discard" [disabled]="!canCancelSession"
+    (click)="cancelSession()">Butta via questa sessione</button>
 </div>
 
 <div class="bottomsheet-overlay" #restSheetOverlay *ngIf="day" [class.show]="restModalOpen" (click)="onRestOverlayClick($event)">
