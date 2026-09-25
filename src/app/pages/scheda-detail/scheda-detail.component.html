@@ -23,6 +23,7 @@
         [class.done]="row.done" [disabled]="setsLocked" (click)="setActive(vm, j)">
         <span class="setline-n">{{ j + 1 }}</span>
         <span class="setline-val">{{ rowSummary(row) }}</span>
+        <span class="setline-extra" *ngIf="row.extra">in più</span>
         <lucide-icon *ngIf="row.done" name="check" [size]="14" class="setline-tick"></lucide-icon>
       </button>
 
@@ -30,7 +31,8 @@
       <div class="setcard" *ngIf="vm.activeRow === j">
         <div class="setcard-head">
           <span class="setcard-title">Serie {{ j + 1 }} di {{ vm.rows.length }}</span>
-          <span class="setcard-hint" *ngIf="!row.load && row.loadPlaceholder">suggerito</span>
+          <span class="setcard-hint" *ngIf="row.extra">aggiunta da te</span>
+          <span class="setcard-hint" *ngIf="!row.extra && !row.load && row.loadPlaceholder">suggerito</span>
         </div>
 
         <div class="stepper">
@@ -67,10 +69,21 @@
           (click)="confirmSet(vm, j)">Fatta</button>
         <button type="button" class="setundo" *ngIf="row.done" [disabled]="setsLocked"
           (click)="undoSet(vm, j)">Togli la spunta</button>
+
+        <button type="button" class="setremove" *ngIf="canRemove(vm, j)" [disabled]="setsLocked"
+          (click)="removeSet(vm, j)">Togli questa serie</button>
       </div>
 
     </ng-container>
   </div>
+
+  <!-- Una serie in piu' di quelle scritte dal coach: quelle del piano restano
+       dove sono, questa la si toglie quando si vuole. -->
+  <button type="button" class="setadd" *ngIf="canAdd(vm)" [disabled]="setsLocked"
+    (click)="addSet(vm)">
+    <lucide-icon name="plus" [size]="16"></lucide-icon>
+    Aggiungi una serie
+  </button>
 
   <!-- Insights -->
   <div class="ex-insights" [class.show]="vm.insightVisible && vm.insight">
@@ -80,6 +93,14 @@
       <div class="suggestion-chip" *ngIf="vm.isFirst && vm.warmup" [innerHTML]="vm.warmup"></div>
     </ng-container>
   </div>
+
+  <!-- Una serie in piu' di quelle scritte dal coach: quelle del piano restano
+       dove sono, questa la si toglie quando si vuole. -->
+  <button type="button" class="setadd" *ngIf="canAdd(vm)" [disabled]="setsLocked"
+    (click)="addSet(vm)">
+    <lucide-icon name="plus" [size]="16"></lucide-icon>
+    Aggiungi una serie
+  </button>
 </ng-template>
 
 <!-- La testata dell'esercizio, una sola volta per due viste: elenco e slider

@@ -391,6 +391,9 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .setline.done{color:var(--label-2);}
 .setline.done .setline-val{color:var(--label);}
 .setline-tick{color:var(--accent);flex-shrink:0;}
+/* Le serie aggiunte durante l'allenamento: la riga chiusa lo dice a parole,
+   perche' sono anche le uniche che si possono togliere. */
+.setline-extra{font-family:'IBM Plex Mono',monospace;font-size:var(--text-2xs);color:var(--label-3);flex-shrink:0;}
 
 .setcard{display:flex;flex-direction:column;gap:11px;padding:14px;border-radius:var(--r-lg);background:var(--accent-dim);border:1px solid var(--accent);}
 .setcard-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;}
@@ -410,6 +413,14 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .setdone{width:100%;min-height:52px;border-radius:var(--r-lg);border:none;background:var(--accent);color:var(--accent-contrast);font-family:'Inter',sans-serif;font-size:var(--text-lg);font-weight:700;cursor:pointer;}
 .setdone:disabled{opacity:.5;cursor:not-allowed;}
 .setundo{width:100%;min-height:44px;border-radius:var(--r-md);border:1px solid var(--border-line);background:transparent;color:var(--label-2);font-family:'Inter',sans-serif;font-size:var(--text-sm);font-weight:600;cursor:pointer;}
+/* Togliere sta dentro la card aperta, sotto ai comandi: e' un'azione che
+   distrugge, non deve stare a portata di pollice mentre si scorre l'elenco. */
+.setremove{width:100%;min-height:44px;border:none;border-radius:var(--r-md);background:transparent;color:var(--state-danger-text);font-family:'Inter',sans-serif;font-size:var(--text-sm);font-weight:600;cursor:pointer;}
+.setremove:disabled{opacity:.45;cursor:not-allowed;}
+/* Tratteggiato e spento: aggiungere una serie e' possibile sempre, ma non e'
+   l'azione della card - quella resta "Fatta". */
+.setadd{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:44px;margin-top:8px;border:1px dashed var(--border-line);border-radius:var(--r-md);background:transparent;color:var(--label-2);font-family:'Inter',sans-serif;font-size:var(--text-sm);font-weight:600;cursor:pointer;}
+.setadd:disabled{opacity:.45;cursor:not-allowed;}
 
 /* La chiusura dell'allenamento: un posto solo, in fondo. */
 /* Da sola (vista elenco) la chiusura sta in fondo alla pagina; dentro lo
