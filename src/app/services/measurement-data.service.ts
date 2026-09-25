@@ -6,6 +6,7 @@ import { AppStateService } from './app-state.service';
 import {
   MeasurementEntry,
   MeasurementKey,
+  normalizeMeasurement,
   MeasureCategory,
   CATEGORY_FIELDS,
   ALL_MEASURE_FIELDS
@@ -51,7 +52,9 @@ export class MeasurementDataService {
     return this.zoneFix.run((async () => {
       const snap = await getDocs(this.col());
       return snap.docs
-        .map(d => d.data() as MeasurementEntry)
+        // I documenti scritti con lo schema precedente si leggono comunque:
+        // i siti che esistono in entrambi vengono riportati sui nomi nuovi.
+        .map(d => normalizeMeasurement(d.data()))
         .sort((a, b) => b.date.localeCompare(a.date));
     })());
   }
