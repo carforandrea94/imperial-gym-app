@@ -52,3 +52,7 @@
 <button class="runsave tap44 press-fx" [disabled]="!canSave" (click)="save()">
   {{ saving ? 'Salvataggio…' : (editId ? 'Salva modifiche' : 'Salva uscita') }}
 </button>
+
+<button class="runremove tap44" *ngIf="editId" [disabled]="saving" (click)="remove()">
+  Elimina questa uscita
+</button>

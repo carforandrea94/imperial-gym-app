@@ -124,6 +124,37 @@
   </span>
 </ng-template>
 
+<!-- Chiudere l'allenamento: un posto solo, dove si arriva quando si ha finito
+     - in fondo all'elenco, ultima card dello slider. Prima erano due tondi
+     nella barra in alto, e quello che butta via il lavoro stava accanto a
+     quello che lo salva. -->
+<ng-template #closingBody>
+  <div class="closing-title">{{ closingTitle }}</div>
+
+  <div class="closing-stats">
+    <div class="closing-stat">
+      <span class="closing-cap">Durata</span>
+      <span class="closing-val">{{ formatDuration(sessionState.elapsedSec()) }}</span>
+    </div>
+    <div class="closing-stat">
+      <span class="closing-cap">Serie</span>
+      <span class="closing-val">{{ doneSets }}<span class="closing-of">/{{ totalSets }}</span></span>
+    </div>
+    <div class="closing-stat">
+      <span class="closing-cap">Volume</span>
+      <span class="closing-val">{{ liveVolumeKg }}<span class="closing-of">kg</span></span>
+    </div>
+  </div>
+
+  <button type="button" class="confirmbtn confirm w-full" [disabled]="!canSaveSession"
+    (click)="saveWorkout()" [attr.aria-label]="saveButtonLabel">
+    {{ state.saveStatus() === 'saving' ? 'Salvo…' : 'Chiudi e salva' }}
+  </button>
+
+  <button type="button" class="closing-discard" [disabled]="!canCancelSession"
+    (click)="cancelSession()">Butta via questa sessione</button>
+</ng-template>
+
 <!-- Il resoconto: quando c'e', ha preso il posto dell'allenamento, che e'
      finito. Non e' una schermata a parte perche' nasce dai dati che questa
      pagina ha gia' in mano. -->
@@ -131,7 +162,7 @@
   <div class="wrapup">
     <div class="wrapup-head">
       <div class="wrapup-eyebrow">Allenamento salvato</div>
-      <div class="wrapup-title">{{ day?.label }}</div>
+      <div class="wrapup-title">{{ day.label }}</div>
       <div class="wrapup-sub">{{ formatDuration(s.durationSec) }} · {{ s.setsDone }} serie su {{ s.setsTotal }}</div>
     </div>
 
@@ -217,14 +248,22 @@
     </div>
   </div>
 </div>
+
+<div class="closing" *ngIf="isSessionOnThisDay">
+  <ng-container *ngTemplateOutlet="closingBody"></ng-container>
+</div>
 </ng-container>
 
 <!-- Vista slider (card scorrevoli, una per volta) -->
 <div class="exslider-wrap" *ngIf="day && !loading && !errorMsg && !summary && state.viewMode() === 'slider'">
-  <div class="exslider-dashes" *ngIf="exercises.length > 1">
+  <div class="exslider-dashes" *ngIf="slideCount > 1">
     <span *ngFor="let vm of exercises; let i = index"
       class="exslider-dash" [class.active]="i === sliderIndex" [class.done]="isComplete(vm)"
       (click)="scrollToIndex(i)"></span>
+    <!-- Tondo invece che trattino: quella slide non e' un esercizio. -->
+    <span class="exslider-dash finish" *ngIf="isSessionOnThisDay"
+      [class.active]="sliderIndex === exercises.length"
+      (click)="scrollToIndex(exercises.length)"></span>
   </div>
 
   <div class="exslider" #sliderEl (scroll)="onSliderScroll()">
@@ -241,38 +280,16 @@
         <ng-container *ngTemplateOutlet="exDetail; context: { vm: vm }"></ng-container>
       </div>
     </div>
+
+    <!-- L'ultima slide non e' un esercizio: e' la fine. Si arriva scorrendo,
+         com'e' l'ordine in cui si allena, invece di dover uscire dallo slider
+         per trovare il tasto che salva. -->
+    <div class="exslide closing" *ngIf="isSessionOnThisDay">
+      <ng-container *ngTemplateOutlet="closingBody"></ng-container>
+    </div>
   </div>
 </div>
 
-<!-- Chiudere l'allenamento: un posto solo, in fondo, dove si arriva quando si
-     ha finito. Prima erano due tondi nella barra in alto, e quello che butta
-     via il lavoro stava accanto a quello che lo salva. -->
-<div class="closing" *ngIf="day && !loading && !errorMsg && !summary && isSessionOnThisDay">
-  <div class="closing-title">{{ closingTitle }}</div>
-
-  <div class="closing-stats">
-    <div class="closing-stat">
-      <span class="closing-cap">Durata</span>
-      <span class="closing-val">{{ formatDuration(sessionState.elapsedSec()) }}</span>
-    </div>
-    <div class="closing-stat">
-      <span class="closing-cap">Serie</span>
-      <span class="closing-val">{{ doneSets }}<span class="closing-of">/{{ totalSets }}</span></span>
-    </div>
-    <div class="closing-stat">
-      <span class="closing-cap">Volume</span>
-      <span class="closing-val">{{ liveVolumeKg }}<span class="closing-of">kg</span></span>
-    </div>
-  </div>
-
-  <button type="button" class="confirmbtn confirm w-full" [disabled]="!canSaveSession"
-    (click)="saveWorkout()" [attr.aria-label]="saveButtonLabel">
-    {{ state.saveStatus() === 'saving' ? 'Salvo…' : 'Chiudi e salva' }}
-  </button>
-
-  <button type="button" class="closing-discard" [disabled]="!canCancelSession"
-    (click)="cancelSession()">Butta via questa sessione</button>
-</div>
 
 <div class="bottomsheet-overlay" #restSheetOverlay *ngIf="day" [class.show]="restModalOpen" (click)="onRestOverlayClick($event)">
   <div class="bottomsheet" [class.show]="restModalOpen">

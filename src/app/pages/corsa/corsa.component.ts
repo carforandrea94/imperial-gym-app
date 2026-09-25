@@ -1,27 +1,36 @@
-import { Component, OnInit, computed } from '@angular/core';
+import { Component, OnInit, computed, signal } from '@angular/core';
 import { LucideAngularModule } from 'lucide-angular';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { RunningStateService } from '../../services/running-state.service';
-import { RunsService } from '../../services/runs.service';
-import { ConfirmDialogService } from '../../services/confirm-dialog.service';
-import { ToastService } from '../../services/toast.service';
-import { RUN_TYPE_LABELS, RUN_EFFORT_LABELS, hasRunGoal, Run } from '../../models/run.model';
-import { formatMinutes, goalPct } from '../../core/utils/run-math.util';
-import { mondayISO, todayLocalISO } from '../../core/utils/date.util';
-
-/** Una riga dell'elenco: l'uscita piu' quello che serve a disegnarla, gia' pronto. */
-interface RunRow {
-  id: string;
-  run: Run;
-  dayLabel: string;
-  minutes: string;
-  typeLabel: string;
-  effortLabel: string;
-}
+import { RUN_TYPE_LABELS, RUN_EFFORT_LABELS, RunEffort, hasRunGoal, Run } from '../../models/run.model';
+import { goalPct } from '../../core/utils/run-math.util';
+import { todayLocalISO } from '../../core/utils/date.util';
+import { buildWeekHistory, WeekGroup } from '../../core/utils/week-history.util';
 
 const WEEKDAYS = ['dom', 'lun', 'mar', 'mer', 'gio', 'ven', 'sab'];
-const MONTHS = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
+
+/**
+ * Quante settimane si vedono senza chiederlo. Dodici sono tre mesi: oltre,
+ * l'elenco tornerebbe lungo come quello che ha sostituito.
+ */
+const WEEKS_SHOWN = 12;
+
+/**
+ * La fatica di un'uscita, detta due volte: con il colore e con la MISURA del
+ * pallino, che cresce col peso della giornata.
+ *
+ * Il colore da solo non basterebbe. I tre hanno contrasto di sovrabbondanza
+ * sulla card — oltre 5:1 in entrambi i temi, contro i 3:1 che servono a un
+ * segno non testuale — ma le loro luminosita' sono quasi identiche, quindi
+ * chi confonde le tinte vedrebbe tre pallini uguali. Il diametro e' il
+ * secondo canale, e si legge anche senza colori.
+ */
+const EFFORT_STYLE: Record<RunEffort, { color: string; size: number }> = {
+  facile: { color: 'var(--state-success)', size: 5 },
+  giusta: { color: 'var(--accent)', size: 8 },
+  dura: { color: 'var(--effort-hard)', size: 11 }
+};
 
 @Component({
   selector: 'app-corsa',
@@ -34,23 +43,19 @@ export class CorsaComponent implements OnInit {
 
   readonly hasGoal = computed(() => hasRunGoal(this.state.goal()));
 
-  /** Uscite di questa settimana, gia' formattate. */
-  readonly weekRows = computed<RunRow[]>(() => this.state.thisWeekRuns().map(r => this.toRow(r.id, r.run)));
+  /** Le settimane aperte, per lunedi'. Quella in corso e' sempre aperta e non
+   *  passa di qui: non ha senso poterla chiudere. */
+  private readonly opened = signal<ReadonlySet<string>>(new Set());
 
-  /** Tutto il resto dello storico, dalla piu' recente. */
-  readonly pastRows = computed<RunRow[]>(() => {
-    const start = this.state.weekStart();
-    return this.state.runs()
-      .filter(r => mondayISO(r.run.date) !== start)
-      .map(r => this.toRow(r.id, r.run));
-  });
+  readonly showAll = signal(false);
+
+  readonly history = computed(() =>
+    buildWeekHistory(this.state.runs(), todayLocalISO(), this.showAll() ? 0 : WEEKS_SHOWN)
+  );
 
   constructor(
     public state: RunningStateService,
-    private runsSvc: RunsService,
-    private router: Router,
-    private confirm: ConfirmDialogService,
-    private toast: ToastService
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -64,68 +69,82 @@ export class CorsaComponent implements OnInit {
 
   // --- Obiettivo settimanale -------------------------------------------------
 
-  get minutesPct(): number { return goalPct(this.minutesDone, this.state.goal()?.weeklyMinutes ?? 0); }
+  get minutesPct(): number { return goalPct(this.minutesDone, this.goalMinutes); }
   get runsPct(): number { return goalPct(this.state.thisWeek().runs, this.state.goal()?.weeklyRuns ?? 0); }
 
   /** Minuti corsi questa settimana: e' il numero confrontato con l'obiettivo. */
   get minutesDone(): number { return this.state.thisWeek().minutes; }
 
-  get weekTime(): string { return formatMinutes(this.state.thisWeek().minutes); }
+  get goalMinutes(): number { return this.state.goal()?.weeklyMinutes ?? 0; }
 
   /** Intervallo della settimana in corso, es. "8 – 14 set". */
   get weekLabel(): string {
-    const start = new Date(this.state.weekStart() + 'T00:00:00');
-    const end = new Date(start);
-    end.setDate(end.getDate() + 6);
-    const sameMonth = start.getMonth() === end.getMonth();
-    const left = sameMonth ? `${start.getDate()}` : `${start.getDate()} ${MONTHS[start.getMonth()]}`;
-    return `${left} – ${end.getDate()} ${MONTHS[end.getMonth()]}`;
+    return this.history().weeks.find(w => w.isCurrent)?.label ?? '';
+  }
+
+  // --- Le settimane ----------------------------------------------------------
+
+  isOpen(w: WeekGroup): boolean {
+    return w.isCurrent || this.opened().has(w.mondayISO);
+  }
+
+  toggle(w: WeekGroup): void {
+    const next = new Set(this.opened());
+    if (next.has(w.mondayISO)) next.delete(w.mondayISO); else next.add(w.mondayISO);
+    this.opened.set(next);
+  }
+
+  /** Quanto della settimana e' stato coperto. Senza obiettivo la barra non
+   *  compare: una percentuale su un bersaglio che non c'e' non vuol dire niente. */
+  pct(w: WeekGroup): number {
+    return goalPct(w.minutes, this.goalMinutes);
+  }
+
+  reached(w: WeekGroup): boolean {
+    return this.goalMinutes > 0 && w.minutes >= this.goalMinutes;
+  }
+
+  runsLabel(w: WeekGroup): string {
+    if (!w.runs.length) return 'nessuna uscita';
+    return w.runs.length === 1 ? '1 uscita' : `${w.runs.length} uscite`;
+  }
+
+  /** "dom 27 · lento" — il giorno serve perche' dentro una settimana passata
+   *  "domenica" da sola non dice piu' quale. */
+  runLineLabel(run: Run): string {
+    const d = new Date(run.date + 'T00:00:00');
+    const giorno = isNaN(d.getTime())
+      ? ''
+      : `${WEEKDAYS[d.getDay()]} ${d.getDate()}`;
+    const tipo = RUN_TYPE_LABELS[run.type]?.toLowerCase() ?? '';
+    return tipo ? `${giorno} · ${tipo}` : giorno;
+  }
+
+  effortColor(effort: RunEffort): string {
+    return (EFFORT_STYLE[effort] ?? EFFORT_STYLE.giusta).color;
+  }
+
+  effortSize(effort: RunEffort): number {
+    return (EFFORT_STYLE[effort] ?? EFFORT_STYLE.giusta).size;
+  }
+
+  effortLabel(effort: RunEffort): string {
+    return RUN_EFFORT_LABELS[effort] ?? '';
   }
 
   // --- Azioni ----------------------------------------------------------------
 
-  addRun(): void {
-    this.router.navigate(['/corsa/nuova']);
+  /**
+   * Nuova uscita dentro una settimana. In quella in corso parte da oggi; in una
+   * passata parte dalla sua domenica, cosi' il calendario si apre gia' nel
+   * punto giusto invece di costringere a girarlo all'indietro.
+   */
+  addRun(w: WeekGroup): void {
+    const date = w.isCurrent ? todayLocalISO() : w.sundayISO;
+    this.router.navigate(['/corsa/nuova'], { queryParams: { date } });
   }
 
   editRun(id: string): void {
     this.router.navigate(['/corsa/nuova'], { queryParams: { id } });
-  }
-
-  async removeRun(row: RunRow, event: Event): Promise<void> {
-    event.stopPropagation();
-    const ok = await this.confirm.confirm(`Eliminare l'uscita di ${row.dayLabel} (${row.minutes})?`);
-    if (!ok) return;
-
-    if (await this.runsSvc.delete(row.id)) {
-      await this.state.refresh();
-      this.toast.success('Uscita eliminata');
-    } else {
-      this.toast.error('Eliminazione non riuscita. Controlla la connessione.');
-    }
-  }
-
-  // --- Formattazione ---------------------------------------------------------
-
-  private toRow(id: string, run: Run): RunRow {
-    return {
-      id,
-      run,
-      dayLabel: this.dayLabel(run.date),
-      minutes: formatMinutes(run.durationMin),
-      typeLabel: RUN_TYPE_LABELS[run.type] ?? '',
-      effortLabel: RUN_EFFORT_LABELS[run.effort] ?? ''
-    };
-  }
-
-  /** "oggi" / "ieri" quando serve, altrimenti "lun 8 set". */
-  private dayLabel(dateISO: string): string {
-    const today = todayLocalISO();
-    if (dateISO === today) return 'Oggi';
-    const d = new Date(dateISO + 'T00:00:00');
-    const yesterday = new Date(today + 'T00:00:00');
-    yesterday.setDate(yesterday.getDate() - 1);
-    if (d.getTime() === yesterday.getTime()) return 'Ieri';
-    return `${WEEKDAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}`;
   }
 }
