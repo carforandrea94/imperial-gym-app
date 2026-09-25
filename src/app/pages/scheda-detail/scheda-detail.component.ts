@@ -355,6 +355,15 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     scrollToSlide(this.sliderEl?.nativeElement, idx);
   }
 
+  /**
+   * Quante slide ha lo slider. Gli esercizi piu' la chiusura, che e' l'ultima
+   * card quando la sessione e' su questo giorno: serve ai trattini, che
+   * altrimenti sparirebbero su un allenamento di un esercizio solo.
+   */
+  get slideCount(): number {
+    return this.exercises.length + (this.isSessionOnThisDay ? 1 : 0);
+  }
+
   onSetCheck(vm: ExerciseVM, rowIdx: number): void {
     // La spunta e' un div, non un <button>: "disabilitato" non esiste per lui e
     // il click arriva comunque. Il controllo vero sta qui.
@@ -726,6 +735,11 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     );
     if (!ok) return;
     this.sessionState.cancel();
+    // La card di chiusura era l'ultima slide e ora non c'e' piu': l'indicatore
+    // resterebbe puntato oltre la fine, senza nessun trattino acceso.
+    if (this.sliderIndex >= this.exercises.length) {
+      this.sliderIndex = Math.max(0, this.exercises.length - 1);
+    }
     this.cdr.detectChanges();
   }
 
