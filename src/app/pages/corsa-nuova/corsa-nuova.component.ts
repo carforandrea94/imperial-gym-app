@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { RunsService } from '../../services/runs.service';
+import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { RunningStateService } from '../../services/running-state.service';
 import { ToastService } from '../../services/toast.service';
 import {
@@ -51,6 +52,7 @@ export class CorsaNuovaComponent implements OnInit, OnDestroy {
     private state: RunningStateService,
     private router: Router,
     private route: ActivatedRoute,
+    private confirm: ConfirmDialogService,
     private toast: ToastService,
     private cdr: ChangeDetectorRef
   ) {}
@@ -61,7 +63,12 @@ export class CorsaNuovaComponent implements OnInit, OnDestroy {
     this.paramSub = this.route.queryParamMap.subscribe(params => {
       const id = params.get('id');
       this.editId = id;
-      if (id) this.loadForEdit(id);
+      if (id) { this.loadForEdit(id); return; }
+      // Una nuova uscita registrata da dentro una settimana passata arriva
+      // con la sua data: il calendario si apre gia' nel punto giusto invece
+      // di costringere a girarlo all'indietro.
+      const date = params.get('date');
+      if (date && date <= this.maxDate) this.date = date;
     });
     // In modifica servono le uscite gia' salvate: se si arriva qui da un link
     // diretto l'elenco puo' essere ancora vuoto.
@@ -126,6 +133,43 @@ export class CorsaNuovaComponent implements OnInit, OnDestroy {
     await this.state.refresh();
     this.toast.success(this.editId ? 'Uscita aggiornata' : `Registrati ${formatMinutes(durationMin)}`);
     this.router.navigate(['/corsa']);
+  }
+
+  /**
+   * Elimina l'uscita in modifica. Sta qui e non su ogni riga dell'elenco:
+   * un cestino sempre acceso accanto a una riga che si tocca per aprirla e'
+   * un incidente che aspetta di succedere.
+   */
+  async remove(): Promise<void> {
+    if (!this.editId || this.saving) return;
+    const ok = await this.confirm.confirm(
+      `Eliminare l'uscita del ${this.dateLabel} (${formatMinutes(parseMinutes(this.minutes))})?`,
+      { confirmLabel: 'Elimina', dangerous: true }
+    );
+    if (!ok) return;
+
+    this.saving = true;
+    this.cdr.detectChanges();
+    const done = await this.runsSvc.delete(this.editId);
+    this.saving = false;
+
+    if (!done) {
+      this.errorMsg = 'Eliminazione non riuscita. Controlla la connessione e riprova.';
+      this.cdr.detectChanges();
+      this.toast.error('Uscita non eliminata. Riprova.');
+      return;
+    }
+
+    await this.state.refresh();
+    this.toast.success('Uscita eliminata');
+    this.router.navigate(['/corsa']);
+  }
+
+  /** La data come si legge in una domanda: "28 settembre". */
+  get dateLabel(): string {
+    const d = new Date(this.date + 'T00:00:00');
+    if (isNaN(d.getTime())) return this.date;
+    return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'long' });
   }
 
   private loadForEdit(id: string, redraw = false): void {
