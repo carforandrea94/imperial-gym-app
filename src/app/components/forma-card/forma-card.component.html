@@ -62,7 +62,7 @@
   </div>
 
   <div class="formatile-note" *ngIf="bodyFat.pct !== null">
-    Jackson-Pollock 7 siti<ng-container *ngIf="plicheDate"> · pliche del {{ plicheDate }}</ng-container>
+    Jackson-Pollock 3 siti<ng-container *ngIf="plicheDate"> · pliche del {{ plicheDate }}</ng-container>
   </div>
   <div class="formatile-note" *ngIf="bodyFat.pct === null">{{ bodyFatMissing }}</div>
 
@@ -74,6 +74,27 @@
   <p class="grassocard-foot" *ngIf="bodyFat.pct !== null">
     È una stima su una popolazione di riferimento, non una misura: serve a seguire
     l'andamento, non a dare un verdetto.
+  </p>
+</div>
+
+<div class="grassocard">
+  <div class="grassocard-head">
+    <div class="formatile-cap">FFMI · massa magra</div>
+    <div class="formatile-val" *ngIf="ffmiValue !== null; else noFfmi">
+      <span class="n">{{ ffmiLabel }}</span>
+    </div>
+    <ng-template #noFfmi>
+      <div class="formatile-val"><span class="n empty">—</span></div>
+    </ng-template>
+  </div>
+
+  <div class="formatile-note" *ngIf="ffmiValue !== null">{{ ffmiNote }}</div>
+  <div class="formatile-note" *ngIf="ffmiValue === null">{{ ffmiMissing }}</div>
+
+  <p class="grassocard-foot" *ngIf="ffmiValue !== null">
+    È il BMI calcolato sulla sola massa magra, e riportato all'altezza di 1,80 m perché statura
+    diverse siano confrontabili. A differenza del BMI, due persone con lo stesso FFMI hanno
+    davvero costruito la stessa quantità di muscolo.
   </p>
 </div>
 

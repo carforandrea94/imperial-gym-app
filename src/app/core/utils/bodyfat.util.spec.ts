@@ -1,126 +1,132 @@
 import {
-  bodyFatJp7, bodyDensityJp7, siriBodyFat, meanSide, formatBodyFat,
-  JP7_SITES, BODYFAT_MIN_AGE, Jp7Sites, jp7SumLimit
+  bodyFatJp3, bodyDensityJp3, siriBodyFat, meanSide, formatBodyFat,
+  jp3SumLimit, JP3_SITES, BODYFAT_MIN_AGE, Jp3Sites
 } from './bodyfat.util';
+import { Sex } from '../models/user.model';
 
-/** Sette siti che sommano a 100 mm, per avere un caso noto. */
-function sites(sum = 100): Jp7Sites {
-  const each = sum / JP7_SITES.length;
-  return Object.fromEntries(JP7_SITES.map(s => [s, each])) as Jp7Sites;
+/** Tre siti che sommano a `sum`, quelli giusti per il sesso indicato. */
+function sites(sum: number, sex: Sex): Jp3Sites {
+  const each = sum / 3;
+  return Object.fromEntries(JP3_SITES[sex].map(s => [s, each])) as Jp3Sites;
 }
 
-describe('bodyDensityJp7', () => {
-  // Valori calcolati a mano dalla formula pubblicata, non ripresi dal codice.
-  it('usa il coefficiente maschile', () => {
-    expect(bodyDensityJp7(100, 30, 'm')).toBeCloseTo(1.065353, 6);
+describe('bodyDensityJp3', () => {
+  // Valori calcolati a mano dai coefficienti pubblicati, non ripresi dal codice.
+  it('usa i coefficienti maschili di Jackson & Pollock 1978', () => {
+    expect(bodyDensityJp3(60, 32, 'm')).toBeCloseTo(1.057301, 6);
   });
 
-  it('usa il coefficiente femminile', () => {
-    expect(bodyDensityJp7(100, 30, 'f')).toBeCloseTo(1.051781, 6);
+  it('usa i coefficienti femminili di Jackson, Pollock & Ward 1980', () => {
+    expect(bodyDensityJp3(60, 32, 'f')).toBeCloseTo(1.043744, 6);
   });
 
   it('la densita\' cala al crescere delle pliche', () => {
-    expect(bodyDensityJp7(140, 30, 'm')).toBeLessThan(bodyDensityJp7(70, 30, 'm'));
+    expect(bodyDensityJp3(100, 30, 'm')).toBeLessThan(bodyDensityJp3(40, 30, 'm'));
   });
 
   it('la densita\' cala al crescere dell\'eta\'', () => {
-    expect(bodyDensityJp7(100, 45, 'm')).toBeLessThan(bodyDensityJp7(100, 25, 'm'));
+    expect(bodyDensityJp3(60, 45, 'm')).toBeLessThan(bodyDensityJp3(60, 25, 'm'));
   });
 });
 
 describe('siriBodyFat', () => {
   it('converte la densita\' in percentuale', () => {
-    expect(siriBodyFat(1.065353)).toBeCloseTo(14.63, 2);
+    expect(siriBodyFat(1.057301)).toBeCloseTo(18.17, 2);
   });
 });
 
-describe('bodyFatJp7', () => {
+describe('bodyFatJp3', () => {
   it('stima il grasso di un uomo', () => {
-    expect(bodyFatJp7(sites(100), 30, 'm').pct).toBe(14.6);
-    expect(bodyFatJp7(sites(70), 25, 'm').pct).toBe(9.6);
-    expect(bodyFatJp7(sites(140), 45, 'm').pct).toBe(21.9);
+    expect(bodyFatJp3(sites(60, 'm'), 32, 'm').pct).toBe(18.2);
+    expect(bodyFatJp3(sites(30, 'm'), 25, 'm').pct).toBe(8.5);
+    expect(bodyFatJp3(sites(100, 'm'), 45, 'm').pct).toBe(30.1);
   });
 
   it('stima il grasso di una donna', () => {
-    expect(bodyFatJp7(sites(100), 30, 'f').pct).toBe(20.6);
-    expect(bodyFatJp7(sites(70), 25, 'f').pct).toBe(15.4);
-    expect(bodyFatJp7(sites(140), 45, 'f').pct).toBe(27.6);
+    expect(bodyFatJp3(sites(60, 'f'), 32, 'f').pct).toBe(24.3);
+    expect(bodyFatJp3(sites(30, 'f'), 25, 'f').pct).toBe(13.4);
+    expect(bodyFatJp3(sites(100, 'f'), 45, 'f').pct).toBe(36.8);
   });
 
-  // A parita' di pliche ed eta' la stima femminile e' piu' alta: e' la
-  // ragione per cui il sesso serve.
-  it('a parita\' di tutto, uomo e donna non danno lo stesso numero', () => {
-    const uomo = bodyFatJp7(sites(100), 30, 'm').pct!;
-    const donna = bodyFatJp7(sites(100), 30, 'f').pct!;
-    expect(donna).toBeGreaterThan(uomo);
+  /*
+   * I SITI sono diversi, non solo i coefficienti: le pliche di un uomo non
+   * bastano a stimare una donna, perche' sono proprio altre tre.
+   */
+  it('a un sesso non bastano le pliche dell\'altro', () => {
+    const r = bodyFatJp3(sites(60, 'm'), 32, 'f');
+    expect(r.pct).toBeNull();
+    expect(r.missing).toEqual(['tricipite', 'iliaca']);
   });
 
-  it('non stima senza sesso, e lo dice', () => {
-    const r = bodyFatJp7(sites(100), 30, null);
+  it('il quadricipite e\' l\'unico sito in comune', () => {
+    const comuni = JP3_SITES.m.filter(s => JP3_SITES.f.includes(s));
+    expect(comuni).toEqual(['quadricipite']);
+  });
+
+  it('non stima senza sesso, e non prova nemmeno a dire quali pliche', () => {
+    const r = bodyFatJp3(sites(60, 'm'), 32, null);
     expect(r.pct).toBeNull();
     expect(r.needsSex).toBe(true);
+    expect(r.missing).toEqual([]);
   });
 
   it('non stima senza eta\', e lo dice', () => {
-    const r = bodyFatJp7(sites(100), null, 'm');
+    const r = bodyFatJp3(sites(60, 'm'), null, 'm');
     expect(r.pct).toBeNull();
     expect(r.needsAge).toBe(true);
   });
 
   it('non stima sotto l\'eta\' minima', () => {
-    expect(bodyFatJp7(sites(100), BODYFAT_MIN_AGE - 1, 'm').pct).toBeNull();
-    expect(bodyFatJp7(sites(100), BODYFAT_MIN_AGE, 'm').pct).not.toBeNull();
+    expect(bodyFatJp3(sites(60, 'm'), BODYFAT_MIN_AGE - 1, 'm').pct).toBeNull();
+    expect(bodyFatJp3(sites(60, 'm'), BODYFAT_MIN_AGE, 'm').pct).not.toBeNull();
   });
 
-  // Il caso che conta: una somma parziale direbbe MENO grasso di quanto ce
-  // n'e', e sembrerebbe un buon risultato.
+  // Una somma parziale direbbe MENO grasso di quanto ce n'e', e sembrerebbe
+  // un buon risultato.
   it('non stima con un sito mancante, e dice quale', () => {
-    const parziale = { ...sites(100), gamba: null };
-    const r = bodyFatJp7(parziale, 30, 'm');
+    const r = bodyFatJp3({ ...sites(60, 'm'), quadricipite: null }, 32, 'm');
     expect(r.pct).toBeNull();
-    expect(r.missing).toEqual(['gamba']);
-  });
-
-  it('elenca i siti mancanti nell\'ordine della formula', () => {
-    const r = bodyFatJp7({ petto: 14, addome: 14 }, 30, 'm');
-    expect(r.missing).toEqual(['ascellare', 'tricipite', 'sottoscapolare', 'sovrailiaca', 'gamba']);
+    expect(r.missing).toEqual(['quadricipite']);
   });
 
   it('tratta uno zero come un sito non misurato', () => {
-    const r = bodyFatJp7({ ...sites(100), petto: 0 }, 30, 'm');
+    const r = bodyFatJp3({ ...sites(60, 'm'), pettorale: 0 }, 32, 'm');
     expect(r.pct).toBeNull();
-    expect(r.missing).toEqual(['petto']);
+    expect(r.missing).toEqual(['pettorale']);
   });
 
-  // Pliche impossibilmente sottili portano Siri sotto lo zero.
+  /*
+   * Il pavimento e' molto piu' basso che a sette siti: servono pliche da un
+   * millimetro, che un plicometro non produce perche' afferra comunque la
+   * pelle. Resta un paracadute per un dato digitato male, non un caso che
+   * qualcuno incontrera'.
+   */
   it('non restituisce una percentuale negativa', () => {
-    const r = bodyFatJp7(sites(7), 20, 'm');
+    const r = bodyFatJp3(sites(3, 'm'), 18, 'm');
     expect(r.pct).toBeNull();
     expect(r.outOfRange).toBe(true);
   });
 
   /*
-   * Il caso peggiore, e la ragione per cui jp7SumLimit esiste: oltre il
-   * vertice della parabola la stima SCENDE al crescere delle pliche, e a
-   * 700 mm dichiarava un 13% — un numero plausibile da un ingresso assurdo,
-   * indistinguibile da un buon risultato.
+   * Oltre il vertice della parabola la stima SCENDE al crescere delle pliche.
+   * A tre siti il vertice e' molto piu' vicino che a sette — 258 mm per
+   * l'uomo, 216 per la donna — quindi questo controllo conta piu' di prima.
    */
   it('non stima oltre il vertice della formula', () => {
     (['m', 'f'] as const).forEach(sex => {
-      const limite = jp7SumLimit(sex);
-      expect(bodyFatJp7(sites(limite - 10), 30, sex).pct).not.toBeNull();
-      const oltre = bodyFatJp7(sites(limite + 10), 30, sex);
+      const limite = jp3SumLimit(sex);
+      expect(bodyFatJp3(sites(limite - 20, sex), 30, sex).pct).not.toBeNull();
+      const oltre = bodyFatJp3(sites(limite + 20, sex), 30, sex);
       expect(oltre.pct).toBeNull();
       expect(oltre.outOfRange).toBe(true);
-      expect(bodyFatJp7(sites(700), 60, sex).pct).toBeNull();
     });
   });
 
   it('dentro il suo campo, piu\' pliche significano piu\' grasso', () => {
     (['m', 'f'] as const).forEach(sex => {
       let prec = 0;
-      for (let somma = 40; somma < jp7SumLimit(sex); somma += 20) {
-        const pct = bodyFatJp7(sites(somma), 30, sex).pct;
+      for (let somma = 20; somma < jp3SumLimit(sex); somma += 10) {
+        const pct = bodyFatJp3(sites(somma, sex), 30, sex).pct;
         expect(pct).not.toBeNull();
         expect(pct!).toBeGreaterThan(prec);
         prec = pct!;
@@ -146,6 +152,6 @@ describe('meanSide', () => {
 
 describe('formatBodyFat', () => {
   it('scrive con la virgola', () => {
-    expect(formatBodyFat(14.6)).toBe('14,6');
+    expect(formatBodyFat(18.2)).toBe('18,2');
   });
 });

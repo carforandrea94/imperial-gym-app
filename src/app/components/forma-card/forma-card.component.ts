@@ -8,9 +8,10 @@ import { formatHeightCm } from '../../core/utils/height.util';
 import { Sex } from '../../core/models/user.model';
 import { MeasurementEntry } from '../../models/measurement.model';
 import {
-  bodyFatJp7, meanSide, formatBodyFat, BodyFatResult, JP7_SITE_LABELS
+  bodyFatJp3, formatBodyFat, BodyFatResult, JP3_SITE_LABELS
 } from '../../core/utils/bodyfat.util';
 import { ageOn, todayLocalISO } from '../../core/utils/date.util';
+import { ffmi, ffmiClass, leanMassKg, formatFfmi, FFMI_CLASS_LABELS } from '../../core/utils/ffmi.util';
 import { rotationTonnage, RotationTonnage, formatKg } from '../../core/utils/tonnage.util';
 import { WorkoutSessionsService } from '../../services/workout-sessions.service';
 import { WorkoutDataService } from '../../services/workout-data.service';
@@ -234,32 +235,30 @@ export class FormaCardComponent implements OnInit {
 
   private plicheCount(e: MeasurementEntry): number {
     const p = this.measures.parseMeasureValue.bind(this.measures);
-    return [e.plicaPetto, e.plicaAddome, e.plicaTricipiteSx, e.plicaTricipiteDx,
-            e.plicaSottoscapolareSx, e.plicaSottoscapolareDx,
-            e.plicaSovrailiacaSx, e.plicaSovrailiacaDx,
-            e.plicaAscellareSx, e.plicaAscellareDx,
-            e.plicaGambaSx, e.plicaGambaDx]
+    return [e.plicaAddominale, e.plicaIliaca, e.plicaPettorale, e.plicaTricipite,
+            e.plicaSottoscapolare, e.plicaLombare, e.plicaQuadricipite]
       .filter(v => p(v) !== null).length;
   }
 
   /**
-   * La stima della massa grassa. I siti bilaterali entrano come media dei due
-   * lati, o col solo lato misurato: prendere una plica e' gia' scomodo, chi ne
-   * fa una sola non deve perdere l'intera stima.
+   * La stima della massa grassa. I siti che servono dipendono dal sesso, ed e'
+   * la formula a sceglierli: qui si passano tutti quelli che l'app raccoglie e
+   * che una delle due equazioni puo' usare.
+   *
+   * Lombare e sottoscapolare restano fuori: il coach le misura, ma
+   * Jackson-Pollock a 3 siti non le prevede per nessuno dei due sessi.
    */
   get bodyFat(): BodyFatResult {
     const e = this.lastPliche();
     const p = (v: string | null | undefined) => this.measures.parseMeasureValue(v ?? null);
     const sites = e ? {
-      petto: p(e.plicaPetto),
-      addome: p(e.plicaAddome),
-      ascellare: meanSide(p(e.plicaAscellareSx), p(e.plicaAscellareDx)),
-      tricipite: meanSide(p(e.plicaTricipiteSx), p(e.plicaTricipiteDx)),
-      sottoscapolare: meanSide(p(e.plicaSottoscapolareSx), p(e.plicaSottoscapolareDx)),
-      sovrailiaca: meanSide(p(e.plicaSovrailiacaSx), p(e.plicaSovrailiacaDx)),
-      gamba: meanSide(p(e.plicaGambaSx), p(e.plicaGambaDx))
+      pettorale: p(e.plicaPettorale),
+      addominale: p(e.plicaAddominale),
+      quadricipite: p(e.plicaQuadricipite),
+      tricipite: p(e.plicaTricipite),
+      iliaca: p(e.plicaIliaca)
     } : {};
-    return bodyFatJp7(sites, ageOn(this.birthDate, todayLocalISO()), this.sex);
+    return bodyFatJp3(sites, ageOn(this.birthDate, todayLocalISO()), this.sex);
   }
 
   get bodyFatLabel(): string {
@@ -275,15 +274,49 @@ export class FormaCardComponent implements OnInit {
     if (r.needsSex && r.needsAge) return 'servono sesso e data di nascita';
     if (r.needsSex) return 'serve il sesso';
     if (r.needsAge) return 'serve la data di nascita';
-    if (r.missing.length === 7) return 'servono le sette pliche';
+    if (r.missing.length === 3) return 'servono le tre pliche della formula';
     if (r.missing.length) {
-      return 'mancano le pliche: ' + r.missing.map(s => JP7_SITE_LABELS[s]).join(', ');
+      return 'mancano le pliche: ' + r.missing.map(s => JP3_SITE_LABELS[s]).join(', ');
     }
     return '';
   }
 
   get bodyFatNeedsProfile(): boolean {
     return this.bodyFat.needsSex || this.bodyFat.needsAge;
+  }
+
+  // ---- FFMI ----
+
+  /** L'FFMI normalizzato, o null se manca un pezzo della catena. */
+  get ffmiValue(): number | null {
+    return ffmi(this.weightKg(), this.heightCm, this.bodyFat.pct);
+  }
+
+  get ffmiLabel(): string {
+    const v = this.ffmiValue;
+    return v === null ? '' : formatFfmi(v);
+  }
+
+  get leanKg(): number | null {
+    return leanMassKg(this.weightKg(), this.bodyFat.pct);
+  }
+
+  get ffmiNote(): string {
+    const v = this.ffmiValue;
+    const sex = this.sex;
+    if (v === null || !sex) return '';
+    const magra = this.leanKg;
+    const fascia = FFMI_CLASS_LABELS[ffmiClass(v, sex)];
+    return magra === null ? fascia : `${fascia} · ${this.measures.formatMeasureNumber(magra)} kg di massa magra`;
+  }
+
+  /** Cosa manca all'FFMI. Il grasso e' l'ultimo anello di una catena: se manca
+   *  lui, il richiamo giusto e' quello della sua tessera, non un altro. */
+  get ffmiMissing(): string {
+    if (this.weightKg() === null) return 'serve una pesata';
+    if (this.heightCm === null) return 'serve l\'altezza';
+    if (this.bodyFat.pct === null) return 'serve la massa grassa';
+    return '';
   }
 
   get birthDate(): string | null {
@@ -329,9 +362,22 @@ export class FormaCardComponent implements OnInit {
     return b === null ? '' : formatBmi(b);
   }
 
+  /**
+   * Sotto il BMI: la fascia, oppure l'avvertenza.
+   *
+   * Il BMI conosce solo peso e altezza, quindi non distingue muscolo da
+   * grasso: un allenato al 10% e un sedentario al 30% possono avere lo stesso
+   * numero e la stessa etichetta. Quando la massa grassa c'e', quella
+   * classificazione non aggiunge niente e rischia di contraddire il dato
+   * migliore che sta due tessere piu' sotto — allora tace, e resta il numero.
+   *
+   * Quando la massa grassa NON c'e', la fascia e' tutto quello che l'app sa
+   * dire: meglio grossolana che muta.
+   */
   get bmiNote(): string {
     const b = this.bmi;
     if (b === null) return '';
+    if (this.bodyFat.pct !== null) return 'non distingue muscolo da grasso';
     return BMI_CLASS_LABELS[bmiClass(b)];
   }
 }
