@@ -17,17 +17,12 @@ import { todayLocalISO } from '../../core/utils/date.util';
 import { findClosestSlideIndex, scrollToSlide } from '../../core/utils/horizontal-slider.util';
 import { PerformedSet, suggestLoad } from '../../core/utils/load-estimate.util';
 import { ToastService } from '../../services/toast.service';
+import {
+  SerieRow, canAddSet, buildExtraSet, canRemoveSet, removeSetAt, mergeDraftRows
+} from '../../core/utils/extra-sets.util';
 
 /** Passo di arrotondamento del carico consigliato: i dischi da 2,5 kg per lato. */
 const LOAD_STEP_KG = 5;
-
-interface SerieRow {
-  reps: string;
-  load: string;
-  done: boolean;
-  ripPlaceholder: string;
-  loadPlaceholder: string;
-}
 
 interface ExerciseVM {
   ex: Exercise;
@@ -214,7 +209,10 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         load: '',
         done: false,
         ripPlaceholder: String(reps[i] ?? ''),
-        loadPlaceholder: ''
+        loadPlaceholder: '',
+        // Viene dal piano del coach: e' quello che la distingue da una serie
+        // aggiunta a mano, che invece si puo' togliere.
+        extra: false
       }));
       const override = restOverrides[this.restKey(ex.name)];
       const restSeconds = override && override > 0 ? override : protocolDefault;
@@ -240,15 +238,8 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   private loadDraft(draft: { rows: WorkoutDraftRow[] }[] | undefined): void {
     if (!draft) return;
     draft.forEach((dex, i) => {
-      if (this.exercises[i]) {
-        dex.rows.forEach((row, j) => {
-          if (this.exercises[i].rows[j]) {
-            this.exercises[i].rows[j].reps = row.reps ?? '';
-            this.exercises[i].rows[j].load = row.load ?? '';
-            this.exercises[i].rows[j].done = row.done ?? false;
-          }
-        });
-      }
+      const vm = this.exercises[i];
+      if (vm) vm.rows = mergeDraftRows(vm.rows, dex.rows);
     });
   }
 
@@ -451,6 +442,55 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.setsLocked || !vm.rows[rowIdx].done) return;
     this.onSetCheck(vm, rowIdx);
     vm.activeRow = rowIdx;
+  }
+
+  // ---- Le serie aggiunte ----
+
+  /** Il piano non si tocca: il tasto per togliere una serie esiste solo su
+   *  quelle aggiunte durante l'allenamento. */
+  canRemove(vm: ExerciseVM, rowIdx: number): boolean {
+    return canRemoveSet(vm.rows, rowIdx);
+  }
+
+  canAdd(vm: ExerciseVM): boolean {
+    return canAddSet(vm.rows);
+  }
+
+  /**
+   * Una serie in piu' su questo esercizio, sul modello dell'ultima. Si apre
+   * solo se non c'era gia' una serie aperta: se si sta lavorando sulla terza
+   * di cinque, saltare alla nuova vorrebbe dire perdere il segno.
+   */
+  addSet(vm: ExerciseVM): void {
+    if (this.setsLocked || !canAddSet(vm.rows)) return;
+    vm.rows = [...vm.rows, buildExtraSet(vm.rows)];
+    if (vm.activeRow === null) vm.activeRow = vm.rows.length - 1;
+    this.scheduleDraft();
+  }
+
+  /**
+   * Toglie una serie aggiunta. Se e' gia' spuntata porta con se' del lavoro
+   * registrato, quindi si chiede prima; se e' vuota no, sarebbe un attrito
+   * inutile su una riga che non contiene niente.
+   */
+  async removeSet(vm: ExerciseVM, rowIdx: number): Promise<void> {
+    if (this.setsLocked || !canRemoveSet(vm.rows, rowIdx)) return;
+
+    if (vm.rows[rowIdx].done) {
+      const ok = await this.confirm.confirm(
+        'Vuoi togliere questa serie in più? Il carico e le ripetizioni che hai registrato vanno persi.',
+        { confirmLabel: 'Togli la serie', dangerous: true }
+      );
+      if (!ok) return;
+      // La conferma e' asincrona: nel frattempo la sessione puo' essere stata
+      // chiusa, o la riga puo' non essere piu' quella.
+      if (this.setsLocked || !canRemoveSet(vm.rows, rowIdx)) return;
+    }
+
+    vm.rows = removeSetAt(vm.rows, rowIdx);
+    this.syncActiveRow(vm);
+    this.scheduleDraft();
+    this.cdr.detectChanges();
   }
 
   /** La riga chiusa in una riga sola: "10 × 80 kg". */

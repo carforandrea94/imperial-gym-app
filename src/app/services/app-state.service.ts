@@ -10,6 +10,10 @@ export interface WorkoutDraftRow {
   reps: string;
   load: string;
   done: boolean;
+  /** Serie aggiunta a mano durante l'allenamento. Senza questo contrassegno,
+   *  al ricaricamento non ci sarebbe modo di distinguerla dagli avanzi di un
+   *  piano che da allora si e' accorciato. Manca nelle bozze di prima. */
+  extra?: boolean;
 }
 
 export interface ActiveWorkoutSession {
