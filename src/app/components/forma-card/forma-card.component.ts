@@ -11,7 +11,9 @@ import {
   bodyFatJp3, formatBodyFat, BodyFatResult, JP3_SITE_LABELS
 } from '../../core/utils/bodyfat.util';
 import { ageOn, todayLocalISO } from '../../core/utils/date.util';
-import { ffmi, ffmiClass, leanMassKg, formatFfmi, FFMI_CLASS_LABELS } from '../../core/utils/ffmi.util';
+import {
+  ffmi, ffmiClass, leanMassKg, formatFfmi, FfmiResult, FFMI_CLASS_LABELS
+} from '../../core/utils/ffmi.util';
 import { rotationTonnage, RotationTonnage, formatKg } from '../../core/utils/tonnage.util';
 import { WorkoutSessionsService } from '../../services/workout-sessions.service';
 import { WorkoutDataService } from '../../services/workout-data.service';
@@ -287,9 +289,14 @@ export class FormaCardComponent implements OnInit {
 
   // ---- FFMI ----
 
-  /** L'FFMI normalizzato, o null se manca un pezzo della catena. */
-  get ffmiValue(): number | null {
+  /** I due FFMI, o entrambi null se manca un pezzo della catena. */
+  get ffmiResult(): FfmiResult {
     return ffmi(this.weightKg(), this.heightCm, this.bodyFat.pct);
+  }
+
+  /** Il numero mostrato: l'FFMI sull'altezza vera, quella del profilo. */
+  get ffmiValue(): number | null {
+    return this.ffmiResult.value;
   }
 
   get ffmiLabel(): string {
@@ -301,12 +308,19 @@ export class FormaCardComponent implements OnInit {
     return leanMassKg(this.weightKg(), this.bodyFat.pct);
   }
 
+  /**
+   * Sotto l'FFMI: la fascia e i chili di massa magra.
+   *
+   * La fascia si decide sul NORMALIZZATO, non sul numero mostrato: le soglie
+   * di Kouri sono state misurate su quello, e classificare il grezzo direbbe
+   * a un alto che e' piu' muscoloso di quanto e'.
+   */
   get ffmiNote(): string {
-    const v = this.ffmiValue;
+    const { normalized } = this.ffmiResult;
     const sex = this.sex;
-    if (v === null || !sex) return '';
+    if (normalized === null || !sex) return '';
     const magra = this.leanKg;
-    const fascia = FFMI_CLASS_LABELS[ffmiClass(v, sex)];
+    const fascia = FFMI_CLASS_LABELS[ffmiClass(normalized, sex)];
     return magra === null ? fascia : `${fascia} · ${this.measures.formatMeasureNumber(magra)} kg di massa magra`;
   }
 

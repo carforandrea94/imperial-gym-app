@@ -28,23 +28,31 @@ describe('leanMassKg', () => {
 });
 
 describe('ffmi', () => {
-  // All'altezza di riferimento la correzione vale zero: 66,95 / 1,80² = 20,7.
-  it('a 1,80 m non corregge niente', () => {
-    expect(ffmi(78.4, 180, 14.6)).toBe(20.7);
+  /*
+   * Il numero mostrato e' quello sull'ALTEZZA VERA: e' il proprio FFMI, non
+   * quello di un ipotetico se stessi alto 1,80.
+   */
+  it('il valore sta sull\'altezza vera', () => {
+    const m = 1.93;
+    const atteso = leanMassKg(109, 16.5)! / (m * m);
+    expect(ffmi(109, 193, 16.5).value).toBeCloseTo(atteso, 1);
   });
 
-  it('alza chi e\' piu\' basso del riferimento', () => {
-    const basso = ffmi(70, 170, 12)!;
-    const m = 1.70;
-    const grezzo = leanMassKg(70, 12)! / (m * m);
-    expect(basso).toBeGreaterThan(Math.round(grezzo * 10) / 10);
-    expect(basso).toBeCloseTo(grezzo + FFMI_NORM_COEFF * (FFMI_REF_HEIGHT_M - m), 1);
+  // All'altezza di riferimento la correzione vale zero: i due coincidono.
+  it('a 1,80 m i due numeri sono lo stesso', () => {
+    const r = ffmi(78.4, 180, 14.6);
+    expect(r.value).toBe(20.7);
+    expect(r.normalized).toBe(20.7);
   });
 
-  it('abbassa chi e\' piu\' alto del riferimento', () => {
-    const m = 1.90;
-    const grezzo = leanMassKg(88, 10)! / (m * m);
-    expect(ffmi(88, 190, 10)!).toBeLessThan(Math.round(grezzo * 10) / 10);
+  it('il normalizzato alza chi e\' piu\' basso del riferimento', () => {
+    const r = ffmi(70, 170, 12);
+    expect(r.normalized!).toBeGreaterThan(r.value!);
+  });
+
+  it('il normalizzato abbassa chi e\' piu\' alto del riferimento', () => {
+    const r = ffmi(88, 190, 10);
+    expect(r.normalized!).toBeLessThan(r.value!);
   });
 
   /*
@@ -53,23 +61,30 @@ describe('ffmi', () => {
    * che due corpi proporzionali cadano sullo stesso numero — e' un aggiustamento
    * empirico, non una legge di scala.
    */
+  /*
+   * La tolleranza e' 0,1 e non meno perche' i due numeri sono arrotondati al
+   * decimo ciascuno: la loro differenza puo' scostarsi di tanto da quella
+   * vera senza che niente sia sbagliato.
+   */
   it('corregge della quantita\' esatta della formula', () => {
     [160, 170, 180, 190, 200].forEach(cm => {
       const m = cm / 100;
-      const grezzo = leanMassKg(70, 14)! / (m * m);
-      const atteso = grezzo + FFMI_NORM_COEFF * (FFMI_REF_HEIGHT_M - m);
-      expect(ffmi(70, cm, 14)!).toBeCloseTo(atteso, 1);
+      const r = ffmi(70, cm, 14);
+      const atteso = FFMI_NORM_COEFF * (FFMI_REF_HEIGHT_M - m);
+      expect(Math.abs((r.normalized! - r.value!) - atteso)).toBeLessThanOrEqual(0.1);
     });
   });
 
   it('senza uno dei tre ingressi non c\'e\' FFMI', () => {
-    expect(ffmi(null, 180, 14.6)).toBeNull();
-    expect(ffmi(78.4, null, 14.6)).toBeNull();
-    expect(ffmi(78.4, 180, null)).toBeNull();
+    [ffmi(null, 180, 14.6), ffmi(78.4, null, 14.6), ffmi(78.4, 180, null)]
+      .forEach(r => {
+        expect(r.value).toBeNull();
+        expect(r.normalized).toBeNull();
+      });
   });
 
   it('non divide per zero', () => {
-    expect(ffmi(78.4, 0, 14.6)).toBeNull();
+    expect(ffmi(78.4, 0, 14.6).value).toBeNull();
   });
 });
 
