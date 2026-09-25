@@ -7,6 +7,8 @@ import { Subscription } from 'rxjs';
 import { WorkoutDataService } from '../../services/workout-data.service';
 import { WorkoutStateService } from '../../services/workout-state.service';
 import { AppStateService, WorkoutDraftRow } from '../../services/app-state.service';
+import { buildSessionSummary, SessionSummary } from '../../core/utils/session-summary.util';
+import { sessionTonnage, formatKg } from '../../core/utils/tonnage.util';
 import { WorkoutSessionsService } from '../../services/workout-sessions.service';
 import { WorkoutSessionStateService } from '../../services/workout-session-state.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
@@ -31,6 +33,12 @@ interface ExerciseVM {
   ex: Exercise;
   rows: SerieRow[];
   open: boolean;
+  /**
+   * La serie su cui si sta lavorando: e' l'unica aperta, con i comandi grandi.
+   * Le altre stanno in una riga sola. null quando non ce n'e' nessuna da fare
+   * e l'utente non ne ha riaperta una.
+   */
+  activeRow: number | null;
   insightVisible: boolean;
   insight: ExInsight | null;
   restSeconds: number;
@@ -59,6 +67,12 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   // avviata per ultima ha il permesso di scrivere lo stato del componente
   // (stesso pattern di `mutationCount` in workout-session-state.service.ts).
   private loadGeneration = 0;
+  /** Le sedute gia' salvate di questo giorno, dalla piu' vecchia: servono ai
+   *  suggerimenti e, a fine allenamento, al confronto del riepilogo. */
+  private daySessions: WorkoutSession[] = [];
+  /** Il resoconto dell'allenamento appena chiuso. Finche' e' null si sta
+   *  ancora allenando; quando c'e', la pagina mostra lui. */
+  summary: SessionSummary | null = null;
 
   restModalOpen = false;
   restModalVm: ExerciseVM | null = null;
@@ -151,7 +165,9 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       if (generation !== this.loadGeneration) return;
       this.buildExercises(appState.restOverrides);
       this.loadDraft(appState.workoutDrafts[dayId]);
+      this.daySessions = daySessions.map(d => d.session);
       this.loadInsights(daySessions);
+      this.exercises.forEach(vm => this.syncActiveRow(vm));
     } catch (e: any) {
       if (generation !== this.loadGeneration) return;
       console.error('Errore caricamento scheda:', e);
@@ -202,7 +218,7 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       }));
       const override = restOverrides[this.restKey(ex.name)];
       const restSeconds = override && override > 0 ? override : protocolDefault;
-      return { ex, rows, open: true, insightVisible: false, insight: null, restSeconds, isFirst: exIdx === 0, warmup: null };
+      return { ex, rows, open: true, activeRow: 0, insightVisible: false, insight: null, restSeconds, isFirst: exIdx === 0, warmup: null };
     });
   }
 
@@ -360,6 +376,141 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     if (row.done) {
       this.state.startRestTimer(vm.restSeconds, vm.ex.name, this.day.id);
     }
+  }
+
+  // ---- La serie corrente ----
+
+  /**
+   * Porta la riga aperta sulla prima ancora da fare. Chiamata dopo ogni
+   * cambiamento: se l'utente aveva aperto una riga gia' spuntata per
+   * correggerla, quella resta dov'e' finche' non la chiude lui.
+   */
+  private syncActiveRow(vm: ExerciseVM): void {
+    const next = vm.rows.findIndex(r => !r.done);
+    vm.activeRow = next === -1 ? null : next;
+  }
+
+  /** Apre una riga per lavorarci: e' l'unica che mostra i comandi. */
+  setActive(vm: ExerciseVM, rowIdx: number): void {
+    if (this.setsLocked) return;
+    vm.activeRow = vm.activeRow === rowIdx ? null : rowIdx;
+  }
+
+  /**
+   * Il valore su cui si muovono i tasti: quello digitato, oppure il
+   * suggerimento. Senza questo, il primo tocco di "+" partirebbe da zero e
+   * butterebbe via il carico proposto.
+   */
+  private valueOf(raw: string, placeholder: string): number {
+    const n = parseFloat((raw || placeholder || '').replace(',', '.'));
+    return isFinite(n) ? n : 0;
+  }
+
+  private write(n: number): string {
+    return (Math.round(n * 100) / 100).toString().replace('.', ',');
+  }
+
+  adjustLoad(vm: ExerciseVM, rowIdx: number, delta: number): void {
+    if (this.setsLocked) return;
+    const row = vm.rows[rowIdx];
+    const next = Math.max(0, this.valueOf(row.load, row.loadPlaceholder) + delta);
+    row.load = next === 0 ? '' : this.write(next);
+    this.scheduleDraft();
+  }
+
+  adjustReps(vm: ExerciseVM, rowIdx: number, delta: number): void {
+    if (this.setsLocked) return;
+    const row = vm.rows[rowIdx];
+    const next = Math.max(0, this.valueOf(row.reps, row.ripPlaceholder) + delta);
+    row.reps = next === 0 ? '' : this.write(next);
+    this.scheduleDraft();
+  }
+
+  /** Il passo del carico: mezzo disco piccolo per lato, che e' il salto vero
+   *  in palestra. Le ripetizioni vanno di una. */
+  readonly loadStep = 2.5;
+
+  /** Chiude la serie aperta e passa alla prossima da fare. */
+  confirmSet(vm: ExerciseVM, rowIdx: number): void {
+    if (this.setsLocked || vm.rows[rowIdx].done) return;
+    this.onSetCheck(vm, rowIdx);
+    this.syncActiveRow(vm);
+  }
+
+  /** Toglie la spunta e riapre quella riga: e' li' che si sta correggendo. */
+  undoSet(vm: ExerciseVM, rowIdx: number): void {
+    if (this.setsLocked || !vm.rows[rowIdx].done) return;
+    this.onSetCheck(vm, rowIdx);
+    vm.activeRow = rowIdx;
+  }
+
+  /** La riga chiusa in una riga sola: "10 × 80 kg". */
+  rowSummary(row: SerieRow): string {
+    const reps = row.reps || row.ripPlaceholder;
+    const load = row.load || row.loadPlaceholder;
+    if (row.done) {
+      if (reps && load) return `${reps} × ${load} kg`;
+      if (reps) return `${reps} rip.`;
+      return load ? `${load} kg` : 'fatta';
+    }
+    return 'da fare';
+  }
+
+  loadFor(row: SerieRow): string {
+    return row.load || row.loadPlaceholder || '0';
+  }
+
+  repsFor(row: SerieRow): string {
+    return row.reps || row.ripPlaceholder || '0';
+  }
+
+  // ---- La chiusura dell'allenamento ----
+
+  /** Il volume gia' accumulato, per la card di chiusura. */
+  get liveVolumeKg(): string {
+    return formatKg(sessionTonnage({
+      dayId: this.day?.id ?? '', dayLabel: '', date: '',
+      exercises: this.exercises.map(vm => ({
+        name: vm.ex.name,
+        sets: vm.rows.map(r => ({ load: r.load || null, reps: r.reps || null, done: r.done }))
+      }))
+    }));
+  }
+
+  get doneSets(): number {
+    return this.exercises.reduce((tot, vm) => tot + vm.rows.filter(r => r.done).length, 0);
+  }
+
+  get totalSets(): number {
+    return this.exercises.reduce((tot, vm) => tot + vm.rows.length, 0);
+  }
+
+  get closingTitle(): string {
+    if (this.allSetsDone) return 'Hai finito';
+    return this.doneSets === 0 ? 'Non hai ancora spuntato niente' : 'Sei a buon punto';
+  }
+
+  formatDuration(seconds: number): string {
+    return this.sessionState.formatDuration(seconds);
+  }
+
+  /** Il volume del riepilogo, gia' scritto. */
+  summaryVolume(kg: number): string {
+    return formatKg(kg);
+  }
+
+  summaryDelta(kg: number): string {
+    return (kg > 0 ? '+' : '−') + formatKg(Math.abs(kg));
+  }
+
+  summaryPrevDate(iso: string): string {
+    if (!iso) return '';
+    const d = new Date(iso + 'T00:00:00');
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  backToScheda(): void {
+    this.router.navigate(['/scheda']);
   }
 
   onInput(): void {
@@ -629,7 +780,10 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         await this.appState.deleteFieldPath(`workoutDrafts.${this.day.id}`);
         this.sessionState.finish();
         this.state.saveStatus.set('saved');
-        this.toast.success('Allenamento salvato ✓');
+        // Il resoconto si costruisce dalla seduta appena scritta e dall'ultima
+        // volta che si era fatto LO STESSO giorno: un Giorno 1 di petto e un
+        // Giorno 2 di gambe non hanno niente da dirsi.
+        this.summary = buildSessionSummary(session, this.daySessions[this.daySessions.length - 1] ?? null);
       } else {
         this.state.saveStatus.set('err');
         this.toast.error('Errore durante il salvataggio. Riprova.');
