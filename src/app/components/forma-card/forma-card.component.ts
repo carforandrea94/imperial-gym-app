@@ -11,6 +11,7 @@ import {
   bodyFatJp7, meanSide, formatBodyFat, BodyFatResult, JP7_SITE_LABELS
 } from '../../core/utils/bodyfat.util';
 import { ageOn, todayLocalISO } from '../../core/utils/date.util';
+import { ffmi, ffmiClass, leanMassKg, formatFfmi, FFMI_CLASS_LABELS } from '../../core/utils/ffmi.util';
 import { rotationTonnage, RotationTonnage, formatKg } from '../../core/utils/tonnage.util';
 import { WorkoutSessionsService } from '../../services/workout-sessions.service';
 import { WorkoutDataService } from '../../services/workout-data.service';
@@ -286,6 +287,40 @@ export class FormaCardComponent implements OnInit {
     return this.bodyFat.needsSex || this.bodyFat.needsAge;
   }
 
+  // ---- FFMI ----
+
+  /** L'FFMI normalizzato, o null se manca un pezzo della catena. */
+  get ffmiValue(): number | null {
+    return ffmi(this.weightKg(), this.heightCm, this.bodyFat.pct);
+  }
+
+  get ffmiLabel(): string {
+    const v = this.ffmiValue;
+    return v === null ? '' : formatFfmi(v);
+  }
+
+  get leanKg(): number | null {
+    return leanMassKg(this.weightKg(), this.bodyFat.pct);
+  }
+
+  get ffmiNote(): string {
+    const v = this.ffmiValue;
+    const sex = this.sex;
+    if (v === null || !sex) return '';
+    const magra = this.leanKg;
+    const fascia = FFMI_CLASS_LABELS[ffmiClass(v, sex)];
+    return magra === null ? fascia : `${fascia} · ${this.measures.formatMeasureNumber(magra)} kg di massa magra`;
+  }
+
+  /** Cosa manca all'FFMI. Il grasso e' l'ultimo anello di una catena: se manca
+   *  lui, il richiamo giusto e' quello della sua tessera, non un altro. */
+  get ffmiMissing(): string {
+    if (this.weightKg() === null) return 'serve una pesata';
+    if (this.heightCm === null) return 'serve l\'altezza';
+    if (this.bodyFat.pct === null) return 'serve la massa grassa';
+    return '';
+  }
+
   get birthDate(): string | null {
     return this.auth.currentUser()?.birthDate ?? null;
   }
@@ -329,9 +364,22 @@ export class FormaCardComponent implements OnInit {
     return b === null ? '' : formatBmi(b);
   }
 
+  /**
+   * Sotto il BMI: la fascia, oppure l'avvertenza.
+   *
+   * Il BMI conosce solo peso e altezza, quindi non distingue muscolo da
+   * grasso: un allenato al 10% e un sedentario al 30% possono avere lo stesso
+   * numero e la stessa etichetta. Quando la massa grassa c'e', quella
+   * classificazione non aggiunge niente e rischia di contraddire il dato
+   * migliore che sta due tessere piu' sotto — allora tace, e resta il numero.
+   *
+   * Quando la massa grassa NON c'e', la fascia e' tutto quello che l'app sa
+   * dire: meglio grossolana che muta.
+   */
   get bmiNote(): string {
     const b = this.bmi;
     if (b === null) return '';
+    if (this.bodyFat.pct !== null) return 'non distingue muscolo da grasso';
     return BMI_CLASS_LABELS[bmiClass(b)];
   }
 }
