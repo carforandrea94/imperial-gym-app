@@ -16,12 +16,18 @@ import { Sex } from '../models/user.model';
 
 /**
  * L'FFMI grezzo penalizza i bassi e premia gli alti, perche' la massa magra
- * non scala col quadrato dell'altezza. La correzione riporta tutti all'altezza
- * di riferimento di 1,80 m.
+ * non scala col quadrato dell'altezza. La correzione riporta il valore
+ * all'altezza di riferimento di 1,80 m.
  *
  * Coefficiente e altezza vengono da Kouri et al. (1995), lo studio da cui
  * arrivano anche le fasce: "a correction of 6.3 x (1.80 m - height) is added
  * to normalize these values to the height of a 1.8-m man".
+ *
+ * Il numero MOSTRATO e' quello sull'altezza vera — e' il proprio FFMI, non
+ * quello di un ipotetico se stessi alto 1,80. Il normalizzato serve solo a
+ * scegliere la fascia, perche' e' su quello che le soglie sono state
+ * misurate: classificare il grezzo direbbe a un alto che e' piu' muscoloso di
+ * quanto e', e a un basso il contrario.
  */
 export const FFMI_REF_HEIGHT_M = 1.80;
 export const FFMI_NORM_COEFF = 6.3;
@@ -77,25 +83,37 @@ export function leanMassKg(
   return lean === null ? null : Math.round(lean * 10) / 10;
 }
 
+export interface FfmiResult {
+  /** L'FFMI sull'altezza vera: il numero da mostrare. */
+  value: number | null;
+  /** Lo stesso, riportato a 1,80 m: il numero da classificare. */
+  normalized: number | null;
+}
+
 /**
- * L'FFMI gia' normalizzato all'altezza di riferimento, arrotondato al decimo.
- * Non esiste una versione grezza esposta: le fasce valgono per il
- * normalizzato, e avere in giro due numeri quasi uguali con significati
- * diversi e' un invito a confonderli.
+ * I due FFMI, arrotondati al decimo. Vengono dalla stessa funzione perche'
+ * differiscono per un solo termine: calcolarli in due punti diversi e' il
+ * modo piu' facile di farli divergere.
  */
 export function ffmi(
   weightKg: number | null | undefined,
   heightCm: number | null | undefined,
   bodyFatPct: number | null | undefined
-): number | null {
+): FfmiResult {
+  const vuoto: FfmiResult = { value: null, normalized: null };
   const lean = leanRaw(weightKg, bodyFatPct);
-  if (lean === null) return null;
-  if (!heightCm || !isFinite(heightCm) || heightCm <= 0) return null;
+  if (lean === null) return vuoto;
+  if (!heightCm || !isFinite(heightCm) || heightCm <= 0) return vuoto;
+
   const m = heightCm / 100;
   const raw = lean / (m * m);
   const normalized = raw + FFMI_NORM_COEFF * (FFMI_REF_HEIGHT_M - m);
-  if (!isFinite(normalized) || normalized <= 0) return null;
-  return Math.round(normalized * 10) / 10;
+  if (!isFinite(raw) || raw <= 0 || !isFinite(normalized) || normalized <= 0) return vuoto;
+
+  return {
+    value: Math.round(raw * 10) / 10,
+    normalized: Math.round(normalized * 10) / 10
+  };
 }
 
 /** La fascia, sulla scala del proprio sesso. */
