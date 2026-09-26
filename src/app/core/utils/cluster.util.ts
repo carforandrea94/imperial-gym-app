@@ -73,7 +73,9 @@ export function clusterScheme(spec: ClusterSpec, sets: number): string {
 
 /** I blocchi di una serie che comincia: vuoti, coi loro suggerimenti. */
 export function buildBlocks(spec: ClusterSpec): BlockRow[] {
-  return spec.blocks.map(n => ({ reps: '', ripPlaceholder: String(n), done: false }));
+  return spec.blocks.map(n => ({
+    reps: '', load: '', ripPlaceholder: String(n), loadPlaceholder: '', done: false
+  }));
 }
 
 /**
@@ -84,8 +86,19 @@ export function canAddBlock(spec: ClusterSpec, blocks: readonly BlockRow[]): boo
   return spec.end === 'open' && blocks.length < MAX_BLOCKS_PER_SET;
 }
 
-export function buildBlock(spec: ClusterSpec): BlockRow {
-  return { reps: '', ripPlaceholder: String(spec.blocks[0] ?? ''), done: false };
+/**
+ * Il blocco che si aggiunge a esaurimento. Il peso lo eredita dall'ultimo
+ * fatto: e' quasi sempre lo stesso, e quando cala lo cali tu di un tocco.
+ */
+export function buildBlock(spec: ClusterSpec, blocks: readonly BlockRow[] = []): BlockRow {
+  const last = blocks[blocks.length - 1];
+  return {
+    reps: '',
+    load: '',
+    ripPlaceholder: String(spec.blocks[0] ?? ''),
+    loadPlaceholder: last ? (last.load || last.loadPlaceholder) : '',
+    done: false
+  };
 }
 
 /** L'indice del blocco su cui si sta lavorando, o -1 se sono tutti fatti. */
@@ -108,6 +121,21 @@ export function clusterSetDone(spec: ClusterSpec, blocks: readonly BlockRow[]): 
 export function blocksLabel(blocks: readonly BlockRow[]): string {
   const fatti = blocks.filter(b => b.done).map(b => b.reps || b.ripPlaceholder || '0');
   return fatti.join('+');
+}
+
+/**
+ * Il carico della serie, scritto come si racconta: "62,5" se i blocchi sono
+ * andati tutti allo stesso peso, "62,5-55" se e' calato.
+ *
+ * Non e' una media: in un cluster che scende, la media e' un numero che non
+ * hai mai sollevato.
+ */
+export function blocksLoadLabel(blocks: readonly BlockRow[]): string {
+  const pesi = blocks.filter(b => b.done).map(b => b.load || b.loadPlaceholder).filter(v => !!v);
+  if (!pesi.length) return '';
+  const primo = pesi[0];
+  const ultimo = pesi[pesi.length - 1];
+  return pesi.every(v => v === primo) ? primo : `${primo}-${ultimo}`;
 }
 
 /** Le ripetizioni previste in tutta la serie, per i suggerimenti di carico. */

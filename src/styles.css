@@ -422,7 +422,11 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .clusterpause.over .clusterpause-val{color:var(--label-2);}
 /* I blocchi della serie: dove sei, cosa hai chiuso, cosa resta. */
 .blockstrip{display:flex;flex-wrap:wrap;gap:7px;}
-.blockchip{flex:1;min-width:58px;padding:0;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:5px;min-height:52px;border-radius:var(--r-md);background:var(--surface-card);border:1px solid var(--border-line);}
+.blockchip{flex:1;min-width:68px;padding:0;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:52px;border-radius:var(--r-md);background:var(--surface-card);border:1px solid var(--border-line);}
+.blockchip-top{display:flex;align-items:center;gap:5px;}
+/* Il peso del blocco sotto le sue ripetizioni: un cluster che scende non si
+   distingue da uno piatto se il carico e' scritto una volta sola. */
+.blockchip-kg{font-family:'IBM Plex Mono',monospace;font-size:var(--text-2xs);color:var(--label-3);}
 .blockchip-v{font-family:'IBM Plex Mono',monospace;font-size:var(--text-lg);font-weight:700;color:var(--label-2);}
 /* Fatto e corrente non si distinguono solo per colore: il primo porta la
    spunta, il secondo un anello. Due tinte di uguale luminosita' sarebbero

@@ -1,7 +1,7 @@
 import {
   newCluster, normalizeCluster, formatClusterRest, clusterLabel, clusterScheme,
   buildBlocks, canAddBlock, buildBlock, currentBlock, clusterSetDone, blocksLabel,
-  plannedReps, CLUSTER_DEFAULT_REST
+  blocksLoadLabel, plannedReps, CLUSTER_DEFAULT_REST
 } from './cluster.util';
 import { BlockRow, MAX_BLOCKS_PER_SET } from './extra-sets.util';
 import { ClusterSpec } from '../../models/workout.model';
@@ -10,7 +10,17 @@ const FISSO: ClusterSpec = { blocks: [8, 8], restSec: 30, end: 'fixed' };
 const APERTO: ClusterSpec = { blocks: [5], restSec: 30, end: 'open' };
 
 function blocchi(...fatti: (number | null)[]): BlockRow[] {
-  return fatti.map(n => ({ reps: n === null ? '' : String(n), ripPlaceholder: '8', done: n !== null }));
+  return fatti.map(n => ({
+    reps: n === null ? '' : String(n), load: '',
+    ripPlaceholder: '8', loadPlaceholder: '', done: n !== null
+  }));
+}
+
+/** Blocchi con un peso, per le prove sul carico. */
+function conPeso(...coppie: [number, string][]): BlockRow[] {
+  return coppie.map(([reps, load]) => ({
+    reps: String(reps), load, ripPlaceholder: '8', loadPlaceholder: '', done: true
+  }));
 }
 
 describe('normalizeCluster', () => {
@@ -92,7 +102,7 @@ describe('i blocchi di una serie', () => {
   it('nascono vuoti, coi loro suggerimenti', () => {
     const b = buildBlocks(FISSO);
     expect(b.length).toBe(2);
-    expect(b[0]).toEqual({ reps: '', ripPlaceholder: '8', done: false });
+    expect(b[0]).toEqual({ reps: '', load: '', ripPlaceholder: '8', loadPlaceholder: '', done: false });
   });
 
   it('il corrente e\' il primo non fatto', () => {
@@ -115,6 +125,16 @@ describe('i blocchi di una serie', () => {
 
   it('il blocco in piu\' suggerisce quello del piano', () => {
     expect(buildBlock(APERTO).ripPlaceholder).toBe('5');
+  });
+
+  /* Il peso quasi sempre resta quello: partire da zero vorrebbe dire
+     ridigitarlo a ogni blocco. */
+  it('il blocco in piu\' eredita il peso dell\'ultimo fatto', () => {
+    expect(buildBlock(APERTO, conPeso([5, '60'], [5, '55'])).loadPlaceholder).toBe('55');
+  });
+
+  it('senza blocchi prima non suggerisce nessun peso', () => {
+    expect(buildBlock(APERTO).loadPlaceholder).toBe('');
   });
 });
 
@@ -145,5 +165,25 @@ describe('plannedReps', () => {
 describe('newCluster', () => {
   it('nasce come il cluster piu\' comune', () => {
     expect(newCluster()).toEqual({ blocks: [8, 8], restSec: 30, end: 'fixed' });
+  });
+});
+
+describe('blocksLoadLabel', () => {
+  it('un peso solo se non e\' cambiato', () => {
+    expect(blocksLoadLabel(conPeso([8, '62,5'], [8, '62,5']))).toBe('62,5');
+  });
+
+  /* La media di 62,5 e 55 sarebbe 58,75: un peso che non hai mai sollevato. */
+  it('da dove parti a dove arrivi, quando cala', () => {
+    expect(blocksLoadLabel(conPeso([8, '62,5'], [6, '55']))).toBe('62,5-55');
+  });
+
+  it('i blocchi non fatti non contano', () => {
+    const b = [...conPeso([8, '60']), ...blocchi(null)];
+    expect(blocksLoadLabel(b)).toBe('60');
+  });
+
+  it('senza pesi scritti non inventa niente', () => {
+    expect(blocksLoadLabel(blocchi(8, 8))).toBe('');
   });
 });
