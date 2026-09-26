@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef, ElementRef, ViewChild, effect } from '@angular/core';
 import { LucideAngularModule } from 'lucide-angular';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DietDataService } from '../../services/diet-data.service';
 import { DietStateService } from '../../services/diet-state.service';
@@ -20,7 +21,7 @@ interface MealVM {
 @Component({
   selector: 'app-dieta-detail',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule],
+  imports: [CommonModule, FormsModule, LucideAngularModule],
   templateUrl: './dieta-detail.component.html',
   styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
 })
@@ -93,10 +94,6 @@ export class DietaDetailComponent implements OnInit {
 
   getActiveCombo(vm: MealVM): MealCombination {
     return vm.meal.combinations.find(c => c.id === vm.selectedComboId) ?? vm.meal.combinations[0];
-  }
-
-  selectCombo(vm: MealVM, combo: MealCombination): void {
-    vm.selectedComboId = combo.id;
   }
 
   comboItem(vm: MealVM, cat: FoodCategory): FoodItem | null {
