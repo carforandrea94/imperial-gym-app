@@ -14,7 +14,7 @@ import { WorkoutSessionStateService } from '../../services/workout-session-state
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { Day, Exercise, WorkoutSession, ExInsight, ClusterSpec, PerformedSetRecord } from '../../models/workout.model';
 import {
-  normalizeCluster, buildBlocks, buildBlock, canAddBlock, currentBlock,
+  normalizeCluster, buildBlocks, buildBlock, canAddBlock, canRemoveBlock, removeLastBlock, currentBlock,
   clusterSetDone, blocksLabel, blocksLoadLabel, clusterLabel, formatClusterRest
 } from '../../core/utils/cluster.util';
 import { todayLocalISO } from '../../core/utils/date.util';
@@ -682,6 +682,40 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     if (row.done) { row.done = false; vm.activeRow = rowIdx; }
     this.stopPause();
     this.scheduleDraft();
+  }
+
+  canRemoveBlock(vm: ExerciseVM, row: SerieRow): boolean {
+    return !!vm.cluster && canRemoveBlock(vm.cluster, row.blocks ?? []);
+  }
+
+  /**
+   * Toglie l'ultimo blocco fatto. A esaurimento i blocchi li aggiunge chi si
+   * allena, quindi deve poterne togliere uno: un tocco di troppo su "fatto il
+   * blocco" oggi non si poteva disfare, si poteva solo togliere la spunta e
+   * lasciare li' un blocco vuoto che restava nel conto.
+   */
+  async removeBlock(vm: ExerciseVM, rowIdx: number): Promise<void> {
+    if (this.setsLocked || !vm.cluster) return;
+    const row = vm.rows[rowIdx];
+    if (!canRemoveBlock(vm.cluster, row.blocks ?? [])) return;
+
+    // Porta con se' ripetizioni e carico registrati, come una serie spuntata.
+    const ok = await this.confirm.confirm(
+      'Vuoi togliere l\'ultimo blocco fatto? Le sue ripetizioni e il suo carico vanno persi.',
+      { confirmLabel: 'Togli il blocco', dangerous: true }
+    );
+    if (!ok) return;
+    // La conferma e' asincrona: nel frattempo la sessione puo' essere stata
+    // chiusa, o la serie puo' non essere piu' quella.
+    if (this.setsLocked || !vm.cluster || !canRemoveBlock(vm.cluster, row.blocks ?? [])) return;
+
+    row.blocks = removeLastBlock(vm.cluster, row.blocks ?? []);
+    // Se la serie era chiusa, un blocco in meno la riapre: non e' piu' quella
+    // che avevi finito.
+    if (row.done) { row.done = false; vm.activeRow = rowIdx; }
+    this.stopPause();
+    this.scheduleDraft();
+    this.cdr.detectChanges();
   }
 
   canCloseCluster(vm: ExerciseVM, row: SerieRow): boolean {

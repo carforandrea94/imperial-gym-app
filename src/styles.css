@@ -440,6 +440,10 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .blockchip.now .blockchip-v{color:var(--accent);}
 /* Chiudere una serie a esaurimento: e' una decisione, non un comando
    primario - quello resta "fatto il blocco". */
+/* Togliere un blocco e' un'azione che distrugge: sta sotto i comandi, in
+   rosso, mentre chiudere la serie e' una decisione e resta neutra. */
+.clusterundo{width:100%;min-height:44px;border:none;border-radius:var(--r-md);background:transparent;color:var(--state-danger-text);font-family:'Inter',sans-serif;font-size:var(--text-sm);font-weight:600;cursor:pointer;}
+.clusterundo:disabled{opacity:.45;cursor:not-allowed;}
 .clusterclose{width:100%;min-height:44px;border-radius:var(--r-md);border:1px dashed var(--border-line);background:transparent;color:var(--label-2);font-family:'Inter',sans-serif;font-size:var(--text-sm);font-weight:600;cursor:pointer;}
 .clusterclose:disabled{opacity:.45;cursor:not-allowed;}
 /* Togliere sta dentro la card aperta, sotto ai comandi: e' un'azione che

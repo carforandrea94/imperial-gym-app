@@ -1,6 +1,7 @@
 import {
   newCluster, normalizeCluster, formatClusterRest, clusterLabel, clusterScheme,
-  buildBlocks, canAddBlock, buildBlock, currentBlock, clusterSetDone, blocksLabel,
+  buildBlocks, canAddBlock, buildBlock, canRemoveBlock, removeLastBlock,
+  currentBlock, clusterSetDone, blocksLabel,
   blocksLoadLabel, plannedReps, CLUSTER_DEFAULT_REST
 } from './cluster.util';
 import { BlockRow, MAX_BLOCKS_PER_SET } from './extra-sets.util';
@@ -185,5 +186,48 @@ describe('blocksLoadLabel', () => {
 
   it('senza pesi scritti non inventa niente', () => {
     expect(blocksLoadLabel(blocchi(8, 8))).toBe('');
+  });
+});
+
+describe('togliere un blocco', () => {
+  /* Dove i blocchi sono scritti dal coach non si toccano: toglierne uno
+     vorrebbe dire cambiargli il piano di nascosto. */
+  it('non si puo\' a blocchi fissi', () => {
+    expect(canRemoveBlock(FISSO, blocchi(8, 8))).toBe(false);
+  });
+
+  it('si puo\' a esaurimento, se c\'e\' qualcosa di fatto', () => {
+    expect(canRemoveBlock(APERTO, blocchi(5, null))).toBe(true);
+    expect(canRemoveBlock(APERTO, blocchi(null))).toBe(false);
+  });
+
+  it('toglie l\'ultimo FATTO, non quello ancora da fare', () => {
+    const out = removeLastBlock(APERTO, blocchi(5, 5, null));
+    expect(out.filter(b => b.done).length).toBe(1);
+    expect(out.length).toBe(2);
+  });
+
+  // Se no la serie non avrebbe piu' dove continuare.
+  it('lascia sempre un blocco da fare', () => {
+    const out = removeLastBlock(APERTO, blocchi(5));
+    expect(out.length).toBe(1);
+    expect(out[0].done).toBe(false);
+  });
+
+  it('il blocco rimasto da fare eredita il peso di quello prima', () => {
+    const out = removeLastBlock(APERTO, conPeso([5, '60'], [5, '55']));
+    expect(out.length).toBe(2);
+    expect(out[1].done).toBe(false);
+    expect(out[1].loadPlaceholder).toBe('60');
+  });
+
+  it('su una serie a blocchi fissi l\'elenco torna uguale', () => {
+    expect(removeLastBlock(FISSO, blocchi(8, 8)).length).toBe(2);
+  });
+
+  it('non tocca l\'elenco di partenza', () => {
+    const b = blocchi(5, 5, null);
+    removeLastBlock(APERTO, b);
+    expect(b.length).toBe(3);
   });
 });

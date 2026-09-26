@@ -117,6 +117,33 @@ export function clusterSetDone(spec: ClusterSpec, blocks: readonly BlockRow[]): 
   return blocks.every(b => b.done);
 }
 
+/**
+ * Si puo' togliere un blocco solo dove i blocchi li aggiunge chi si allena.
+ * Dove sono scritti dal coach, toglierne uno vorrebbe dire cambiargli il
+ * piano di nascosto.
+ */
+export function canRemoveBlock(spec: ClusterSpec, blocks: readonly BlockRow[]): boolean {
+  return spec.end === 'open' && blocks.some(b => b.done);
+}
+
+/**
+ * Toglie l'ultimo blocco FATTO.
+ *
+ * Non l'ultimo in coda: a esaurimento quello e' il prossimo da fare, creato
+ * per mostrare dove si sta andando, e toglierlo non toglierebbe niente di
+ * quello che hai sbagliato a segnare.
+ */
+export function removeLastBlock(spec: ClusterSpec, blocks: readonly BlockRow[]): BlockRow[] {
+  if (!canRemoveBlock(spec, blocks)) return blocks.slice();
+  const out = blocks.slice();
+  for (let i = out.length - 1; i >= 0; i--) {
+    if (out[i].done) { out.splice(i, 1); break; }
+  }
+  // Senza un blocco da fare la serie non avrebbe piu' dove continuare.
+  if (!out.some(b => !b.done)) out.push(buildBlock(spec, out));
+  return out;
+}
+
 /** Quello che hai fatto, scritto come lo scriveresti: "8+8", "5+5+3". */
 export function blocksLabel(blocks: readonly BlockRow[]): string {
   const fatti = blocks.filter(b => b.done).map(b => b.reps || b.ripPlaceholder || '0');
