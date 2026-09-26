@@ -422,12 +422,15 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .clusterpause.over .clusterpause-val{color:var(--label-2);}
 /* I blocchi della serie: dove sei, cosa hai chiuso, cosa resta. */
 .blockstrip{display:flex;flex-wrap:wrap;gap:7px;}
-.blockchip{flex:1;min-width:58px;padding:0;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:52px;border-radius:var(--r-md);background:var(--surface-card);border:1px solid var(--border-line);}
+.blockchip{flex:1;min-width:58px;padding:0;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:5px;min-height:52px;border-radius:var(--r-md);background:var(--surface-card);border:1px solid var(--border-line);}
 .blockchip-v{font-family:'IBM Plex Mono',monospace;font-size:var(--text-lg);font-weight:700;color:var(--label-2);}
-.blockchip-k{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--label-3);}
+/* Fatto e corrente non si distinguono solo per colore: il primo porta la
+   spunta, il secondo un anello. Due tinte di uguale luminosita' sarebbero
+   lo stesso blocco per chi le confonde. */
+.blockchip-tick{color:var(--state-success);flex-shrink:0;}
 .blockchip.done{border-color:var(--state-success);}
 .blockchip.done .blockchip-v{color:var(--state-success);}
-.blockchip.now{border-color:var(--accent);}
+.blockchip.now{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);}
 /* Solo un blocco fatto si puo' toccare, per togliergli la spunta. */
 .blockchip:disabled{cursor:default;}
 .blockchip.now .blockchip-v{color:var(--accent);}
