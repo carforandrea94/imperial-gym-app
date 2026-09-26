@@ -190,7 +190,15 @@ html {
   overscroll-behavior-y: contain;
   scroll-padding-top: calc(var(--nav-h-rest, 96px) + 12px);
   scroll-padding-bottom: calc(var(--tabbar-h) + var(--tabbar-gap) + 12px);
+  /* La barra di scorrimento non si vede, come negli elenchi che scorrono di
+     lato e nella ruota. L'app e' un telefono: li' la barra non c'e' comunque,
+     e su un desktop restringerebbe la colonna di qualche pixel a meta'
+     pagina. Lo scorrimento resta quello di sistema: si nasconde il disegno,
+     non il movimento. */
+  scrollbar-width: none;
 }
+
+html::-webkit-scrollbar { display: none; }
 
 body {
   min-height: 100%;
