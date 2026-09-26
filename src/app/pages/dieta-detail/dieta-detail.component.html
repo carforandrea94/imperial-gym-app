@@ -57,11 +57,13 @@
 
   <!-- Alternative per macro, un unico accordion -->
   <ng-container *ngIf="totalAlternatives(vm) > 0">
-    <div class="altwrap-header mt-4" (click)="toggleMacroAltExpanded(vm)">
-      <span>Alternative ({{ totalAlternatives(vm) }})</span>
-      <span class="chevron">
-        <lucide-icon name="chevron-down" [size]="10"></lucide-icon>
-      </span>
+    <div class="altwrap mt-4" [class.open]="isMacroAltExpanded(vm)">
+      <div class="altwrap-header" (click)="toggleMacroAltExpanded(vm)">
+        <span>{{ isMacroAltExpanded(vm) ? 'Nascondi alternative' : 'Alternative (' + totalAlternatives(vm) + ')' }}</span>
+        <span class="chevron">
+          <lucide-icon name="chevron-down" [size]="10"></lucide-icon>
+        </span>
+      </div>
     </div>
     <div class="altlist" *ngIf="isMacroAltExpanded(vm)">
       <ng-container *ngFor="let cat of foodCategories">
