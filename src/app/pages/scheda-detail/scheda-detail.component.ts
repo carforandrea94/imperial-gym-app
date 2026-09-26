@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectorRef, ElementRef, Renderer2, ViewChild, effect } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectorRef, ElementRef, Renderer2, ViewChild, effect, signal } from '@angular/core';
 import { LucideAngularModule } from 'lucide-angular';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -12,13 +12,17 @@ import { sessionTonnage, formatKg } from '../../core/utils/tonnage.util';
 import { WorkoutSessionsService } from '../../services/workout-sessions.service';
 import { WorkoutSessionStateService } from '../../services/workout-session-state.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
-import { Day, Exercise, WorkoutSession, ExInsight } from '../../models/workout.model';
+import { Day, Exercise, WorkoutSession, ExInsight, ClusterSpec, PerformedSetRecord } from '../../models/workout.model';
+import {
+  normalizeCluster, buildBlocks, buildBlock, canAddBlock, currentBlock,
+  clusterSetDone, blocksLabel, clusterLabel, formatClusterRest
+} from '../../core/utils/cluster.util';
 import { todayLocalISO } from '../../core/utils/date.util';
 import { findClosestSlideIndex, scrollToSlide } from '../../core/utils/horizontal-slider.util';
 import { PerformedSet, suggestLoad } from '../../core/utils/load-estimate.util';
 import { ToastService } from '../../services/toast.service';
 import {
-  SerieRow, canAddSet, buildExtraSet, canRemoveSet, removeSetAt, mergeDraftRows
+  SerieRow, BlockRow, canAddSet, buildExtraSet, canRemoveSet, removeSetAt, mergeDraftRows
 } from '../../core/utils/extra-sets.util';
 
 /** Passo di arrotondamento del carico consigliato: i dischi da 2,5 kg per lato. */
@@ -39,6 +43,9 @@ interface ExerciseVM {
   restSeconds: number;
   isFirst: boolean;
   warmup: string | null;
+  /** Serie a cluster: la forma di OGNI serie di questo esercizio. null = serie
+   *  normali, un blocco per serie. */
+  cluster: ClusterSpec | null;
 }
 
 @Component({
@@ -124,6 +131,7 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       // se resta aperto mostra l'esercizio sbagliato sotto la pagina nuova.
       this.closeRestModal();
       this.restModalVm = null;
+      this.stopPause();
       // La fascia del recupero si vede solo dentro l'allenamento in corso: un
       // timer partito su un altro giorno resterebbe acceso senza essere
       // disegnato da nessuna parte, e senza modo di fermarlo.
@@ -193,6 +201,7 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.paramSub?.unsubscribe();
+    this.stopPause();
     if (this.draftTimer) clearTimeout(this.draftTimer);
     if (this.restSheetOverlayEl?.nativeElement.parentNode === document.body) {
       this.renderer.removeChild(document.body, this.restSheetOverlayEl.nativeElement);
@@ -204,19 +213,26 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     const protocolDefault = this.parseRecSeconds(this.day.rec);
     this.exercises = this.day.ex.map((ex, exIdx) => {
       const { sets, reps } = this.workoutData.getExSetsReps(ex, week);
+      // Il cluster arriva da Firestore come tutto il resto del protocollo:
+      // quello che non si riesce a leggere non diventa un cluster rotto,
+      // diventa una serie normale.
+      const cluster = normalizeCluster(ex.cluster);
       const rows: SerieRow[] = Array.from({ length: sets }, (_, i) => ({
-        reps: String(reps[i] ?? ''),
+        // In una serie a cluster le ripetizioni non sono un numero ma una
+        // forma ("8+8"): il numero sta nei blocchi, uno per uno.
+        reps: cluster ? '' : String(reps[i] ?? ''),
         load: '',
         done: false,
-        ripPlaceholder: String(reps[i] ?? ''),
+        ripPlaceholder: cluster ? clusterLabel(cluster) : String(reps[i] ?? ''),
         loadPlaceholder: '',
         // Viene dal piano del coach: e' quello che la distingue da una serie
         // aggiunta a mano, che invece si puo' togliere.
-        extra: false
+        extra: false,
+        ...(cluster ? { blocks: buildBlocks(cluster) } : {})
       }));
       const override = restOverrides[this.restKey(ex.name)];
       const restSeconds = override && override > 0 ? override : protocolDefault;
-      return { ex, rows, open: true, activeRow: 0, insightVisible: false, insight: null, restSeconds, isFirst: exIdx === 0, warmup: null };
+      return { ex, rows, open: true, activeRow: 0, insightVisible: false, insight: null, restSeconds, isFirst: exIdx === 0, warmup: null, cluster };
     });
   }
 
@@ -444,6 +460,210 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     vm.activeRow = rowIdx;
   }
 
+  // ---- Le serie a cluster ----
+  //
+  // Una serie a cluster e' UNA serie spezzata in blocchi, con una pausa breve
+  // dentro. Resta una serie in tutti i conti: il contatore dell'esercizio, la
+  // card di chiusura e il confronto col piano parlano di serie, non di blocchi.
+
+  /** La pausa dentro la serie: quale blocco l'ha fatta partire e da quando. */
+  private pauseFrom: number | null = null;
+  private pauseKey = '';
+  private pauseTicker: ReturnType<typeof setInterval> | null = null;
+
+  /** Secondi passati dall'inizio della pausa. E' un signal perche' la pagina
+   *  e' zoneless: un campo mutato dentro setInterval non ridisegnerebbe nulla. */
+  readonly pauseElapsed = signal(0);
+
+  isCluster(vm: ExerciseVM, row: SerieRow): boolean {
+    return !!vm.cluster && !!row.blocks;
+  }
+
+  blockIndex(row: SerieRow): number {
+    return currentBlock(row.blocks ?? []);
+  }
+
+  /** Il blocco su cui si sta lavorando, o null se sono tutti fatti. */
+  block(row: SerieRow): BlockRow | null {
+    const i = this.blockIndex(row);
+    return i === -1 ? null : (row.blocks ?? [])[i];
+  }
+
+  blockLabel(vm: ExerciseVM, row: SerieRow): string {
+    const i = this.blockIndex(row);
+    if (i === -1) return 'Serie finita';
+    // A esaurimento non esiste un "di quanti": e' il punto.
+    return vm.cluster?.end === 'open'
+      ? `Blocco ${i + 1}`
+      : `Blocco ${i + 1} di ${(row.blocks ?? []).length}`;
+  }
+
+  clusterHint(vm: ExerciseVM): string {
+    if (!vm.cluster) return '';
+    return vm.cluster.end === 'open'
+      ? 'a esaurimento'
+      : `${formatClusterRest(vm.cluster.restSec)} dentro`;
+  }
+
+  /** Quello che si e' fatto finora nella serie: "8+8", "5+5+3". */
+  clusterDone(row: SerieRow): string {
+    return blocksLabel(row.blocks ?? []);
+  }
+
+  // --- La pausa dentro la serie ---
+
+  private pauseId(vm: ExerciseVM, rowIdx: number): string {
+    return `${vm.ex.name}#${rowIdx}`;
+  }
+
+  isPausing(vm: ExerciseVM, rowIdx: number): boolean {
+    return this.pauseFrom !== null && this.pauseKey === this.pauseId(vm, rowIdx);
+  }
+
+  /**
+   * Quanto manca alla fine della pausa, o quanto se n'e' gia' preso in piu'.
+   *
+   * La pausa del coach e' un MINIMO: passata quella, il conto sale invece di
+   * sparire. Un cluster in cui il telefono ti dice "tempo scaduto" spingerebbe
+   * a ripartire prima di essere pronti, che e' l'opposto del motivo per cui il
+   * coach l'ha scritto.
+   */
+  pauseText(vm: ExerciseVM): string {
+    const resta = (vm.cluster?.restSec ?? 0) - this.pauseElapsed();
+    return resta >= 0
+      ? this.formatDuration(resta)
+      : '+' + this.formatDuration(-resta);
+  }
+
+  pauseOver(vm: ExerciseVM): boolean {
+    return this.pauseElapsed() >= (vm.cluster?.restSec ?? 0);
+  }
+
+  private startPause(vm: ExerciseVM, rowIdx: number): void {
+    this.stopPause();
+    this.pauseFrom = Date.now();
+    this.pauseKey = this.pauseId(vm, rowIdx);
+    this.pauseElapsed.set(0);
+    this.pauseTicker = setInterval(() => {
+      if (this.pauseFrom === null) return;
+      const passati = Math.floor((Date.now() - this.pauseFrom) / 1000);
+      this.pauseElapsed.set(passati);
+      // Alla fine del minimo una vibrazione, come per il recupero lungo: il
+      // telefono e' in tasca o sulla panca, non davanti agli occhi.
+      if (passati === (vm.cluster?.restSec ?? 0) && navigator.vibrate) navigator.vibrate(200);
+    }, 1000);
+  }
+
+  private stopPause(): void {
+    if (this.pauseTicker) { clearInterval(this.pauseTicker); this.pauseTicker = null; }
+    this.pauseFrom = null;
+    this.pauseKey = '';
+    this.pauseElapsed.set(0);
+  }
+
+  // --- I comandi ---
+
+  adjustBlockReps(vm: ExerciseVM, rowIdx: number, delta: number): void {
+    if (this.setsLocked) return;
+    const b = this.block(vm.rows[rowIdx]);
+    if (!b) return;
+    const next = Math.max(0, this.valueOf(b.reps, b.ripPlaceholder) + delta);
+    b.reps = next === 0 ? '' : this.write(next);
+    this.scheduleDraft();
+  }
+
+  /**
+   * Chiude il blocco corrente e fa partire la pausa. Quando i blocchi scritti
+   * sono finiti, la serie si chiude da sola; a esaurimento no - li' un altro
+   * blocco e' sempre possibile finche' non sei tu a dire che non ne escono.
+   */
+  doneBlock(vm: ExerciseVM, rowIdx: number): void {
+    if (this.setsLocked || !vm.cluster) return;
+    const row = vm.rows[rowIdx];
+    let i = this.blockIndex(row);
+    // A esaurimento puo' non esserci un blocco corrente: succede riaprendo
+    // una serie gia' chiusa per farne un altro. Se ne crea uno.
+    if (i === -1 && vm.cluster.end === 'open' && canAddBlock(vm.cluster, row.blocks ?? [])) {
+      row.blocks = [...(row.blocks ?? []), buildBlock(vm.cluster)];
+      i = row.blocks.length - 1;
+    }
+    if (i === -1) return;
+
+    const b = (row.blocks ?? [])[i];
+    b.done = true;
+    if (!b.reps && b.ripPlaceholder) b.reps = b.ripPlaceholder;
+    // Il carico lo si scrive una volta per serie: in un cluster il peso e' lo
+    // stesso in tutti i blocchi, ed e' per questo che e' un cluster.
+    if (!row.load && row.loadPlaceholder) row.load = row.loadPlaceholder;
+
+    // A esaurimento il blocco dopo non esiste finche' non serve: si crea qui,
+    // cosi' la striscia mostra sempre dove si sta andando.
+    if (vm.cluster.end === 'open' && this.blockIndex(row) === -1 && canAddBlock(vm.cluster, row.blocks ?? [])) {
+      row.blocks = [...(row.blocks ?? []), buildBlock(vm.cluster)];
+    }
+
+    if (clusterSetDone(vm.cluster, row.blocks ?? [])) {
+      this.closeClusterSet(vm, rowIdx);
+      return;
+    }
+
+    this.startPause(vm, rowIdx);
+    this.scheduleDraft();
+  }
+
+  /** La serie finisce qui: a blocchi finiti, o perche' non ne escono altri. */
+  closeClusterSet(vm: ExerciseVM, rowIdx: number): void {
+    if (this.setsLocked) return;
+    const row = vm.rows[rowIdx];
+    if (!row.blocks?.some(b => b.done)) return;
+
+    // A esaurimento l'ultimo blocco e' quello che stavi per fare e non hai
+    // fatto: e' li' perche' la striscia mostrasse dove si stava andando, e
+    // nello storico non deve restare come una serie mancata.
+    if (vm.cluster?.end === 'open') {
+      while (row.blocks.length && !row.blocks[row.blocks.length - 1].done) row.blocks.pop();
+    }
+
+    row.done = true;
+    // Le ripetizioni della serie sono quelle che hai fatto davvero, blocco per
+    // blocco: "5+5+3" dice una cosa che "15" non dice.
+    row.reps = blocksLabel(row.blocks);
+    this.stopPause();
+    this.syncActiveRow(vm);
+    this.scheduleDraft();
+    // Finita la serie tocca il recupero lungo dell'esercizio, non piu' quello
+    // corto di dentro.
+    this.state.startRestTimer(vm.restSeconds, vm.ex.name, this.day.id);
+  }
+
+  /** Riapre una serie a cluster per correggerla: i blocchi restano come sono. */
+  reopenClusterSet(vm: ExerciseVM, rowIdx: number): void {
+    if (this.setsLocked) return;
+    vm.rows[rowIdx].done = false;
+    vm.activeRow = rowIdx;
+    this.scheduleDraft();
+  }
+
+  /**
+   * Toglie la spunta a un blocco: e' cosi' che si corregge quello sbagliato.
+   * Tornando non fatto, ridiventa il blocco corrente, e se la serie era chiusa
+   * si riapre — una serie finita con dentro un blocco da rifare non e' finita.
+   */
+  undoBlock(vm: ExerciseVM, rowIdx: number, blockIdx: number): void {
+    if (this.setsLocked) return;
+    const row = vm.rows[rowIdx];
+    const b = row.blocks?.[blockIdx];
+    if (!b?.done) return;
+    b.done = false;
+    if (row.done) { row.done = false; vm.activeRow = rowIdx; }
+    this.stopPause();
+    this.scheduleDraft();
+  }
+
+  canCloseCluster(vm: ExerciseVM, row: SerieRow): boolean {
+    return vm.cluster?.end === 'open' && !!row.blocks?.some(b => b.done);
+  }
+
   // ---- Le serie aggiunte ----
 
   /** Il piano non si tocca: il tasto per togliere una serie esiste solo su
@@ -497,6 +717,11 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   rowSummary(row: SerieRow): string {
     const reps = row.reps || row.ripPlaceholder;
     const load = row.load || row.loadPlaceholder;
+    // Una serie a cluster lasciata a meta' ha gia' del lavoro dentro: dire
+    // "da fare" cancellerebbe i blocchi chiusi.
+    if (!row.done && row.blocks?.some(b => b.done)) {
+      return `${blocksLabel(row.blocks)} · in corso`;
+    }
     if (row.done) {
       if (reps && load) return `${reps} × ${load} kg`;
       if (reps) return `${reps} rip.`;
@@ -515,13 +740,34 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // ---- La chiusura dell'allenamento ----
 
+  /**
+   * Una serie come finisce nello storico. I blocchi ci vanno tutti: `reps` e'
+   * il riassunto della serie ("8+8") e chi conta i chili non puo' ricavarlo
+   * da li' — parseFloat ne leggerebbe 8, meta' del lavoro.
+   */
+  private toPerformedSet(row: SerieRow): PerformedSetRecord {
+    const set: PerformedSetRecord = {
+      load: row.load || null,
+      reps: row.reps || (row.blocks ? blocksLabel(row.blocks) : '') || null,
+      done: row.done
+    };
+    if (row.blocks?.length) {
+      set.blocks = row.blocks.map(b => ({
+        load: row.load || null,
+        reps: b.reps || b.ripPlaceholder || null,
+        done: b.done
+      }));
+    }
+    return set;
+  }
+
   /** Il volume gia' accumulato, per la card di chiusura. */
   get liveVolumeKg(): string {
     return formatKg(sessionTonnage({
       dayId: this.day?.id ?? '', dayLabel: '', date: '',
       exercises: this.exercises.map(vm => ({
         name: vm.ex.name,
-        sets: vm.rows.map(r => ({ load: r.load || null, reps: r.reps || null, done: r.done }))
+        sets: vm.rows.map(r => this.toPerformedSet(r))
       }))
     }));
   }
@@ -819,7 +1065,7 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       date: isoDate,
       exercises: this.exercises.map(vm => ({
         name: vm.ex.name,
-        sets: vm.rows.map(r => ({ load: r.load || null, reps: r.reps || null, done: r.done }))
+        sets: vm.rows.map(r => this.toPerformedSet(r))
       })),
       durationSec
     };

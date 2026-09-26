@@ -101,3 +101,34 @@ describe('formatKg', () => {
     expect(formatKg(800)).toBe('800');
   });
 });
+
+/*
+ * Una serie a cluster: il suo `reps` e' il riassunto ("8+8"), e parseFloat ne
+ * leggerebbe 8. I chili veri stanno nei blocchi.
+ */
+describe('sessionTonnage con le serie a cluster', () => {
+  const cluster = (blocks: { reps: string; done: boolean }[]) => ({
+    dayId: 'day1', dayLabel: 'G1', date: '2026-09-26',
+    exercises: [{
+      name: 'Panca',
+      sets: [{
+        load: '60', reps: '8+8', done: true,
+        blocks: blocks.map(b => ({ load: '60', reps: b.reps, done: b.done }))
+      }]
+    }]
+  });
+
+  it('somma i blocchi, non il riassunto', () => {
+    expect(sessionTonnage(cluster([{ reps: '8', done: true }, { reps: '8', done: true }]))).toBe(960);
+  });
+
+  it('un blocco non fatto non e\' volume', () => {
+    expect(sessionTonnage(cluster([{ reps: '8', done: true }, { reps: '8', done: false }]))).toBe(480);
+  });
+
+  it('a esaurimento conta quanti ne sono usciti', () => {
+    expect(sessionTonnage(cluster([
+      { reps: '5', done: true }, { reps: '5', done: true }, { reps: '3', done: true }
+    ]))).toBe(780);
+  });
+});

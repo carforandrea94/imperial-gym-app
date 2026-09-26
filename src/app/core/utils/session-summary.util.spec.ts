@@ -130,3 +130,46 @@ describe('buildSessionSummary — i record', () => {
     expect(s.records).toEqual([]);
   });
 });
+
+describe('buildSessionSummary — le serie a cluster', () => {
+  /** Un esercizio a cluster: una serie sola, coi suoi blocchi. */
+  function conCluster(date: string, load: string, blocchi: [string, boolean][]): WorkoutSession {
+    return {
+      dayId: 'day1', dayLabel: 'Giorno 1', date, durationSec: 3000,
+      exercises: [{
+        name: 'Panca piana',
+        sets: [{
+          load, reps: blocchi.filter(b => b[1]).map(b => b[0]).join('+'), done: true,
+          blocks: blocchi.map(([reps, done]) => ({ load, reps, done }))
+        }]
+      }]
+    };
+  }
+
+  /* 16 ripetizioni di fila non le ha mai fatte nessuno: il cluster e' fatto
+     apposta per NON farle di fila. Il confronto e' fra blocchi. */
+  it('il record si misura sul blocco, non sulla somma', () => {
+    const s = buildSessionSummary(
+      conCluster('2026-09-26', '62,5', [['8', true], ['8', true]]),
+      conCluster('2026-09-19', '60', [['8', true], ['8', true]])
+    );
+    expect(s.records.length).toBe(1);
+    expect(s.records[0].kind).toBe('carico');
+    expect(s.records[0].now).toBe('62,5 kg × 8');
+  });
+
+  it('piu\' blocchi allo stesso carico non sono un record di ripetizioni', () => {
+    const s = buildSessionSummary(
+      conCluster('2026-09-26', '60', [['8', true], ['8', true], ['8', true]]),
+      conCluster('2026-09-19', '60', [['8', true], ['8', true]])
+    );
+    expect(s.records).toEqual([]);
+  });
+
+  it('una serie a cluster resta una serie sola nei conti', () => {
+    const s = buildSessionSummary(conCluster('2026-09-26', '60', [['8', true], ['8', true]]), null);
+    expect(s.setsTotal).toBe(1);
+    expect(s.setsDone).toBe(1);
+    expect(s.volumeKg).toBe(960);
+  });
+});
