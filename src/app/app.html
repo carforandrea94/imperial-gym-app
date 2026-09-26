@@ -29,7 +29,8 @@
   (saveMeasureClick)="measureState.requestSave()">
 </app-navbar>
 
-<div class="content" [class.no-chrome]="!showChrome">
+<div class="content" [class.no-chrome]="!showChrome"
+  [appSwipeTabs]="swipeTabs" [swipeEnabled]="swipeEnabled">
   <div class="wrap">
     <router-outlet></router-outlet>
   </div>
