@@ -19,11 +19,12 @@ import { HistoryEditStateService } from './services/history-edit-state.service';
 import { ProtocolBuilderStateService } from './services/protocol-builder-state.service';
 import { MeasureCategoryStateService } from './services/measure-category-state.service';
 import { ThemeService } from './services/theme.service';
+import { SwipeTabsDirective } from './core/directives/swipe-tabs.directive';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, NavbarComponent, TabbarComponent, RestBarComponent, ConfirmDialogComponent, ToastComponent],
+  imports: [CommonModule, RouterOutlet, NavbarComponent, TabbarComponent, RestBarComponent, ConfirmDialogComponent, ToastComponent, SwipeTabsDirective],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
@@ -61,6 +62,21 @@ export class App implements OnInit, OnDestroy {
   }
   showSaveMeasure = false;
   showChrome = false;
+
+  /** Le schede in ordine, le stesse della barra in fondo: la passata del
+   *  pollice le attraversa in quell'ordine e in nessun altro. */
+  get swipeTabs(): string[] {
+    return this.auth.isCoach
+      ? ['/coach/bacheca', '/coach/clienti', '/account']
+      : ['/scheda', '/dieta', '/corsa', '/misure', '/account'];
+  }
+
+  /** Si sfoglia solo dove la barra delle schede c'e' davvero: dentro un
+   *  allenamento in fondo c'e' il recupero, e un gesto che cambiasse sezione
+   *  porterebbe via da una sessione aperta. */
+  get swipeEnabled(): boolean {
+    return this.showChrome && this.auth.authReady() && !this.showRestBar;
+  }
 
   get showProtocolSave(): boolean {
     return this.showSettings && !this.protocolBuilderState.editingSubform();
