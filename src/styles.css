@@ -422,7 +422,11 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .clusterpause.over .clusterpause-val{color:var(--label-2);}
 /* I blocchi della serie: dove sei, cosa hai chiuso, cosa resta. */
 .blockstrip{display:flex;flex-wrap:wrap;gap:7px;}
-.blockchip{flex:1;min-width:58px;padding:0;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:5px;min-height:52px;border-radius:var(--r-md);background:var(--surface-card);border:1px solid var(--border-line);}
+.blockchip{flex:1;min-width:68px;padding:0;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:52px;border-radius:var(--r-md);background:var(--surface-card);border:1px solid var(--border-line);}
+.blockchip-top{display:flex;align-items:center;gap:5px;}
+/* Il peso del blocco sotto le sue ripetizioni: un cluster che scende non si
+   distingue da uno piatto se il carico e' scritto una volta sola. */
+.blockchip-kg{font-family:'IBM Plex Mono',monospace;font-size:var(--text-2xs);color:var(--label-3);}
 .blockchip-v{font-family:'IBM Plex Mono',monospace;font-size:var(--text-lg);font-weight:700;color:var(--label-2);}
 /* Fatto e corrente non si distinguono solo per colore: il primo porta la
    spunta, il secondo un anello. Due tinte di uguale luminosita' sarebbero
@@ -774,13 +778,23 @@ lucide-icon svg.filled{fill:currentColor;}
 .meal-summary{cursor:pointer;padding:15px 16px;min-height:44px;display:flex;align-items:center;justify-content:space-between;font-weight:700;letter-spacing:-.005em;font-size:var(--text-lg);-webkit-user-select:none;user-select:none;}
 .meal .chevron{display:flex;align-items:center;justify-content:center;color:var(--label-3);transition:transform .35s var(--spring);}
 .meal .chevron svg{display:block;}
-.meal.open .chevron{transform:rotate(180deg);color:var(--accent);}
+.meal.open > .meal-summary .chevron{transform:rotate(180deg);color:var(--accent);}
 .meal .content-inner{padding:0 16px 15px;border-top:1px solid var(--separator);}
 .meal.mealslide{margin-bottom:0;}
 .meal-summary.noclick{cursor:default;}
 .variant-tabs{display:flex;gap:6px;margin:13px 0 10px;flex-wrap:wrap;}
 .variant-tabs button{font-family:'IBM Plex Mono',monospace;font-size:var(--text-xs);padding:8px 12px;min-height:38px;border-radius:var(--r-sm);border:1px solid var(--border-line);background:var(--surface-raise);color:var(--label-2);cursor:pointer;}
 .variant-tabs button.active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
+/* La scelta della combinazione, lato cliente: un menu invece di una fila di
+   pastiglie. Le etichette le scrive il coach e sono libere, quindi una fila
+   andava a capo appena si allungavano; il menu e' alto 44 comunque, e quello
+   che hai scelto si legge anche da chiuso. La freccia e' disegnata a mano:
+   l'app azzera l'appearance nativa di tutti i controlli. */
+.combo-select{position:relative;display:flex;align-items:center;margin:13px 0 10px;}
+.combo-select select{width:100%;min-height:44px;padding:0 40px 0 13px;border:1px solid var(--border-line);border-radius:var(--r-md);background:var(--surface-raise);color:var(--label);font-family:'IBM Plex Mono',monospace;font-size:var(--text-sm);font-weight:600;cursor:pointer;}
+.combo-select select:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.combo-select .chevron{position:absolute;right:14px;display:flex;align-items:center;pointer-events:none;color:var(--label-3);}
+.combo-select .chevron svg{display:block;}
 .fooditem{padding:11px 0;border-bottom:1px solid var(--separator);}
 .fooditem-category{font-family:'IBM Plex Mono',monospace;font-size:var(--text-2xs);font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--label-3);margin:14px 0 4px;}
 /* I tre macro si distinguono per un PALLINO, non per il colore del testo.

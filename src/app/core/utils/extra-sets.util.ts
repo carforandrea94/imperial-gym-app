@@ -7,12 +7,18 @@
  * appena se ne aggiunge o se ne leva una.
  */
 /**
- * Un blocco di una serie a cluster. Il carico non sta qui: in un cluster il
- * peso e' lo stesso per tutti i blocchi, ed e' della serie.
+ * Un blocco di una serie a cluster.
+ *
+ * Il carico sta QUI e non sulla serie: di solito e' lo stesso in tutti i
+ * blocchi, ma non deve esserlo — al terzo blocco si cala, e scrivere il peso
+ * una volta sola per tutta la serie costringerebbe a mentire su quello che
+ * hai davvero sollevato.
  */
 export interface BlockRow {
   reps: string;
+  load: string;
   ripPlaceholder: string;
+  loadPlaceholder: string;
   done: boolean;
 }
 
@@ -36,7 +42,7 @@ export interface DraftRow {
   extra?: boolean;
   /** Solo sulle serie a cluster. In un cluster a esaurimento possono essere
    *  piu' di quelli previsti: i blocchi in piu' si ricreano. */
-  blocks?: { reps?: string | null; done?: boolean }[];
+  blocks?: { reps?: string | null; load?: string | null; done?: boolean }[];
 }
 
 /**
@@ -67,7 +73,13 @@ export function buildExtraSet(rows: readonly SerieRow[]): SerieRow {
   const last = rows[rows.length - 1];
   // Una serie in piu' su un esercizio a cluster e' a cluster anche lei: ha la
   // stessa forma dell'ultima, vuota.
-  const blocks = last?.blocks?.map(b => ({ reps: '', ripPlaceholder: b.ripPlaceholder, done: false }));
+  const blocks = last?.blocks?.map(b => ({
+    reps: '', load: '',
+    ripPlaceholder: b.ripPlaceholder,
+    // Il peso dell'ultima volta e' il punto di partenza della prossima.
+    loadPlaceholder: b.load || b.loadPlaceholder,
+    done: false
+  }));
   return {
     ...(blocks ? { blocks } : {}),
     reps: '',
@@ -130,7 +142,7 @@ export function mergeDraftRows(rows: readonly SerieRow[], draftRows: readonly Dr
  */
 function mergeDraftBlocks(
   blocks: readonly BlockRow[],
-  draft: readonly { reps?: string | null; done?: boolean }[]
+  draft: readonly { reps?: string | null; load?: string | null; done?: boolean }[]
 ): BlockRow[] {
   const out = blocks.map(b => ({ ...b }));
   draft.forEach((d, j) => {
@@ -138,10 +150,16 @@ function mergeDraftBlocks(
     if (!target) {
       const last = out[out.length - 1];
       if (out.length >= MAX_BLOCKS_PER_SET) return;
-      target = { reps: '', ripPlaceholder: last?.ripPlaceholder ?? '', done: false };
+      target = {
+        reps: '', load: '',
+        ripPlaceholder: last?.ripPlaceholder ?? '',
+        loadPlaceholder: last ? (last.load || last.loadPlaceholder) : '',
+        done: false
+      };
       out.push(target);
     }
     target.reps = d.reps ?? '';
+    target.load = d.load ?? '';
     target.done = d.done ?? false;
   });
   return out;

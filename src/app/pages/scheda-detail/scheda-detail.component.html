@@ -51,13 +51,16 @@
               [class.done]="b.done" [class.now]="!b.done && blockIndex(row) === k"
               [disabled]="setsLocked || !b.done" (click)="undoBlock(vm, j, k)"
               [attr.aria-label]="b.done ? 'Togli la spunta al blocco ' + (k + 1) : null">
-              <span class="blockchip-v">{{ b.reps || b.ripPlaceholder || '—' }}</span>
-              <lucide-icon *ngIf="b.done" name="check" [size]="13" class="blockchip-tick"></lucide-icon>
+              <span class="blockchip-top">
+                <span class="blockchip-v">{{ b.reps || b.ripPlaceholder || '—' }}</span>
+                <lucide-icon *ngIf="b.done" name="check" [size]="13" class="blockchip-tick"></lucide-icon>
+              </span>
+              <span class="blockchip-kg" *ngIf="b.load || b.loadPlaceholder">{{ b.load || b.loadPlaceholder }} kg</span>
             </button>
           </div>
         </ng-container>
 
-        <div class="stepper">
+        <div class="stepper" *ngIf="!isCluster(vm, row)">
           <button type="button" class="stepbtn" [disabled]="setsLocked"
             (click)="adjustLoad(vm, j, -loadStep)"
             [attr.aria-label]="'Togli ' + loadStep + ' chili'">−</button>
@@ -70,6 +73,24 @@
           <span class="stepunit">kg</span>
           <button type="button" class="stepbtn" [disabled]="setsLocked"
             (click)="adjustLoad(vm, j, loadStep)"
+            [attr.aria-label]="'Aggiungi ' + loadStep + ' chili'">+</button>
+        </div>
+
+        <!-- In un cluster il carico e' del BLOCCO: di solito e' lo stesso in
+             tutti, ma al terzo si cala, e la serie deve poterlo dire. -->
+        <div class="stepper" *ngIf="isCluster(vm, row) && block(row) as b">
+          <button type="button" class="stepbtn" [disabled]="setsLocked"
+            (click)="adjustBlockLoad(vm, j, -loadStep)"
+            [attr.aria-label]="'Togli ' + loadStep + ' chili'">−</button>
+          <label class="stepfield">
+            <span class="sr-only">Carico del blocco in corso, in chili</span>
+            <input type="text" inputmode="decimal" [(ngModel)]="b.load"
+              [placeholder]="b.loadPlaceholder || '0'" [disabled]="setsLocked"
+              (input)="onInput()" />
+          </label>
+          <span class="stepunit">kg</span>
+          <button type="button" class="stepbtn" [disabled]="setsLocked"
+            (click)="adjustBlockLoad(vm, j, loadStep)"
             [attr.aria-label]="'Aggiungi ' + loadStep + ' chili'">+</button>
         </div>
 

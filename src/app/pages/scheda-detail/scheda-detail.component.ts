@@ -15,7 +15,7 @@ import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { Day, Exercise, WorkoutSession, ExInsight, ClusterSpec, PerformedSetRecord } from '../../models/workout.model';
 import {
   normalizeCluster, buildBlocks, buildBlock, canAddBlock, currentBlock,
-  clusterSetDone, blocksLabel, clusterLabel, formatClusterRest
+  clusterSetDone, blocksLabel, blocksLoadLabel, clusterLabel, formatClusterRest
 } from '../../core/utils/cluster.util';
 import { todayLocalISO } from '../../core/utils/date.util';
 import { findClosestSlideIndex, scrollToSlide } from '../../core/utils/horizontal-slider.util';
@@ -268,7 +268,7 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
       // Collect max loads per session for this exercise
       const maxLoads: number[] = [];
-      let lastSessionData: { load: string | null; reps: string | null }[] = [];
+      let lastSessionData: { load: string | null; reps: string | null; blocks?: { load: string | null }[] }[] = [];
       // Carico e ripetizioni della stessa serie vanno tenuti insieme: e' la
       // coppia, non il solo carico, a dire quanto e' stato faticoso.
       const performed: PerformedSet[] = [];
@@ -284,14 +284,26 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
           const reps = parseFloat(sr.reps ?? '');
           if (load > 0 && reps > 0) performed.push({ load, reps });
         });
-        lastSessionData = sexData.sets.map(sr => ({ load: sr.load, reps: sr.reps }));
+        lastSessionData = sexData.sets.map(sr => ({
+          load: sr.load, reps: sr.reps,
+          blocks: sr.blocks?.map(b => ({ load: b.load }))
+        }));
       });
 
       // Set load placeholder from last session
       if (lastSessionData.length > 0) {
         lastSessionData.forEach((sr, j) => {
-          if (vm.rows[j] && sr.load) {
-            vm.rows[j].loadPlaceholder = sr.load;
+          const row = vm.rows[j];
+          if (!row) return;
+          if (sr.load) row.loadPlaceholder = sr.load;
+          // In un cluster il peso e' del blocco: il suggerimento va preso dal
+          // blocco corrispondente della volta scorsa, non dal riassunto della
+          // serie, che puo' essere un intervallo ("62,5-55").
+          if (row.blocks && sr.blocks) {
+            row.blocks.forEach((b, k) => {
+              const prima = sr.blocks?.[k]?.load;
+              if (prima) b.loadPlaceholder = prima;
+            });
           }
         });
       }
@@ -563,6 +575,15 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // --- I comandi ---
 
+  adjustBlockLoad(vm: ExerciseVM, rowIdx: number, delta: number): void {
+    if (this.setsLocked) return;
+    const b = this.block(vm.rows[rowIdx]);
+    if (!b) return;
+    const next = Math.max(0, this.valueOf(b.load, b.loadPlaceholder) + delta);
+    b.load = next === 0 ? '' : this.write(next);
+    this.scheduleDraft();
+  }
+
   adjustBlockReps(vm: ExerciseVM, rowIdx: number, delta: number): void {
     if (this.setsLocked) return;
     const b = this.block(vm.rows[rowIdx]);
@@ -584,7 +605,7 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     // A esaurimento puo' non esserci un blocco corrente: succede riaprendo
     // una serie gia' chiusa per farne un altro. Se ne crea uno.
     if (i === -1 && vm.cluster.end === 'open' && canAddBlock(vm.cluster, row.blocks ?? [])) {
-      row.blocks = [...(row.blocks ?? []), buildBlock(vm.cluster)];
+      row.blocks = [...(row.blocks ?? []), buildBlock(vm.cluster, row.blocks ?? [])];
       i = row.blocks.length - 1;
     }
     if (i === -1) return;
@@ -592,14 +613,14 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     const b = (row.blocks ?? [])[i];
     b.done = true;
     if (!b.reps && b.ripPlaceholder) b.reps = b.ripPlaceholder;
-    // Il carico lo si scrive una volta per serie: in un cluster il peso e' lo
-    // stesso in tutti i blocchi, ed e' per questo che e' un cluster.
-    if (!row.load && row.loadPlaceholder) row.load = row.loadPlaceholder;
+    // Il carico e' del BLOCCO: in un cluster di solito e' lo stesso ovunque,
+    // ma al terzo blocco si cala, e la serie deve poterlo dire.
+    if (!b.load && b.loadPlaceholder) b.load = b.loadPlaceholder;
 
     // A esaurimento il blocco dopo non esiste finche' non serve: si crea qui,
     // cosi' la striscia mostra sempre dove si sta andando.
     if (vm.cluster.end === 'open' && this.blockIndex(row) === -1 && canAddBlock(vm.cluster, row.blocks ?? [])) {
-      row.blocks = [...(row.blocks ?? []), buildBlock(vm.cluster)];
+      row.blocks = [...(row.blocks ?? []), buildBlock(vm.cluster, row.blocks ?? [])];
     }
 
     if (clusterSetDone(vm.cluster, row.blocks ?? [])) {
@@ -628,6 +649,9 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     // Le ripetizioni della serie sono quelle che hai fatto davvero, blocco per
     // blocco: "5+5+3" dice una cosa che "15" non dice.
     row.reps = blocksLabel(row.blocks);
+    // E il carico e' quello che hai usato: uno solo se non e' cambiato,
+    // altrimenti da dove sei partito a dove sei arrivato.
+    row.load = blocksLoadLabel(row.blocks);
     this.stopPause();
     this.syncActiveRow(vm);
     this.scheduleDraft();
@@ -747,13 +771,13 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
    */
   private toPerformedSet(row: SerieRow): PerformedSetRecord {
     const set: PerformedSetRecord = {
-      load: row.load || null,
+      load: row.load || (row.blocks ? blocksLoadLabel(row.blocks) : '') || null,
       reps: row.reps || (row.blocks ? blocksLabel(row.blocks) : '') || null,
       done: row.done
     };
     if (row.blocks?.length) {
       set.blocks = row.blocks.map(b => ({
-        load: row.load || null,
+        load: b.load || b.loadPlaceholder || null,
         reps: b.reps || b.ripPlaceholder || null,
         done: b.done
       }));

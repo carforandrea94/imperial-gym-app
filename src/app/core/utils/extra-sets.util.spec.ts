@@ -1,5 +1,5 @@
 import {
-  SerieRow, MAX_SETS_PER_EXERCISE, canAddSet, buildExtraSet,
+  SerieRow, MAX_SETS_PER_EXERCISE, MAX_BLOCKS_PER_SET, canAddSet, buildExtraSet,
   canRemoveSet, removeSetAt, mergeDraftRows
 } from './extra-sets.util';
 
@@ -150,5 +150,49 @@ describe('mergeDraftRows', () => {
     const rows = piano(1);
     mergeDraftRows(rows, [{ reps: '10', done: true }]);
     expect(rows[0]).toMatchObject({ reps: '', done: false });
+  });
+});
+
+describe('mergeDraftRows — i blocchi a cluster', () => {
+  function conBlocchi(n: number): SerieRow[] {
+    return [{
+      reps: '', load: '', done: false, ripPlaceholder: '8+8', loadPlaceholder: '', extra: false,
+      blocks: Array.from({ length: n }, () => ({
+        reps: '', load: '', ripPlaceholder: '8', loadPlaceholder: '', done: false
+      }))
+    }];
+  }
+
+  it('rimette peso e ripetizioni di ogni blocco', () => {
+    const out = mergeDraftRows(conBlocchi(2), [{
+      blocks: [{ reps: '8', load: '62,5', done: true }, { reps: '6', load: '55', done: true }]
+    }]);
+    expect(out[0].blocks?.map(b => [b.reps, b.load, b.done]))
+      .toEqual([['8', '62,5', true], ['6', '55', true]]);
+  });
+
+  /* A esaurimento i blocchi li aggiunge chi si allena: ricaricando la pagina
+     non devono tornare quelli del piano. */
+  it('ricrea i blocchi in piu\' col peso dell\'ultimo', () => {
+    const out = mergeDraftRows(conBlocchi(1), [{
+      blocks: [
+        { reps: '5', load: '60', done: true },
+        { reps: '5', load: '60', done: true },
+        { reps: '4', load: '55', done: true }
+      ]
+    }]);
+    expect(out[0].blocks?.length).toBe(3);
+    expect(out[0].blocks?.[2]).toMatchObject({ reps: '4', load: '55', done: true });
+  });
+
+  it('non supera il tetto dei blocchi', () => {
+    const draft = Array.from({ length: MAX_BLOCKS_PER_SET + 3 }, () => ({ reps: '5', done: true }));
+    const out = mergeDraftRows(conBlocchi(1), [{ blocks: draft }]);
+    expect(out[0].blocks?.length).toBe(MAX_BLOCKS_PER_SET);
+  });
+
+  it('una serie senza blocchi non se li inventa dalla bozza', () => {
+    const out = mergeDraftRows(piano(1), [{ blocks: [{ reps: '8', done: true }] }]);
+    expect(out[0].blocks).toBeUndefined();
   });
 });

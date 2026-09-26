@@ -1,15 +1,17 @@
 <p class="sectiontitle">{{ plan?.name }}</p>
 
 <ng-template #mealDetail let-vm="vm">
-  <!-- Tab combinazioni (Base + alternative) -->
+  <!-- La combinazione si sceglie da un menu: le pastiglie erano una fila di
+       bersagli da 38 px che andava a capo appena le etichette del coach si
+       allungavano, e occupavano una riga intera per una scelta sola. -->
   <p class="fooditem-category" *ngIf="hasMultipleCombinations(vm)">Combinazioni</p>
-  <div class="variant-tabs" *ngIf="hasMultipleCombinations(vm)">
-    <button
-      *ngFor="let combo of getCombinations(vm)"
-      [class.active]="vm.selectedComboId === combo.id"
-      (click)="selectCombo(vm, combo)">
-      {{ combo.label }}
-    </button>
+  <div class="combo-select" *ngIf="hasMultipleCombinations(vm)">
+    <select [(ngModel)]="vm.selectedComboId" [attr.aria-label]="'Combinazione per ' + vm.meal.name">
+      <option *ngFor="let combo of getCombinations(vm)" [value]="combo.id">{{ combo.label }}</option>
+    </select>
+    <span class="chevron" aria-hidden="true">
+      <lucide-icon name="chevron-down" [size]="14"></lucide-icon>
+    </span>
   </div>
 
   <!-- Un alimento per macro nella combinazione selezionata -->
@@ -55,11 +57,13 @@
 
   <!-- Alternative per macro, un unico accordion -->
   <ng-container *ngIf="totalAlternatives(vm) > 0">
-    <div class="altwrap-header mt-4" (click)="toggleMacroAltExpanded(vm)">
-      <span>Alternative ({{ totalAlternatives(vm) }})</span>
-      <span class="chevron">
-        <lucide-icon name="chevron-down" [size]="10"></lucide-icon>
-      </span>
+    <div class="altwrap mt-4" [class.open]="isMacroAltExpanded(vm)">
+      <div class="altwrap-header" (click)="toggleMacroAltExpanded(vm)">
+        <span>{{ isMacroAltExpanded(vm) ? 'Nascondi alternative' : 'Alternative (' + totalAlternatives(vm) + ')' }}</span>
+        <span class="chevron">
+          <lucide-icon name="chevron-down" [size]="10"></lucide-icon>
+        </span>
+      </div>
     </div>
     <div class="altlist" *ngIf="isMacroAltExpanded(vm)">
       <ng-container *ngFor="let cat of foodCategories">
