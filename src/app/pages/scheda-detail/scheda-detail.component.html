@@ -130,6 +130,14 @@
         <button type="button" class="setdone" *ngIf="!row.done && isCluster(vm, row)" [disabled]="setsLocked"
           (click)="doneBlock(vm, j)">Fatto il {{ blockLabel(vm, row).toLowerCase() }}</button>
 
+        <!-- A esaurimento i blocchi li aggiunge chi si allena, quindi deve
+             poterne togliere uno: un tocco di troppo su "fatto il blocco"
+             altrimenti non si disfa. -->
+        <button type="button" class="clusterundo" *ngIf="canRemoveBlock(vm, row)"
+          [disabled]="setsLocked" (click)="removeBlock(vm, j)">
+          Togli l'ultimo blocco
+        </button>
+
         <!-- A esaurimento la serie non finisce da sola: un altro blocco è
              sempre possibile finché non sei tu a dire che non ne escono. -->
         <button type="button" class="clusterclose" *ngIf="!row.done && canCloseCluster(vm, row)"
