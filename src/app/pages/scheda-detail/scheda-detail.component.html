@@ -52,7 +52,7 @@
               [disabled]="setsLocked || !b.done" (click)="undoBlock(vm, j, k)"
               [attr.aria-label]="b.done ? 'Togli la spunta al blocco ' + (k + 1) : null">
               <span class="blockchip-v">{{ b.reps || b.ripPlaceholder || '—' }}</span>
-              <span class="blockchip-k">{{ b.done ? 'fatto' : (blockIndex(row) === k ? 'ora' : 'poi') }}</span>
+              <lucide-icon *ngIf="b.done" name="check" [size]="13" class="blockchip-tick"></lucide-icon>
             </button>
           </div>
         </ng-container>
@@ -144,14 +144,6 @@
       <div class="suggestion-chip" *ngIf="vm.isFirst && vm.warmup" [innerHTML]="vm.warmup"></div>
     </ng-container>
   </div>
-
-  <!-- Una serie in piu' di quelle scritte dal coach: quelle del piano restano
-       dove sono, questa la si toglie quando si vuole. -->
-  <button type="button" class="setadd" *ngIf="canAdd(vm)" [disabled]="setsLocked"
-    (click)="addSet(vm)">
-    <lucide-icon name="plus" [size]="16"></lucide-icon>
-    Aggiungi una serie
-  </button>
 </ng-template>
 
 <!-- La testata dell'esercizio, una sola volta per due viste: elenco e slider
