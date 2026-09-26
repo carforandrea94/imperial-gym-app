@@ -413,6 +413,28 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .setdone{width:100%;min-height:52px;border-radius:var(--r-lg);border:none;background:var(--accent);color:var(--accent-contrast);font-family:'Inter',sans-serif;font-size:var(--text-lg);font-weight:700;cursor:pointer;}
 .setdone:disabled{opacity:.5;cursor:not-allowed;}
 .setundo{width:100%;min-height:44px;border-radius:var(--r-md);border:1px solid var(--border-line);background:transparent;color:var(--label-2);font-family:'Inter',sans-serif;font-size:var(--text-sm);font-weight:600;cursor:pointer;}
+/* La pausa dentro una serie a cluster. Il conto scende fino a zero e poi
+   sale col segno +: la pausa del coach e' un minimo, e un timer che dice
+   "scaduto" spingerebbe a ripartire prima di essere pronti. */
+.clusterpause{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 0 6px;}
+.clusterpause-val{font-family:'IBM Plex Mono',monospace;font-size:44px;font-weight:700;line-height:1;letter-spacing:-.02em;color:var(--accent);}
+.clusterpause-cap{font-family:'IBM Plex Mono',monospace;font-size:var(--text-2xs);letter-spacing:.06em;color:var(--label-3);}
+.clusterpause.over .clusterpause-val{color:var(--label-2);}
+/* I blocchi della serie: dove sei, cosa hai chiuso, cosa resta. */
+.blockstrip{display:flex;flex-wrap:wrap;gap:7px;}
+.blockchip{flex:1;min-width:58px;padding:0;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:52px;border-radius:var(--r-md);background:var(--surface-card);border:1px solid var(--border-line);}
+.blockchip-v{font-family:'IBM Plex Mono',monospace;font-size:var(--text-lg);font-weight:700;color:var(--label-2);}
+.blockchip-k{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--label-3);}
+.blockchip.done{border-color:var(--state-success);}
+.blockchip.done .blockchip-v{color:var(--state-success);}
+.blockchip.now{border-color:var(--accent);}
+/* Solo un blocco fatto si puo' toccare, per togliergli la spunta. */
+.blockchip:disabled{cursor:default;}
+.blockchip.now .blockchip-v{color:var(--accent);}
+/* Chiudere una serie a esaurimento: e' una decisione, non un comando
+   primario - quello resta "fatto il blocco". */
+.clusterclose{width:100%;min-height:44px;border-radius:var(--r-md);border:1px dashed var(--border-line);background:transparent;color:var(--label-2);font-family:'Inter',sans-serif;font-size:var(--text-sm);font-weight:600;cursor:pointer;}
+.clusterclose:disabled{opacity:.45;cursor:not-allowed;}
 /* Togliere sta dentro la card aperta, sotto ai comandi: e' un'azione che
    distrugge, non deve stare a portata di pollice mentre si scorre l'elenco. */
 .setremove{width:100%;min-height:44px;border:none;border-radius:var(--r-md);background:transparent;color:var(--state-danger-text);font-family:'Inter',sans-serif;font-size:var(--text-sm);font-weight:600;cursor:pointer;}
@@ -648,6 +670,18 @@ lucide-icon svg.filled{fill:currentColor;}
 .builder-day{margin-bottom:16px;}
 .builder-exercise{border-top:1px solid var(--border-line);padding-top:14px;margin-top:14px;}
 .builder-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+/* Il riquadro del cluster nell'editor del coach. Sta dentro la scheda
+   dell'esercizio ma si stacca, perche' descrive una cosa sola: com'e' fatta
+   UNA serie. Il numero di serie resta il suo campo, sopra. */
+.clusterbox{margin:12px 0;padding:14px;border-radius:var(--r-lg);background:var(--accent-dim);border:1px solid var(--accent);}
+.cluster-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:11px;}
+.cluster-cap{font-family:'IBM Plex Mono',monospace;font-size:var(--text-2xs);font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);}
+.cluster-scheme{font-family:'IBM Plex Mono',monospace;font-size:var(--text-sm);font-weight:700;color:var(--label);}
+.cluster-blocks{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+.cluster-block{display:flex;align-items:center;gap:6px;}
+.cluster-block .measure-input-wrap{width:104px;}
+.cluster-plus{font-family:'IBM Plex Mono',monospace;font-size:var(--text-lg);font-weight:700;color:var(--label-3);}
+.cluster-note{margin:11px 0 0;font-size:var(--text-xs);line-height:1.45;color:var(--label-2);}
 .builder-row2 select{width:100%;background:none;border:none;color:var(--label);font-family:'Inter',sans-serif;font-size:var(--text-sm);}
 
 .builder-meal{margin-bottom:14px;}

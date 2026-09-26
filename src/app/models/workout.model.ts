@@ -3,6 +3,26 @@ export interface MuscleInfo {
   dim: string;
 }
 
+/**
+ * Serie a cluster: UNA serie spezzata in blocchi con una pausa breve dentro.
+ *
+ * Il numero davanti alla x resta il numero di SERIE ("4x8+8" = quattro serie
+ * fatte cosi'), quindi il cluster descrive com'e' fatta una serie sola.
+ *
+ * Due forme, e la differenza non e' cosmetica:
+ * - `fixed`: i blocchi sono scritti. "8+8" e' 8 ripetizioni, pausa, altre 8.
+ * - `open`: a esaurimento. "5+30\"" e' un blocco da 5 con 30" di pausa,
+ *   ripetuto finche' ne escono. Quanti siano lo decide la palestra, non il
+ *   foglio: il piano non puo' saperlo e non deve fingere di saperlo.
+ */
+export interface ClusterSpec {
+  /** Ripetizioni di ogni blocco. In `open` ce n'e' uno solo, che si ripete. */
+  blocks: number[];
+  /** Pausa dentro la serie, in secondi. E' un minimo, non un massimo. */
+  restSec: number;
+  end: 'fixed' | 'open';
+}
+
 export interface Exercise {
   name: string;
   scheme: 'wave' | 'plain';
@@ -13,6 +33,8 @@ export interface Exercise {
   note?: string;
   /** Solo per scheme 'wave': progressione settimanale specifica di questo esercizio. */
   weekPlan?: WeekPlan[];
+  /** Assente sulle serie normali: ogni serie e' un blocco solo. */
+  cluster?: ClusterSpec;
 }
 
 export interface Day {
@@ -33,13 +55,32 @@ export interface ExerciseState {
   done: boolean[];
 }
 
+/** Un blocco di una serie a cluster, come e' stato davvero fatto. */
+export interface PerformedBlock {
+  load: string | null;
+  reps: string | null;
+  done: boolean;
+}
+
+export interface PerformedSetRecord {
+  load: string | null;
+  reps: string | null;
+  done: boolean;
+  /**
+   * Solo sulle serie a cluster: i blocchi, uno per uno. `reps` resta il
+   * riassunto leggibile ("8+8"), ma chi conta i chili o cerca un record deve
+   * guardare qui: parseFloat("8+8") darebbe 8, cioe' meta' del lavoro fatto.
+   */
+  blocks?: PerformedBlock[];
+}
+
 export interface WorkoutSession {
   dayId: string;
   dayLabel: string;
   date: string;
   exercises: {
     name: string;
-    sets: { load: string | null; reps: string | null; done: boolean }[];
+    sets: PerformedSetRecord[];
   }[];
   /** Durata della sessione in secondi. Assente nelle sedute salvate prima di
    *  questa feature: dove manca, la durata semplicemente non viene mostrata. */
@@ -67,11 +108,21 @@ export function normalizeSession(raw: any): WorkoutSession | null {
   const text = (v: unknown) => (typeof v === 'string' ? v : null);
   const exercises = (Array.isArray(raw.exercises) ? raw.exercises : []).map((ex: any) => ({
     name: typeof ex?.name === 'string' ? ex.name : '',
-    sets: (Array.isArray(ex?.sets) ? ex.sets : []).map((set: any) => ({
-      load: text(set?.load),
-      reps: text(set?.reps),
-      done: !!set?.done
-    }))
+    sets: (Array.isArray(ex?.sets) ? ex.sets : []).map((set: any) => {
+      const out: PerformedSetRecord = {
+        load: text(set?.load),
+        reps: text(set?.reps),
+        done: !!set?.done
+      };
+      // I blocchi ci sono solo sulle serie a cluster, e solo da quando i
+      // cluster esistono: una seduta di prima non ne ha, e va letta uguale.
+      if (Array.isArray(set?.blocks) && set.blocks.length) {
+        out.blocks = set.blocks.map((b: any) => ({
+          load: text(b?.load), reps: text(b?.reps), done: !!b?.done
+        }));
+      }
+      return out;
+    })
   }));
 
   const session: WorkoutSession = {

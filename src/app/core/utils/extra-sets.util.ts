@@ -6,6 +6,16 @@
  * togliere, ed e' `extra` a dire quali sono - non la posizione, che cambia
  * appena se ne aggiunge o se ne leva una.
  */
+/**
+ * Un blocco di una serie a cluster. Il carico non sta qui: in un cluster il
+ * peso e' lo stesso per tutti i blocchi, ed e' della serie.
+ */
+export interface BlockRow {
+  reps: string;
+  ripPlaceholder: string;
+  done: boolean;
+}
+
 export interface SerieRow {
   reps: string;
   load: string;
@@ -14,6 +24,8 @@ export interface SerieRow {
   loadPlaceholder: string;
   /** Aggiunta durante l'allenamento, non prevista dal piano. */
   extra: boolean;
+  /** Solo sulle serie a cluster. Assente = la serie e' un blocco solo. */
+  blocks?: BlockRow[];
 }
 
 /** Com'e' fatta una riga nella bozza salvata: i campi possono mancare. */
@@ -22,6 +34,9 @@ export interface DraftRow {
   load?: string | null;
   done?: boolean;
   extra?: boolean;
+  /** Solo sulle serie a cluster. In un cluster a esaurimento possono essere
+   *  piu' di quelli previsti: i blocchi in piu' si ricreano. */
+  blocks?: { reps?: string | null; done?: boolean }[];
 }
 
 /**
@@ -31,6 +46,13 @@ export interface DraftRow {
  * documento senza fine.
  */
 export const MAX_SETS_PER_EXERCISE = 20;
+
+/**
+ * Quanti blocchi puo' arrivare ad avere una serie. Vale soprattutto per il
+ * cluster a esaurimento, dove i blocchi li aggiunge chi si allena: stesso
+ * motivo del tetto sulle serie, la bozza finisce su Firestore a ogni tocco.
+ */
+export const MAX_BLOCKS_PER_SET = 12;
 
 export function canAddSet(rows: readonly SerieRow[]): boolean {
   return rows.length < MAX_SETS_PER_EXERCISE;
@@ -43,7 +65,11 @@ export function canAddSet(rows: readonly SerieRow[]): boolean {
  */
 export function buildExtraSet(rows: readonly SerieRow[]): SerieRow {
   const last = rows[rows.length - 1];
+  // Una serie in piu' su un esercizio a cluster e' a cluster anche lei: ha la
+  // stessa forma dell'ultima, vuota.
+  const blocks = last?.blocks?.map(b => ({ reps: '', ripPlaceholder: b.ripPlaceholder, done: false }));
   return {
+    ...(blocks ? { blocks } : {}),
     reps: '',
     load: '',
     done: false,
@@ -90,6 +116,32 @@ export function mergeDraftRows(rows: readonly SerieRow[], draftRows: readonly Dr
     }
     target.reps = d.reps ?? '';
     target.load = d.load ?? '';
+    target.done = d.done ?? false;
+    if (target.blocks && d.blocks) target.blocks = mergeDraftBlocks(target.blocks, d.blocks);
+  });
+  return out;
+}
+
+/**
+ * I blocchi di una serie a cluster, come stavano nella bozza. Quelli in piu'
+ * si ricreano sul modello dell'ultimo: in un cluster a esaurimento il numero
+ * di blocchi lo decide chi si allena, e ricaricando la pagina non deve
+ * tornare quello del piano.
+ */
+function mergeDraftBlocks(
+  blocks: readonly BlockRow[],
+  draft: readonly { reps?: string | null; done?: boolean }[]
+): BlockRow[] {
+  const out = blocks.map(b => ({ ...b }));
+  draft.forEach((d, j) => {
+    let target: BlockRow | undefined = out[j];
+    if (!target) {
+      const last = out[out.length - 1];
+      if (out.length >= MAX_BLOCKS_PER_SET) return;
+      target = { reps: '', ripPlaceholder: last?.ripPlaceholder ?? '', done: false };
+      out.push(target);
+    }
+    target.reps = d.reps ?? '';
     target.done = d.done ?? false;
   });
   return out;

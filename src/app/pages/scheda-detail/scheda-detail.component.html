@@ -31,9 +31,31 @@
       <div class="setcard" *ngIf="vm.activeRow === j">
         <div class="setcard-head">
           <span class="setcard-title">Serie {{ j + 1 }} di {{ vm.rows.length }}</span>
-          <span class="setcard-hint" *ngIf="row.extra">aggiunta da te</span>
-          <span class="setcard-hint" *ngIf="!row.extra && !row.load && row.loadPlaceholder">suggerito</span>
+          <span class="setcard-hint" *ngIf="isCluster(vm, row)">{{ clusterHint(vm) }}</span>
+          <span class="setcard-hint" *ngIf="!isCluster(vm, row) && row.extra">aggiunta da te</span>
+          <span class="setcard-hint" *ngIf="!isCluster(vm, row) && !row.extra && !row.load && row.loadPlaceholder">suggerito</span>
         </div>
+
+        <!-- La serie a cluster: i blocchi, e la pausa che li separa.
+             La pausa e' un MINIMO, quindi il conto scende fino a zero e poi
+             sale: "tempo scaduto" spingerebbe a ripartire prima di essere
+             pronti, che e' l'opposto di perche' il coach l'ha scritta. -->
+        <ng-container *ngIf="isCluster(vm, row)">
+          <div class="clusterpause" *ngIf="isPausing(vm, j)" [class.over]="pauseOver(vm)">
+            <span class="clusterpause-val">{{ pauseText(vm) }}</span>
+            <span class="clusterpause-cap">{{ pauseOver(vm) ? 'pausa passata, quando vuoi' : 'pausa dentro la serie' }}</span>
+          </div>
+
+          <div class="blockstrip">
+            <button type="button" class="blockchip" *ngFor="let b of row.blocks; let k = index"
+              [class.done]="b.done" [class.now]="!b.done && blockIndex(row) === k"
+              [disabled]="setsLocked || !b.done" (click)="undoBlock(vm, j, k)"
+              [attr.aria-label]="b.done ? 'Togli la spunta al blocco ' + (k + 1) : null">
+              <span class="blockchip-v">{{ b.reps || b.ripPlaceholder || '—' }}</span>
+              <span class="blockchip-k">{{ b.done ? 'fatto' : (blockIndex(row) === k ? 'ora' : 'poi') }}</span>
+            </button>
+          </div>
+        </ng-container>
 
         <div class="stepper">
           <button type="button" class="stepbtn" [disabled]="setsLocked"
@@ -51,7 +73,7 @@
             [attr.aria-label]="'Aggiungi ' + loadStep + ' chili'">+</button>
         </div>
 
-        <div class="stepper small">
+        <div class="stepper small" *ngIf="!isCluster(vm, row)">
           <button type="button" class="stepbtn" [disabled]="setsLocked"
             (click)="adjustReps(vm, j, -1)" aria-label="Una ripetizione in meno">−</button>
           <label class="stepfield">
@@ -65,10 +87,39 @@
             (click)="adjustReps(vm, j, 1)" aria-label="Una ripetizione in più">+</button>
         </div>
 
-        <button type="button" class="setdone" *ngIf="!row.done" [disabled]="setsLocked"
+        <!-- In un cluster le ripetizioni sono del BLOCCO: il carico resta della
+             serie, perché è lo stesso in tutti i blocchi. -->
+        <div class="stepper small" *ngIf="isCluster(vm, row) && block(row) as b">
+          <button type="button" class="stepbtn" [disabled]="setsLocked"
+            (click)="adjustBlockReps(vm, j, -1)" aria-label="Una ripetizione in meno">−</button>
+          <label class="stepfield">
+            <span class="sr-only">Ripetizioni del blocco in corso</span>
+            <input type="text" inputmode="numeric" [(ngModel)]="b.reps"
+              [placeholder]="b.ripPlaceholder || '0'" [disabled]="setsLocked"
+              (input)="onInput()" />
+          </label>
+          <span class="stepunit">rip.</span>
+          <button type="button" class="stepbtn" [disabled]="setsLocked"
+            (click)="adjustBlockReps(vm, j, 1)" aria-label="Una ripetizione in più">+</button>
+        </div>
+
+        <button type="button" class="setdone" *ngIf="!row.done && !isCluster(vm, row)" [disabled]="setsLocked"
           (click)="confirmSet(vm, j)">Fatta</button>
-        <button type="button" class="setundo" *ngIf="row.done" [disabled]="setsLocked"
+
+        <button type="button" class="setdone" *ngIf="!row.done && isCluster(vm, row)" [disabled]="setsLocked"
+          (click)="doneBlock(vm, j)">Fatto il {{ blockLabel(vm, row).toLowerCase() }}</button>
+
+        <!-- A esaurimento la serie non finisce da sola: un altro blocco è
+             sempre possibile finché non sei tu a dire che non ne escono. -->
+        <button type="button" class="clusterclose" *ngIf="!row.done && canCloseCluster(vm, row)"
+          [disabled]="setsLocked" (click)="closeClusterSet(vm, j)">
+          Non ne escono altri · chiudo la serie
+        </button>
+
+        <button type="button" class="setundo" *ngIf="row.done && !isCluster(vm, row)" [disabled]="setsLocked"
           (click)="undoSet(vm, j)">Togli la spunta</button>
+        <button type="button" class="setundo" *ngIf="row.done && isCluster(vm, row)" [disabled]="setsLocked"
+          (click)="reopenClusterSet(vm, j)">Riapri questa serie</button>
 
         <button type="button" class="setremove" *ngIf="canRemove(vm, j)" [disabled]="setsLocked"
           (click)="removeSet(vm, j)">Togli questa serie</button>

@@ -22,6 +22,16 @@ export function sessionTonnage(session: WorkoutSession | null | undefined): numb
   let kg = 0;
   for (const ex of session.exercises) {
     for (const set of ex.sets ?? []) {
+      // Una serie a cluster va contata blocco per blocco: il suo `reps` e' il
+      // riassunto ("8+8") e parseFloat ne leggerebbe 8, cioe' meta' del
+      // lavoro. I blocchi hanno una spunta ciascuno, e un blocco non fatto
+      // non e' volume nemmeno dentro una serie chiusa.
+      if (set?.blocks?.length) {
+        for (const b of set.blocks) {
+          if (b?.done) kg += num(b.load) * num(b.reps);
+        }
+        continue;
+      }
       if (!set?.done) continue;
       kg += num(set.load) * num(set.reps);
     }

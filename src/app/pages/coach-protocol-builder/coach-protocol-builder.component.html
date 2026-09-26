@@ -113,13 +113,80 @@
           </div>
         </div>
         <div class="authfield">
-          <label>Testo mostrato (es. 3x12-10-8)</label>
+          <label>Tipo di serie</label>
           <div class="measure-input-wrap">
-            <input type="text" [(ngModel)]="ee.ex.text" placeholder="3x12-10-8" />
+            <select [ngModel]="serieType(ee.ex)" (ngModelChange)="setSerieType(ee.ex, $event)">
+              <option value="normale">Normale</option>
+              <option value="cluster">Cluster (blocchi dentro la serie)</option>
+            </select>
           </div>
         </div>
       </div>
+
+      <!-- Il cluster descrive com'e' fatta UNA serie: "4x8+8" sono quattro
+           serie di due blocchi da otto. Il quattro sta gia' in "N. serie". -->
+      <div class="clusterbox" *ngIf="ee.ex.cluster as c">
+        <div class="cluster-head">
+          <span class="cluster-cap">Com'è fatta una serie</span>
+          <span class="cluster-scheme">{{ clusterScheme(ee.ex) }}</span>
+        </div>
+
+        <div class="cluster-blocks">
+          <div class="cluster-block" *ngFor="let b of c.blocks; let i = index">
+            <div class="measure-input-wrap">
+              <input type="number" inputmode="numeric" [ngModel]="b"
+                (ngModelChange)="onBlockReps(ee.ex, i, $event)"
+                [attr.aria-label]="'Ripetizioni del blocco ' + (i + 1)" />
+              <span class="unit">rip</span>
+            </div>
+            <button type="button" class="delete-btn" *ngIf="c.end === 'fixed' && c.blocks.length > 2"
+              (click)="removeBlock(ee.ex, i)" [attr.aria-label]="'Togli il blocco ' + (i + 1)">✕</button>
+            <span class="cluster-plus" *ngIf="i < c.blocks.length - 1" aria-hidden="true">+</span>
+          </div>
+        </div>
+
+        <button type="button" class="confirmbtn cancel w-full mt-2"
+          *ngIf="c.end === 'fixed' && c.blocks.length < maxBlocks" (click)="addBlock(ee.ex)">
+          + Aggiungi un blocco
+        </button>
+
+        <div class="builder-row2 mt-3">
+          <div class="authfield">
+            <label>Pausa minima</label>
+            <div class="measure-input-wrap">
+              <input type="number" inputmode="numeric" [ngModel]="c.restSec"
+                (ngModelChange)="onClusterRest(ee.ex, $event)" [min]="minClusterRest" />
+              <span class="unit">sec</span>
+            </div>
+          </div>
+          <div class="authfield">
+            <label>Fine della serie</label>
+            <div class="measure-input-wrap">
+              <select [ngModel]="c.end" (ngModelChange)="setClusterEnd(ee.ex, $event)">
+                <option value="fixed">A blocchi finiti</option>
+                <option value="open">A esaurimento</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <p class="cluster-note" *ngIf="c.end === 'open'">
+          Un blocco da {{ c.blocks[0] }} con {{ clusterRestLabel(c) }} di pausa, ripetuto finché ne escono:
+          quanti siano lo decide chi si allena.
+        </p>
+        <p class="cluster-note" *ngIf="c.end === 'fixed'">
+          {{ clusterRestLabel(c) }} di pausa dentro la serie, poi il blocco dopo. Il recupero lungo arriva a serie finita.
+        </p>
+      </div>
+
       <div class="authfield">
+        <label>Testo mostrato (es. 3x12-10-8)</label>
+        <div class="measure-input-wrap">
+          <input type="text" [(ngModel)]="ee.ex.text" [placeholder]="ee.ex.cluster ? clusterScheme(ee.ex) : '3x12-10-8'" />
+        </div>
+      </div>
+
+      <div class="authfield" *ngIf="!ee.ex.cluster">
         <label>Ripetizioni per serie (separate da virgola)</label>
         <div class="measure-input-wrap">
           <input type="text" [ngModel]="repsAsString(ee.ex)" (ngModelChange)="setRepsFromString(ee.ex, $event)" placeholder="12, 10, 8" />

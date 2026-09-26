@@ -7,7 +7,12 @@ import { Subscription } from 'rxjs';
 import { ProtocolService } from '../../services/protocol.service';
 import { WorkoutDataService } from '../../services/workout-data.service';
 import { Protocol } from '../../models/protocol.model';
-import { Day, Exercise } from '../../models/workout.model';
+import { Day, Exercise, ClusterSpec } from '../../models/workout.model';
+import {
+  newCluster, clusterLabel, clusterScheme, formatClusterRest,
+  CLUSTER_MIN_REST
+} from '../../core/utils/cluster.util';
+import { MAX_BLOCKS_PER_SET } from '../../core/utils/extra-sets.util';
 import { RunGoal, normalizeRunGoal } from '../../models/run.model';
 import { FoodItem, DietPlan, NamedMeal, MealCombination, SupplementItem, newDietPlan, newNamedMeal, newCombination, FoodCategory, FOOD_CATEGORIES, FOOD_CATEGORY_LABELS } from '../../models/diet.model';
 import { ProtocolBuilderStateService } from '../../services/protocol-builder-state.service';
@@ -153,6 +158,7 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
     if (ex.scheme === 'plain' && (!ex.reps || ex.reps.length !== ex.sets)) {
       ex.reps = Array.from({ length: ex.sets }, () => '');
     }
+    if (ex.scheme === 'wave') delete ex.cluster;
     if (ex.scheme === 'wave' && (!ex.weekPlan || ex.weekPlan.length === 0)) {
       ex.weekPlan = Array.from({ length: 8 }, () => ({ sets: 4, reps: 10 }));
     }
@@ -162,10 +168,110 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
   onSetsChange(ex: Exercise): void {
     const sets = Math.max(1, ex.sets || 1);
     ex.sets = sets;
+    if (ex.cluster) { this.syncClusterReps(ex); return; }
     const reps = ex.reps ? [...ex.reps] : [];
     while (reps.length < sets) reps.push('');
     reps.length = sets;
     ex.reps = reps;
+  }
+
+  // --- Serie a cluster -------------------------------------------------------
+  //
+  // Il cluster descrive com'e' fatta UNA serie: "4x8+8" sono quattro serie di
+  // due blocchi da otto. Il quattro resta dov'e' sempre stato, nel campo
+  // "N. serie": qui si scrive solo quello che sta dentro la serie.
+
+  readonly maxBlocks = MAX_BLOCKS_PER_SET;
+  readonly minClusterRest = CLUSTER_MIN_REST;
+
+  isCluster(ex: Exercise): boolean {
+    return !!ex.cluster;
+  }
+
+  /** Il tipo di serie, per la select: una stringa perche' ngModel possa legarla. */
+  serieType(ex: Exercise): 'normale' | 'cluster' {
+    return ex.cluster ? 'cluster' : 'normale';
+  }
+
+  setSerieType(ex: Exercise, tipo: 'normale' | 'cluster'): void {
+    if (tipo === 'cluster') {
+      if (!ex.cluster) ex.cluster = newCluster();
+      this.syncClusterReps(ex);
+    } else {
+      delete ex.cluster;
+      // Le ripetizioni tornano a essere una per serie, come se il cluster non
+      // ci fosse mai stato: lasciare "8+8" in ogni cella direbbe il contrario.
+      ex.reps = Array.from({ length: Math.max(1, ex.sets || 1) }, () => '');
+    }
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * A esaurimento il blocco e' uno solo: quanti se ne fanno lo decide la
+   * palestra. Tenerne scritti altri prometterebbe un numero che il piano non
+   * puo' conoscere.
+   */
+  setClusterEnd(ex: Exercise, end: 'fixed' | 'open'): void {
+    if (!ex.cluster) return;
+    ex.cluster.end = end;
+    if (end === 'open') ex.cluster.blocks = ex.cluster.blocks.slice(0, 1);
+    else if (ex.cluster.blocks.length < 2) ex.cluster.blocks = [...ex.cluster.blocks, ex.cluster.blocks[0] ?? 8];
+    this.syncClusterReps(ex);
+    this.cdr.detectChanges();
+  }
+
+  addBlock(ex: Exercise): void {
+    const c = ex.cluster;
+    if (!c || c.end === 'open' || c.blocks.length >= MAX_BLOCKS_PER_SET) return;
+    c.blocks = [...c.blocks, c.blocks[c.blocks.length - 1] ?? 8];
+    this.syncClusterReps(ex);
+    this.cdr.detectChanges();
+  }
+
+  removeBlock(ex: Exercise, i: number): void {
+    const c = ex.cluster;
+    // Sotto i due blocchi non e' piu' un cluster: e' una serie normale, e si
+    // toglie dalla select del tipo, non svuotando l'elenco.
+    if (!c || c.end === 'open' || c.blocks.length <= 2) return;
+    c.blocks = c.blocks.filter((_, j) => j !== i);
+    this.syncClusterReps(ex);
+    this.cdr.detectChanges();
+  }
+
+  onBlockReps(ex: Exercise, i: number, value: any): void {
+    const c = ex.cluster;
+    if (!c) return;
+    const n = Math.floor(Number(value));
+    c.blocks = c.blocks.map((b, j) => (j === i ? (isFinite(n) && n > 0 ? n : b) : b));
+    this.syncClusterReps(ex);
+  }
+
+  onClusterRest(ex: Exercise, value: any): void {
+    const c = ex.cluster;
+    if (!c) return;
+    const n = Math.floor(Number(value));
+    c.restSec = isFinite(n) && n >= CLUSTER_MIN_REST ? n : CLUSTER_MIN_REST;
+    this.syncClusterReps(ex);
+  }
+
+  /** Lo schema come lo scriverebbe a mano: "4x8+8", "2x5+30"". */
+  clusterScheme(ex: Exercise): string {
+    return ex.cluster ? clusterScheme(ex.cluster, Math.max(1, ex.sets || 1)) : '';
+  }
+
+  clusterRestLabel(c: ClusterSpec): string {
+    return formatClusterRest(c.restSec);
+  }
+
+  /**
+   * Le ripetizioni per serie restano scritte anche con un cluster: sono il
+   * riassunto della serie ("8+8"), e chi legge il protocollo senza sapere dei
+   * cluster vede comunque qualcosa di vero invece di celle vuote.
+   */
+  private syncClusterReps(ex: Exercise): void {
+    if (!ex.cluster) return;
+    const label = clusterLabel(ex.cluster);
+    ex.reps = Array.from({ length: Math.max(1, ex.sets || 1) }, () => label);
   }
 
   repsAsString(ex: Exercise): string {
@@ -192,6 +298,7 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
       const n = ex.weekPlan?.length ?? 0;
       return n > 0 ? `Wave · ${n} settimane` : 'Wave · da configurare';
     }
+    if (ex.cluster) return this.clusterScheme(ex);
     return `${ex.sets}×${(ex.reps ?? []).join('-') || '?'}`;
   }
 

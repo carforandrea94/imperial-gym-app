@@ -59,10 +59,33 @@ interface Best {
  * Contano solo le serie SPUNTATE: una serie compilata e non fatta non e' un
  * risultato, e prenderla per buona regalerebbe record mai successi.
  */
+/**
+ * Quello che si confronta: una serie normale, oppure un singolo BLOCCO di una
+ * serie a cluster.
+ *
+ * Il blocco e non la serie, perche' un blocco da 8 a 62,5 kg sta accanto a
+ * una serie da 8 a 62,5 kg, mentre la somma dei blocchi ("16 ripetizioni")
+ * non e' mai stata sollevata tutta insieme e regalerebbe un record ogni volta
+ * che il coach scrive un cluster.
+ */
+function doneUnits(ex: { sets?: WorkoutSession['exercises'][number]['sets'] }): { load: number; reps: number }[] {
+  const out: { load: number; reps: number }[] = [];
+  for (const s of ex.sets ?? []) {
+    if (s?.blocks?.length) {
+      for (const b of s.blocks) {
+        if (b?.done) out.push({ load: num(b.load), reps: num(b.reps) });
+      }
+      continue;
+    }
+    if (s?.done) out.push({ load: num(s.load), reps: num(s.reps) });
+  }
+  return out;
+}
+
 function bestOf(session: WorkoutSession | null, exercise: string): Best | null {
   const ex = session?.exercises?.find(e => e.name === exercise);
   if (!ex?.sets?.length) return null;
-  const done = ex.sets.filter(s => s?.done);
+  const done = doneUnits(ex);
   if (!done.length) return null;
 
   let load = 0;
@@ -71,8 +94,8 @@ function bestOf(session: WorkoutSession | null, exercise: string): Best | null {
   let anyReps = false;
 
   for (const s of done) {
-    const l = num(s.load);
-    const r = num(s.reps);
+    const l = s.load;
+    const r = s.reps;
     if (l > 0) anyLoad = true;
     if (r > 0) anyReps = true;
     if (l > load) { load = l; reps = r; }
