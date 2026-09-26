@@ -746,12 +746,11 @@ lucide-icon svg.filled{fill:currentColor;}
    specificita' vincerebbe lei, essendo dichiarata dopo, e questi margini non
    avrebbero alcun effetto. Classe dedicata per la card finale invece di
    :last-of-type, che guarda il tipo di elemento (div) e non la classe. */
-/* Barra sessione: cronometro e i tre comandi. Si ferma appena sotto la navbar
-   invece di scorrere via, agganciandosi alla sua altezza corrente (--nav-h-now):
-   quando la navbar si rimpicciolisce allo scroll, la barra la segue senza mai
-   finirle sotto e senza restare staccata. --nav-h-scrolled e' solo il ripiego
-   per il primo fotogramma, prima che la misura arrivi. */
-.session-bar{position:sticky;top:calc(var(--nav-h-now, var(--nav-h-scrolled)) + 8px);z-index:5;display:flex;align-items:center;gap:8px;padding:8px 8px 8px 13px;margin-bottom:12px;border-radius:var(--r-xl);background:var(--surface-card);border:1px solid var(--border-line);box-shadow:var(--shadow-card);}
+/* Barra sessione: cronometro e comandi. E' una card come le altre e sta nel
+   flusso con loro: restava appiccicata sotto la navbar, e scorrendo le card
+   le passavano sotto - un pannello sospeso sopra la pagina invece di una
+   delle sue parti. */
+.session-bar{display:flex;align-items:center;gap:8px;padding:8px 8px 8px 13px;margin-bottom:12px;border-radius:var(--r-xl);background:var(--surface-card);border:1px solid var(--border-line);box-shadow:var(--shadow-card);}
 .session-bar-dot{width:7px;height:7px;border-radius:50%;background:var(--label-3);opacity:.45;flex-shrink:0;transition:background .25s ease,opacity .25s ease;}
 .session-bar-dot.live{background:var(--accent);opacity:1;}
 /* L'etichetta e' l'unico elemento comprimibile: su schermi stretti cede spazio

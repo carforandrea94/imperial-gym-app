@@ -290,9 +290,9 @@
   </div>
 </ng-container>
 
-<!-- Sessione: unico posto da cui si comanda, fisso in alto sopra i pallini, cosi'
-     resta visibile su qualunque slide e anche scorrendo dentro una card lunga.
-     Vale per entrambe le viste; lo storico usa un altro componente e non la mostra. -->
+<!-- Sessione: unico posto da cui si comanda, sopra i pallini e nel flusso con
+     le card, non sospesa sopra di loro. Vale per entrambe le viste; lo storico
+     usa un altro componente e non la mostra. -->
 <div class="session-bar" *ngIf="day && !loading && !summary">
   <span class="session-bar-dot" [class.live]="isSessionOnThisDay"></span>
 
