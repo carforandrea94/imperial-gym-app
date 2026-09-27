@@ -3,13 +3,17 @@ import {
   ElementRef, Renderer2, ViewChild, signal
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { LucideAngularModule } from 'lucide-angular';
 import { AuthService } from '../../core/services/auth.service';
 import { Sex } from '../../core/models/user.model';
 import { ThemeService } from '../../services/theme.service';
 import { ToastService } from '../../services/toast.service';
+import { WorkoutSessionStateService } from '../../services/workout-session-state.service';
 import { isIosSafariNotStandalone } from '../../core/utils/platform.util';
 import { todayLocalISO } from '../../core/utils/date.util';
+import { deleteAccountErrorMessage } from '../../core/utils/auth-errors.util';
 import {
   heightOptions, toWheelValue, wheelValueAt, wheelOffsetOf, formatHeightCm
 } from '../../core/utils/height.util';
@@ -17,7 +21,7 @@ import {
 @Component({
   selector: 'app-impostazioni',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule],
+  imports: [CommonModule, FormsModule, LucideAngularModule],
   templateUrl: './impostazioni.component.html',
   styles: [`
     :host { display: block; animation: fade .4s var(--spring-soft); }
@@ -62,6 +66,32 @@ import {
       font-size: var(--text-xs); line-height: 1.5; color: var(--label-3);
       margin: 10px 0 0;
     }
+    /* Chiudere l'account non e' un'impostazione fra le altre: sta in fondo,
+       da sola, e non porta il colore dell'accento - che nell'app vuol dire
+       "fai questo". */
+    .dangerbtn {
+      width: 100%; min-height: 48px; display: flex; align-items: center;
+      justify-content: center; gap: 8px; border-radius: var(--r-md);
+      background: var(--state-danger-soft); border: 1px solid var(--state-danger-soft-border);
+      color: var(--state-danger-text); font-family: 'Inter', sans-serif;
+      font-weight: 600; font-size: var(--text-md); cursor: pointer;
+    }
+    .dangerbtn:disabled { opacity: .55; cursor: default; }
+    /* Dentro la riga di due, il tasto sta al passo con "Annulla": il 100% di
+       larghezza se lo prenderebbe tutto, e i due tasti di una scelta devono
+       pesare uguale. */
+    .confirmbtns .dangerbtn { flex: 1; width: auto; }
+    .sheet-err {
+      font-size: var(--text-sm); line-height: 1.45; color: var(--state-danger-text);
+      background: rgba(var(--state-danger-rgb), .10);
+      border: 1px solid rgba(var(--state-danger-rgb), .25);
+      border-radius: var(--r-sm); padding: 10px 12px; margin: 0 0 12px;
+    }
+    .sheet-text {
+      font-size: var(--text-sm); line-height: 1.5; color: var(--label-2);
+      margin: 0 0 14px;
+    }
+    .sheet-text b { color: var(--label); }
   `]
 })
 export class ImpostazioniComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -75,15 +105,24 @@ export class ImpostazioniComponent implements OnInit, AfterViewInit, OnDestroy {
   heightModalOpen = false;
   saving = false;
 
+  /** Il foglio per chiudere l'account, con la password da riscrivere. */
+  deleteSheetOpen = false;
+  deletePassword = '';
+  deleting = false;
+  deleteError = '';
+
   @ViewChild('heightSheetOverlay') sheetOverlayEl?: ElementRef<HTMLDivElement>;
   @ViewChild('heightWheel') wheelEl?: ElementRef<HTMLDivElement>;
+  @ViewChild('deleteSheetOverlay') deleteOverlayEl?: ElementRef<HTMLDivElement>;
 
   constructor(
     public auth: AuthService,
     public theme: ThemeService,
     private toast: ToastService,
     private renderer: Renderer2,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private router: Router,
+    private sessionState: WorkoutSessionStateService
   ) {}
 
   ngOnInit(): void {
@@ -99,14 +138,67 @@ export class ImpostazioniComponent implements OnInit, AfterViewInit, OnDestroy {
    * Stessa ragione, stessa mossa del foglio del recupero.
    */
   ngAfterViewInit(): void {
-    if (this.sheetOverlayEl) {
-      this.renderer.appendChild(document.body, this.sheetOverlayEl.nativeElement);
+    for (const el of [this.sheetOverlayEl, this.deleteOverlayEl]) {
+      if (el) this.renderer.appendChild(document.body, el.nativeElement);
     }
   }
 
   ngOnDestroy(): void {
-    if (this.sheetOverlayEl?.nativeElement.parentNode === document.body) {
-      this.renderer.removeChild(document.body, this.sheetOverlayEl.nativeElement);
+    for (const el of [this.sheetOverlayEl, this.deleteOverlayEl]) {
+      if (el?.nativeElement.parentNode === document.body) {
+        this.renderer.removeChild(document.body, el.nativeElement);
+      }
+    }
+  }
+
+  /**
+   * Esce e ricarica la pagina invece di navigare: tutti i servizi singoli
+   * (AppStateService, ProtocolBootstrapService, WorkoutDataService,
+   * DietDataService...) ripartono cosi' da zero, e i dati dell'account
+   * precedente non restano in memoria per il prossimo che accede da questo
+   * telefono. La cache locale della sessione va svuotata a mano perche' i
+   * dayId sono posizionali (day1, day2...) e non dicono di chi sono.
+   */
+  async logout(): Promise<void> {
+    await this.auth.logout();
+    this.sessionState.clearLocalCache();
+    window.location.href = '/login';
+  }
+
+  openDeleteSheet(): void {
+    this.deletePassword = '';
+    this.deleteError = '';
+    this.deleteSheetOpen = true;
+    this.cdr.detectChanges();
+  }
+
+  closeDeleteSheet(): void {
+    if (this.deleting) return;
+    this.deleteSheetOpen = false;
+    this.cdr.detectChanges();
+  }
+
+  onDeleteOverlayClick(event: MouseEvent): void {
+    if ((event.target as HTMLElement).classList.contains('bottomsheet-overlay')) {
+      this.closeDeleteSheet();
+    }
+  }
+
+  async confirmDelete(): Promise<void> {
+    if (this.deleting || !this.deletePassword) return;
+    this.deleting = true;
+    this.deleteError = '';
+    this.cdr.detectChanges();
+
+    try {
+      await this.auth.deleteAccount(this.deletePassword);
+      this.sessionState.clearLocalCache();
+      window.location.href = '/login';
+    } catch (e: any) {
+      console.error('Errore eliminazione account:', e);
+      this.deleteError = deleteAccountErrorMessage(e);
+      this.deleting = false;
+      this.cdr.detectChanges();
     }
   }
 

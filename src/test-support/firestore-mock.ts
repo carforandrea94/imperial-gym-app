@@ -37,16 +37,30 @@ export const firestoreMock = {
   // lunga il documento finiva sotto 'users' e ogni utente sovrascriveva il
   // precedente.
   doc: (_col: any, ...segmenti: string[]) => ({ id: segmenti[segmenti.length - 1] }),
-  query: (col: any) => col,
-  where: () => ({}),
+  // where() e query() filtravano a vuoto: getDocs restituiva comunque TUTTA la
+  // mappa. Una lettura che chiede i clienti di un coach si riprendeva anche i
+  // documenti di altre raccolte, e un test poteva passare per il motivo
+  // sbagliato. Ora i vincoli di uguaglianza valgono davvero.
+  query: (col: any, ...vincoli: any[]) => ({ ...col, vincoli }),
+  where: (campo: string, op: string, valore: unknown) => ({ campo, op, valore }),
 
   getDoc: async (ref: { id: string }) => {
     const data = mockDocs.get(ref.id);
     return { exists: () => data !== undefined, data: () => data };
   },
-  getDocs: async () => ({
-    docs: Array.from(mockDocs.entries()).map(([id, data]) => ({ id, data: () => data }))
-  }),
+  // `ref` c'e' anche nei risultati veri, ed e' quello che si passa a deleteDoc
+  // per cancellare cio' che una lettura ha appena trovato.
+  getDocs: async (q?: { vincoli?: { campo: string; op: string; valore: unknown }[] }) => {
+    const vincoli = q?.vincoli ?? [];
+    const passa = (data: any) => vincoli.every(v =>
+      v.op === '==' ? data?.[v.campo] === v.valore : true
+    );
+    return {
+      docs: Array.from(mockDocs.entries())
+        .filter(([, data]) => passa(data))
+        .map(([id, data]) => ({ id, data: () => data, ref: { id } }))
+    };
+  },
   setDoc: async (ref: { id: string }, data: any, opts?: { merge?: boolean }) => {
     merge(ref.id, data, opts?.merge);
   },
