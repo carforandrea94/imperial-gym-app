@@ -42,4 +42,17 @@
       </button>
     </div>
   </div>
+
+  <p class="sectiontitle mt-4">Togliere il cliente</p>
+  <div class="infocard">
+    <p class="danger-hint" style="margin:0 0 12px">
+      Se ne vanno il profilo, i protocolli, le sedute salvate, le uscite di corsa e le
+      misurazioni. Il suo accesso resta attivo ma vuoto: per tornare dovra' iscriversi di
+      nuovo con il tuo codice.
+    </p>
+    <button type="button" class="dangerbtn" [disabled]="removingClient" (click)="removeClient()">
+      <lucide-icon name="trash-2" [size]="17"></lucide-icon>
+      {{ removingClient ? 'Rimuovo…' : 'Togli dai miei clienti' }}
+    </button>
+  </div>
 </ng-container>

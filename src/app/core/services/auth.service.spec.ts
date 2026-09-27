@@ -210,4 +210,44 @@ describe('AuthService — iscrizioni che si rompono a meta\'', () => {
       await expect(service.deleteAccount('giusta')).rejects.toThrow(/Sessione scaduta/);
     });
   });
+
+  describe('il coach toglie un cliente', () => {
+    const entraComeCoach = async () => {
+      mockDocs.set('uid-coach@e.com', { uid: 'uid-coach@e.com', role: 'coach', email: 'coach@e.com', pairingCode: 'AB12CD' });
+      await service.login('coach@e.com', 'pw1234');
+    };
+
+    it('porta via il cliente e quello che ha sotto', async () => {
+      await entraComeCoach();
+      mockDocs.set('cliente-1', { uid: 'cliente-1', role: 'client', coachId: 'uid-coach@e.com' });
+
+      await service.deleteClient('cliente-1');
+
+      expect(mockDocs.get('cliente-1')).toBeUndefined();
+      // Il coach resta: toglie il cliente, non se stesso.
+      expect(stato.cancellati).toEqual([]);
+    });
+
+    it('non tocca il cliente di un altro coach', async () => {
+      await entraComeCoach();
+      mockDocs.set('cliente-altrui', { uid: 'cliente-altrui', role: 'client', coachId: 'un-altro-coach' });
+
+      await expect(service.deleteClient('cliente-altrui')).rejects.toThrow(/non e\' tuo/);
+      expect(mockDocs.get('cliente-altrui')).toBeTruthy();
+    });
+
+    it('un cliente non puo\' togliere nessuno', async () => {
+      mockDocs.set('uid-io@e.com', { uid: 'uid-io@e.com', role: 'client', coachId: 'c1' });
+      mockDocs.set('cliente-2', { uid: 'cliente-2', role: 'client', coachId: 'c1' });
+      await service.login('io@e.com', 'pw1234');
+
+      await expect(service.deleteClient('cliente-2')).rejects.toThrow(/Solo un coach/);
+      expect(mockDocs.get('cliente-2')).toBeTruthy();
+    });
+
+    it('un cliente che non esiste piu\' lo dice', async () => {
+      await entraComeCoach();
+      await expect(service.deleteClient('mai-esistito')).rejects.toThrow(/non esiste piu\'/);
+    });
+  });
 });

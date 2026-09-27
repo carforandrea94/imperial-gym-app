@@ -51,3 +51,4 @@ Thumbs.db
 
 # Superpowers scratch (SDD ledger, brainstorming mockups)
 .superpowers/
+firestore-debug.log

@@ -149,6 +149,46 @@ export class AuthService {
     }
   }
 
+  /**
+   * Cancella tutto quello che sta sotto un utente, e per ultimo il suo profilo.
+   *
+   * L'ordine e' la parte importante. Firestore non cancella a cascata: le
+   * sottoraccolte restano anche quando il documento che le contiene sparisce.
+   * E il permesso del coach su quei documenti si ricava dal coachId scritto nel
+   * profilo, quindi togliendo prima il profilo diventerebbero indelebili - da
+   * nessuno, per sempre.
+   */
+  private async wipeUserData(uid: string): Promise<void> {
+    for (const nome of [...SOTTORACCOLTE, 'protocols']) {
+      const snap = await getDocs(collection(this.fb.db, 'users', uid, nome));
+      await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+    }
+    await deleteDoc(doc(this.fb.db, 'users', uid));
+  }
+
+  /**
+   * Il coach toglie un proprio cliente, con tutto quello che ha.
+   *
+   * Quello che NON succede, e che va detto a chi preme: l'accesso del cliente
+   * resta aperto. Chiudere l'utente di qualcun altro su Auth lo puo' fare solo
+   * un server con le chiavi di amministrazione - dal telefono si cancella
+   * soltanto se stessi. Chi viene tolto, entrando, trova l'iscrizione da
+   * rifare: senza profilo l'app non lo lascia andare da nessuna parte.
+   */
+  deleteClient(clientId: string): Promise<void> {
+    return this.zoneFix.run((async () => {
+      const coach = this.currentUser();
+      if (!coach || coach.role !== 'coach') throw new Error('Solo un coach puo\' rimuovere un cliente.');
+
+      const snap = await getDoc(doc(this.fb.db, 'users', clientId));
+      if (!snap.exists()) throw new Error('Questo cliente non esiste piu\'.');
+      const cliente = snap.data() as UserProfile;
+      if (cliente.coachId !== coach.uid) throw new Error('Questo cliente non e\' tuo.');
+
+      await this.wipeUserData(clientId);
+    })());
+  }
+
   /** C'e' una sessione aperta senza profilo, cioe' un'iscrizione da finire. */
   hasPendingProfile(): boolean {
     return !!this.fb.auth.currentUser && !this.currentUser();
@@ -257,14 +297,7 @@ export class AuthService {
         }
       }
 
-      for (const nome of SOTTORACCOLTE) {
-        const snap = await getDocs(collection(this.fb.db, 'users', user.uid, nome));
-        await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
-      }
-      const protocolli = await getDocs(collection(this.fb.db, 'users', user.uid, 'protocols'));
-      await Promise.all(protocolli.docs.map(d => deleteDoc(d.ref)));
-
-      await deleteDoc(doc(this.fb.db, 'users', user.uid));
+      await this.wipeUserData(user.uid);
       if (profile.role === 'coach' && profile.pairingCode) {
         // Senza questo il codice resterebbe valido: chi lo usasse si
         // iscriverebbe a un coach che non c'e' piu'.
