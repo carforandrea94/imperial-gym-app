@@ -32,18 +32,48 @@ const MEAL_KEYWORDS: Record<string, string> = {
   'cena': 'Cena'
 };
 
+/** Il suffisso che fa di un'intestazione l'alternativa del pasto che nomina.
+ *
+ *  ALTERNATIV[AO] e non solo ALTERNATIVA: il PDF concorda il genere col nome del
+ *  pasto - "COLAZIONE ALTERNATIVA 1" ma "PRANZO ALTERNATIVO 1" - e riconoscendo
+ *  una forma sola meta' delle alternative non combaciava. Quelle finivano nel
+ *  ramo delle intestazioni sconosciute e diventavano pasti a se': nella dieta
+ *  del cliente compariva un pasto "PRANZO ALTERNATIVO 2" accanto al pranzo,
+ *  invece di una voce nel menu delle combinazioni. */
+const ALT_SUFFIX = String.raw`(?:\s+ALTERNATIV[AO]\s*(\d+))?`;
+
+const headerRe = (base: string) => new RegExp(`^${base}${ALT_SUFFIX}$`, 'i');
+
 /** Intestazioni pasto riconosciute nel template "Giorno ON/OFF" (nutrizionista),
- *  con l'eventuale suffisso "ALTERNATIVA N" catturato nel gruppo 1. L'ordine conta:
+ *  con l'eventuale numero dell'alternativa catturato nel gruppo 1. L'ordine conta:
  *  i nomi composti vanno prima del generico "Spuntino" per non essere troncati. */
 const MEAL_HEADER_DEFS: { name: string; re: RegExp }[] = [
-  { name: 'Spuntino Mattina', re: /^SPUNTINO\s+MATTINA(?:\s+ALTERNATIVA\s*(\d+))?$/i },
-  { name: 'Merenda', re: /^SPUNTINO\s+POMERIDIANO(?:\s+ALTERNATIVA\s*(\d+))?$/i },
-  { name: 'Colazione', re: /^COLAZIONE(?:\s+ALTERNATIVA\s*(\d+))?$/i },
-  { name: 'Pranzo', re: /^PRANZO(?:\s+ALTERNATIVA\s*(\d+))?$/i },
-  { name: 'Merenda', re: /^MERENDA(?:\s+ALTERNATIVA\s*(\d+))?$/i },
-  { name: 'Cena', re: /^CENA(?:\s+ALTERNATIVA\s*(\d+))?$/i },
-  { name: 'Spuntino', re: /^SPUNTINO(?:\s+ALTERNATIVA\s*(\d+))?$/i }
+  { name: 'Spuntino Mattina', re: headerRe(String.raw`SPUNTINO\s+MATTINA`) },
+  { name: 'Merenda', re: headerRe(String.raw`SPUNTINO\s+POMERIDIANO`) },
+  { name: 'Colazione', re: headerRe('COLAZIONE') },
+  { name: 'Pranzo', re: headerRe('PRANZO') },
+  { name: 'Merenda', re: headerRe('MERENDA') },
+  { name: 'Cena', re: headerRe('CENA') },
+  { name: 'Spuntino', re: headerRe('SPUNTINO') }
 ];
+
+/** La nota che il PDF stampa ACCANTO al titolo, in corpo piu' piccolo
+ *  ("CENA ALTERNATIVA 1   Nota: aggiungi 6gr di essenziali"). L'estrazione del
+ *  testo la appiattisce sulla stessa riga, e l'intestazione smetteva di
+ *  combaciare: l'alternativa spariva e i suoi alimenti confluivano nella
+ *  combinazione precedente, corrompendola in silenzio. Va staccata prima di
+ *  riconoscere l'intestazione, e non buttata: e' roba che il coach ha scritto. */
+const HEADER_NOTE_RE = /\s+((?:nota|n\.?\s?b\.?)\s*:.*)$/i;
+
+/** Cosa rende un pasto una riga tutta maiuscola che non sta fra quelle note.
+ *
+ *  Senza questo filtro ci finiva dentro qualunque riga maiuscola corta e senza
+ *  quantita', comprese le precisazioni che il PDF stampa SOTTO un alimento
+ *  ("SENZA ZUCCHERI AGGIUNTI" sotto i cornflakes): diventavano pasti, e il
+ *  cliente si trovava in elenco un pasto chiamato "SENZA ZUCCHERI AGGIUNTI".
+ *  Nel PDF le due cose si distinguono per colonna e corpo del carattere, che
+ *  pero' l'estrazione del testo butta via: resta il nome. */
+const MEAL_WORD_RE = /\b(COLAZIONE|PRANZO|CENA|MERENDA|SPUNTINO|PASTO|BRUNCH|WORKOUT|ALLENAMENTO|NANNA)\b/i;
 
 const GIORNO_HEADER_RE = /^GIORNO\s+(.+)$/i;
 // Marcatore di continuazione a inizio pagina ("...Continua Cena" / "…Continua Day 2").
@@ -56,8 +86,12 @@ const ALTERNATIVE_MARKER_RE = /^alternative\s*:?\s*$/i;
 const GRAM_TAIL_RE = /(\d+(?:[.,]\d+)?)\s*(g|kg|ml|l)\.?\s*$/i;
 
 /** Separa dal testo prima dei grammi l'eventuale "misura" (es. "5 Cucchiai", "3/4 di Piatto",
- *  "1 Piatto e 1/4") dal nome dell'alimento. Se non trova una misura riconosciuta, non c'e' match. */
-const MISURA_RE = /^(.*?)\s+((?:\d+(?:[\/.,]\d+)?\s+)?(?:di\s+)?(?:cucchiai(?:ni|no|o)?|fett[ae]|piatt[oi]|panin[oi])(?:\s+e\s+\d+(?:[\/.,]\d+)?)?)$/i;
+ *  "1 Piatto e 1/4") dal nome dell'alimento. Se non trova una misura riconosciuta, non c'e' match.
+ *
+ *  Bicchiere e frutto mancavano: "Farina d'avena 1 Bicchiere 100 g" finiva con la
+ *  misura incollata al nome ("Farina d'avena   1 Bicchiere"), spazi doppi compresi,
+ *  invece che nella quantita' accanto ai grammi. */
+const MISURA_RE = /^(.*?)\s+((?:\d+(?:[\/.,]\d+)?\s+)?(?:di\s+)?(?:cucchiai(?:ni|no|o)?|fett[ae]|piatt[oi]|panin[oi]|bicchier[ei]|frutt[oi])(?:\s+e\s+\d+(?:[\/.,]\d+)?)?)$/i;
 
 const CARB_KEYWORDS = [
   'avena', 'riso', 'pasta', 'patate', 'pane', 'gallette', 'fette biscottate', 'crusca',
@@ -649,14 +683,23 @@ export class PdfImportService {
       if (CONTINUA_RE.test(line)) continue; // riga di continuazione tra pagine: il contesto resta invariato
 
       if (currentPlan) {
-        const mealHeader = MEAL_HEADER_DEFS.find(d => d.re.test(line));
+        // La nota accanto al titolo va tolta prima del riconoscimento, o l'ancora
+        // di fine riga non combacia; il titolo pulito serve anche al ramo delle
+        // intestazioni sconosciute, piu' sotto.
+        const notaMatch = line.match(HEADER_NOTE_RE);
+        const testa = notaMatch ? line.slice(0, notaMatch.index).trim() : line;
+        const nota = notaMatch ? notaMatch[1].trim() : '';
+
+        const mealHeader = MEAL_HEADER_DEFS.find(d => d.re.test(testa));
         if (mealHeader) {
-          const m = line.match(mealHeader.re)!;
+          const m = testa.match(mealHeader.re)!;
           const altNum = m[1];
           const meal = findOrCreateMeal(currentPlan, mealHeader.name);
           currentMeal = meal;
           if (altNum) {
-            const combo = newCombination(`Alternativa ${altNum}`);
+            // La nota entra nell'etichetta: e' li' che il cliente sceglie la
+            // combinazione, ed e' l'unico posto dove puo' leggerla.
+            const combo = newCombination(nota ? `Alternativa ${altNum} · ${nota}` : `Alternativa ${altNum}`);
             meal.combinations.push(combo);
             currentCombo = combo;
           } else {
@@ -668,24 +711,37 @@ export class PdfImportService {
           continue;
         }
 
-        // Intestazione di pasto non prevista in MEAL_HEADER_DEFS (es. "SPUNTINO SERALE"):
-        // una riga tutta in maiuscolo, corta, senza quantita' in grammi (quindi non un
-        // alimento) e diversa dal marcatore "Alternative:" e' comunque l'inizio di un nuovo
-        // pasto. La apriamo come pasto a se' (nome = testo grezzo) invece di lasciar cadere
-        // la riga e far confluire i suoi alimenti nel pasto precedente (corrompendolo).
+        // Riga tutta in maiuscolo, corta e senza quantita' in grammi: nel PDF
+        // sono due cose diverse, e il testo estratto non le distingue piu'.
         if (
-          !ALTERNATIVE_MARKER_RE.test(line) &&
-          !GRAM_TAIL_RE.test(line) &&
-          line === line.toUpperCase() &&
-          /[A-ZÀ-Ù]/.test(line) &&
-          line.split(/\s+/).length <= 5
+          !ALTERNATIVE_MARKER_RE.test(testa) &&
+          !GRAM_TAIL_RE.test(testa) &&
+          testa === testa.toUpperCase() &&
+          /[A-ZÀ-Ù]/.test(testa) &&
+          testa.split(/\s+/).length <= 5
         ) {
-          const meal = findOrCreateMeal(currentPlan, line);
-          currentMeal = meal;
-          if (meal.combinations.length === 0) meal.combinations.push(newCombination('Base'));
-          currentCombo = meal.combinations[0];
-          lastItem = null;
-          collectingAlt = false;
+          // Se nomina un pasto e' un'intestazione che MEAL_HEADER_DEFS non
+          // prevede (es. "SPUNTINO SERALE"): la apriamo come pasto a se' invece
+          // di lasciar cadere la riga e far confluire i suoi alimenti nel pasto
+          // precedente, corrompendolo.
+          if (MEAL_WORD_RE.test(testa)) {
+            const meal = findOrCreateMeal(currentPlan, testa);
+            currentMeal = meal;
+            if (meal.combinations.length === 0) meal.combinations.push(newCombination('Base'));
+            currentCombo = meal.combinations[0];
+            lastItem = null;
+            collectingAlt = false;
+            continue;
+          }
+
+          // Se non nomina nessun pasto e' una precisazione sull'alimento sopra,
+          // che il PDF stampa su una riga sua ("SENZA ZUCCHERI AGGIUNTI" sotto i
+          // cornflakes): fa parte del nome di quell'alimento, non e' un pasto.
+          if (lastItem) {
+            lastItem.name = `${lastItem.name} ${testa.toLowerCase()}`;
+            continue;
+          }
+          // Niente a cui attaccarla e nessun pasto da aprire: si lascia cadere.
           continue;
         }
       }

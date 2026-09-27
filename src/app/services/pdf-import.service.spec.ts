@@ -315,6 +315,97 @@ EX.6/HIP THRUST CON BILANCIERE+AFFONDI CAMMINANDO
 3X12+12
 `;
 
+/**
+ * Le righe qui sotto sono copiate parola per parola da "dieta Andrea Diet break"
+ * (stesso template, stesso nutrizionista), dove l'importazione sbagliava:
+ * intestazioni che diventavano pasti a se' invece di alternative, e una
+ * precisazione stampata sotto un alimento che diventava anche lei un pasto.
+ */
+const TESTO_DIET_BREAK = `
+Dott. Luigi Iannotta
+Giorno ON
+COLAZIONE ALTERNATIVA 3
+Proteine Isolate - Myprotein 20 g
+Cornflakes 8 Cucchiai 80 g
+SENZA ZUCCHERI AGGIUNTI
+Alternative:
+Crusca di frumento 1 Bicchiere 100 g
+PRANZO
+Riso 1 Piatto e 1/2 120 g
+Petto di pollo 200 g
+PRANZO ALTERNATIVO 1 Nota: aggiungi 6gr di aminoacidi essenziali
+Lenticchie decorticate 130 g
+PRANZO ALTERNATIVO 2
+Uova di gallina - albume 250 g
+CENA
+Riso 1 Bicchiere 150 g
+SPUNTINO SERALE
+Fiocchi d'avena 3 Cucchiai 30 g
+`;
+
+describe('PdfImportService - il template che concorda il genere e annota i titoli', () => {
+  let service: PdfImportService;
+  beforeEach(() => { service = new PdfImportService(); });
+
+  const pasti = () => service.parseDietText(TESTO_DIET_BREAK)[0].meals;
+
+  /* "PRANZO ALTERNATIVO 1" al maschile non combaciava, e finiva nel ramo delle
+     intestazioni sconosciute: nella dieta del cliente compariva un pasto
+     "PRANZO ALTERNATIVO 2" accanto al pranzo, invece di una combinazione. */
+  it('l\'alternativa al maschile resta una combinazione del pranzo', () => {
+    const nomi = pasti().map(m => m.name);
+    expect(nomi).not.toContain('PRANZO ALTERNATIVO 1');
+    expect(nomi).not.toContain('PRANZO ALTERNATIVO 2');
+
+    const pranzo = pasti().find(m => m.name === 'Pranzo')!;
+    expect(pranzo.combinations.map(c => c.label)).toEqual([
+      'Base',
+      'Alternativa 1 · Nota: aggiungi 6gr di aminoacidi essenziali',
+      'Alternativa 2'
+    ]);
+  });
+
+  /* La nota accanto al titolo rompeva l'ancora di fine riga: l'alternativa
+     spariva e i suoi alimenti confluivano nella combinazione precedente. */
+  it('la nota accanto al titolo non fa perdere l\'alternativa, e si conserva', () => {
+    const pranzo = pasti().find(m => m.name === 'Pranzo')!;
+    const conNota = pranzo.combinations.find(c => c.label.startsWith('Alternativa 1'))!;
+    expect(conNota.label).toContain('aggiungi 6gr di aminoacidi essenziali');
+    // In che macro finiscano le lenticchie non e' il punto: il punto e' che gli
+    // alimenti dell'alternativa stanno nell'alternativa.
+    const dentro = [conNota.carb, conNota.protein, conNota.fat].map(f => f?.name);
+    expect(dentro).toContain('Lenticchie decorticate');
+    // La base resta quella che era: nessun travaso.
+    expect(pranzo.combinations[0].protein?.name).toBe('Petto di pollo');
+  });
+
+  /* "SENZA ZUCCHERI AGGIUNTI" e' stampato sotto i cornflakes, nella colonna
+     degli alimenti: e' come si chiamano quei cornflakes, non un pasto. */
+  it('la precisazione sotto un alimento entra nel suo nome, non diventa un pasto', () => {
+    expect(pasti().map(m => m.name)).not.toContain('SENZA ZUCCHERI AGGIUNTI');
+
+    const colazione = pasti().find(m => m.name === 'Colazione')!;
+    const alt3 = colazione.combinations.find(c => c.label === 'Alternativa 3')!;
+    expect(alt3.carb?.name).toBe('Cornflakes senza zuccheri aggiunti');
+    // E le sue alternative restano attaccate a lui.
+    expect(alt3.carb?.alt?.map(a => a.name)).toContain('Crusca di frumento');
+  });
+
+  /* Il filtro non deve chiudere la porta ai pasti che il template non prevede. */
+  it('un pasto sconosciuto che si chiama pasto resta un pasto', () => {
+    const spuntino = pasti().find(m => m.name === 'SPUNTINO SERALE');
+    expect(spuntino).toBeTruthy();
+    expect(spuntino!.combinations[0].carb?.name).toBe("Fiocchi d'avena");
+  });
+
+  /* "1 Bicchiere" non era fra le misure note: restava incollato al nome. */
+  it('il bicchiere e\' una misura, non parte del nome', () => {
+    const cena = pasti().find(m => m.name === 'Cena')!;
+    expect(cena.combinations[0].carb?.name).toBe('Riso');
+    expect(cena.combinations[0].carb?.qty).toBe('1 Bicchiere · 150 g');
+  });
+});
+
 describe('PdfImportService - scheda allenamento', () => {
   let service: PdfImportService;
 
