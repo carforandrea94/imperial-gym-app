@@ -1,6 +1,15 @@
 <div *ngIf="loading" class="history-empty">Caricamento…</div>
 
-<ng-container *ngIf="!loading && protocol">
+<!-- Senza questo la pagina restava su "Caricamento..." per sempre: nessun
+     messaggio, nessuna uscita, e il protocollo intanto era salvato. -->
+<div *ngIf="!loading && errorMsg" class="history-empty">
+  {{ errorMsg }}
+  <div class="mt-3">
+    <button class="confirmbtn cancel" (click)="load()">Riprova</button>
+  </div>
+</div>
+
+<ng-container *ngIf="!loading && !errorMsg && protocol">
 
   <ng-container *ngIf="!editingExercise && !editingMeal">
     <div class="authfield mb-4">

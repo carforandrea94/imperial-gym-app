@@ -33,6 +33,7 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
   protocolId = '';
   protocol: Protocol | null = null;
   loading = true;
+  errorMsg = '';
   saving = false;
   saveMsg = '';
   private paramSub: Subscription | null = null;
@@ -91,17 +92,50 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
     this.protocolBuilderState.editingSubform.set(false);
   }
 
-  private async load(): Promise<void> {
+  /**
+   * Questa pagina e' dove si atterra subito dopo aver caricato i PDF, cioe'
+   * nel momento in cui la connessione ha appena finito di lavorare. Una
+   * lettura Firestore li' puo' restare sospesa a tempo indeterminato senza
+   * mai risolversi ne' rigettarsi - e' lo stesso motivo per cui
+   * FirebaseService forza il long-polling - e senza un limite di tempo la
+   * schermata restava su "Caricamento..." per sempre, senza dire niente e
+   * senza un modo per riprovare. Succedeva davvero: il protocollo era
+   * salvato e corretto, ma la pagina non lo mostrava mai.
+   */
+  load(): Promise<void> {
+    return this.caricaProtocollo();
+  }
+
+  private async caricaProtocollo(): Promise<void> {
     this.loading = true;
-    this.protocol = await this.protocolSvc.get(this.clientId, this.protocolId);
-    if (!this.protocol) { this.router.navigate(['/coach/clienti', this.clientId]); return; }
-    // Il form ha sempre qualcosa a cui legarsi: i protocolli creati prima della
-    // sezione Corsa non hanno l'obiettivo, quelli salvati quando era in
-    // chilometri hanno un campo che non esiste piu'. Un obiettivo a zero vale
-    // come "non impostato" e il cliente non vede barre.
-    this.protocol.running = normalizeRunGoal(this.protocol.running);
-    this.loading = false;
+    this.errorMsg = '';
     this.cdr.detectChanges();
+
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('TIMEOUT')), 12000)
+    );
+
+    try {
+      const protocollo = await Promise.race([
+        this.protocolSvc.get(this.clientId, this.protocolId),
+        timeout
+      ]);
+      if (!protocollo) { this.router.navigate(['/coach/clienti', this.clientId]); return; }
+      this.protocol = protocollo;
+      // Il form ha sempre qualcosa a cui legarsi: i protocolli creati prima della
+      // sezione Corsa non hanno l'obiettivo, quelli salvati quando era in
+      // chilometri hanno un campo che non esiste piu'. Un obiettivo a zero vale
+      // come "non impostato" e il cliente non vede barre.
+      this.protocol.running = normalizeRunGoal(this.protocol.running);
+    } catch (e: any) {
+      console.error('Errore caricamento protocollo:', e);
+      this.errorMsg = e?.message === 'TIMEOUT'
+        ? 'La connessione sta impiegando troppo tempo. Il protocollo e\' salvato: controlla la rete e riprova.'
+        : 'Errore nel caricamento del protocollo. Riprova.';
+    } finally {
+      this.loading = false;
+      this.cdr.detectChanges();
+    }
   }
 
   // ===== Scheda =====

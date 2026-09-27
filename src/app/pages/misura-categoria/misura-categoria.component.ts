@@ -76,23 +76,38 @@ export class MisuraCategoriaComponent implements OnInit, OnDestroy {
     const dateParam = this.route.snapshot.queryParamMap.get('date');
     this.isEdit = !!dateParam;
 
+    // Una lettura Firestore puo' restare sospesa a tempo indeterminato senza
+    // mai risolversi ne' rigettarsi (stesso motivo per cui FirebaseService
+    // forza il long-polling): senza un limite di tempo il catch qui sotto non
+    // verrebbe mai raggiunto e la schermata resterebbe a caricare per sempre.
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('TIMEOUT')), 12000)
+    );
+
     try {
       if (this.isEdit) {
         this.originalDate = dateParam!;
         this.dateValue = dateParam!;
-        this.values = await this.data.getCategoryValues(this.category, dateParam!);
+        this.values = await Promise.race([
+          this.data.getCategoryValues(this.category, dateParam!),
+          timeout
+        ]);
       } else {
         this.dateValue = todayLocalISO();
         this.values = this.emptyValues();
-        const lastValues = await this.data.getLastValues();
+        const [lastValues, draft] = await Promise.race([
+          Promise.all([this.data.getLastValues(), this.data.loadDraft(this.category)]),
+          timeout
+        ]);
         this.placeholders = {};
         this.fields.forEach(f => { if (lastValues[f.key]) this.placeholders[f.key] = lastValues[f.key]!; });
-        const draft = await this.data.loadDraft(this.category);
         if (draft) this.values = draft;
       }
     } catch (e: any) {
       console.error('Errore caricamento misura:', e);
-      this.errorMsg = 'Errore nel caricamento. Riprova.';
+      this.errorMsg = e?.message === 'TIMEOUT'
+        ? 'La connessione sta impiegando troppo tempo. Controlla la rete e riprova.'
+        : 'Errore nel caricamento. Riprova.';
     } finally {
       this.loading = false;
       this.cdr.detectChanges();
