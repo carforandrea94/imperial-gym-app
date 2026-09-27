@@ -11,7 +11,14 @@ export type Sex = 'm' | 'f';
 export interface UserProfile {
   uid: string;
   email: string;
+  /** Il nome intero, sempre valorizzato: e' quello che l'app mostra ovunque.
+   *  Quando ci sono, e' la somma di firstName e lastName. */
   displayName: string;
+  /** Nome e cognome separati. Assenti sui profili nati prima che i due campi
+   *  esistessero: chi li legge passa da dividiNome(), che in quel caso li
+   *  ricava dal nome intero. */
+  firstName?: string;
+  lastName?: string;
   role: UserRole;
   pairingCode: string;
   /** Solo per i client: uid del coach a cui sono associati. */

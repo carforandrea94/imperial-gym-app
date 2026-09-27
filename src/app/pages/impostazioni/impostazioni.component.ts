@@ -14,6 +14,7 @@ import { WorkoutSessionStateService } from '../../services/workout-session-state
 import { isIosSafariNotStandalone } from '../../core/utils/platform.util';
 import { todayLocalISO } from '../../core/utils/date.util';
 import { deleteAccountErrorMessage } from '../../core/utils/auth-errors.util';
+import { dividiNome, componiNome } from '../../core/utils/nome.util';
 import {
   heightOptions, toWheelValue, wheelValueAt, wheelOffsetOf, formatHeightCm
 } from '../../core/utils/height.util';
@@ -60,6 +61,17 @@ import {
       text-align: right; cursor: pointer; min-height: 44px;
     }
     .daterow.unset { color: var(--label-3); }
+    /* Il campo di testo si veste da valore come il campo data: e' una riga
+       dell'elenco, non un modulo. Allineato a destra perche' e' li' che
+       stanno tutti gli altri valori della colonna. */
+    .textrow {
+      flex: 1; min-width: 0; background: none; border: none; outline: none;
+      padding: 0; margin-left: 12px; min-height: 44px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--label);
+      text-align: right;
+    }
+    .textrow::placeholder { color: var(--label-3); }
+    .textrow:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-xs); }
     .daterow:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-xs); }
     .daterow::-webkit-calendar-picker-indicator { opacity: .5; cursor: pointer; }
     .settings-hint {
@@ -210,6 +222,63 @@ export class ImpostazioniComponent implements OnInit, AfterViewInit, OnDestroy {
   get heightLabel(): string {
     const cm = this.auth.currentUser()?.heightCm;
     return this.heightSet ? `${formatHeightCm(cm)} cm` : 'Da impostare';
+  }
+
+  get nome(): string {
+    return dividiNome(this.auth.currentUser() ?? {}).nome;
+  }
+
+  get cognome(): string {
+    return dividiNome(this.auth.currentUser() ?? {}).cognome;
+  }
+
+  setNome(event: Event): Promise<void> {
+    return this.salvaNome((event.target as HTMLInputElement).value, this.cognome);
+  }
+
+  setCognome(event: Event): Promise<void> {
+    return this.salvaNome(this.nome, (event.target as HTMLInputElement).value);
+  }
+
+  /**
+   * Scrive nome, cognome e il nome intero insieme.
+   *
+   * displayName e' quello che l'app mostra ovunque - testata dell'Account,
+   * sottotitolo della navbar, lista clienti del coach - e ricomporlo qui e'
+   * l'unico modo perche' quei posti non restino indietro col nome vecchio.
+   *
+   * Tutti e due vuoti non si puo': resterebbero schermate senza nome e un
+   * avatar senza iniziale, e le regole lo rifiutano comunque. Meglio dirlo
+   * qui, invece di far tornare un permesso negato.
+   */
+  private async salvaNome(nome: string, cognome: string): Promise<void> {
+    const utente = this.auth.currentUser();
+    if (!utente) return;
+
+    const nuovoNome = nome.trim();
+    const nuovoCognome = cognome.trim();
+    if (nuovoNome === this.nome && nuovoCognome === this.cognome) return;
+
+    const intero = componiNome(nuovoNome, nuovoCognome);
+    if (!intero) {
+      this.toast.error('Il nome non puo\' restare vuoto.');
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.auth.currentUser.set({
+      ...utente, firstName: nuovoNome, lastName: nuovoCognome, displayName: intero
+    });
+    try {
+      await this.auth.patchBody({
+        firstName: nuovoNome, lastName: nuovoCognome, displayName: intero
+      });
+    } catch (e) {
+      console.error('Salvataggio del nome fallito:', e);
+      this.auth.currentUser.set(utente);
+      this.toast.error('Non sono riuscito a salvare. Riprova.');
+    }
+    this.cdr.detectChanges();
   }
 
   get birthDate(): string | null {

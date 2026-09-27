@@ -18,17 +18,25 @@
   </p>
 </div>
 
-<p class="sectiontitle">Corpo</p>
+<!-- Nome, cognome, data di nascita e sesso: sono di chiunque abbia un
+     account, coach compreso. -->
+<p class="sectiontitle">Dati personali</p>
 <div class="infocard">
   <div class="rows">
     <div class="account-row">
-      <span class="account-row-label" id="sesso-lbl">Sesso</span>
-      <div class="viewtoggle labeltoggle" role="group" aria-labelledby="sesso-lbl">
-        <button class="viewtogglebtn tap44 tap44-v" [class.active]="sex === 'm'"
-                [attr.aria-pressed]="sex === 'm'" (click)="setSex('m')">Uomo</button>
-        <button class="viewtogglebtn tap44 tap44-v" [class.active]="sex === 'f'"
-                [attr.aria-pressed]="sex === 'f'" (click)="setSex('f')">Donna</button>
-      </div>
+      <label class="account-row-label" for="nome">Nome</label>
+      <!-- Si salva quando il campo perde il fuoco, come la data: senza un
+           tasto "salva" il riscontro e' che il valore resta li' tornando. -->
+      <input id="nome" class="textrow" type="text" autocomplete="given-name"
+             [value]="nome" placeholder="Il tuo nome" maxlength="80"
+             (change)="setNome($event)" />
+    </div>
+
+    <div class="account-row">
+      <label class="account-row-label" for="cognome">Cognome</label>
+      <input id="cognome" class="textrow" type="text" autocomplete="family-name"
+             [value]="cognome" [class.unset]="!cognome" placeholder="Da impostare" maxlength="80"
+             (change)="setCognome($event)" />
     </div>
 
     <div class="account-row">
@@ -38,6 +46,23 @@
              (change)="setBirthDate($event)" />
     </div>
 
+    <div class="account-row">
+      <span class="account-row-label" id="sesso-lbl">Sesso</span>
+      <div class="viewtoggle labeltoggle" role="group" aria-labelledby="sesso-lbl">
+        <button class="viewtogglebtn tap44 tap44-v" [class.active]="sex === 'm'"
+                [attr.aria-pressed]="sex === 'm'" (click)="setSex('m')">Uomo</button>
+        <button class="viewtogglebtn tap44 tap44-v" [class.active]="sex === 'f'"
+                [attr.aria-pressed]="sex === 'f'" (click)="setSex('f')">Donna</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- L'altezza invece serve alle formule di composizione corporea, che vivono
+     nelle Misure: schermata che il coach non ha. -->
+<ng-container *ngIf="!auth.isCoach">
+  <p class="sectiontitle">Corpo</p>
+  <div class="infocard">
     <button type="button" class="account-row heightrow" (click)="openHeightModal()">
       <span class="account-row-label">Altezza</span>
       <span class="heightrow-right">
@@ -45,12 +70,12 @@
         <lucide-icon name="chevron-right" [size]="13"></lucide-icon>
       </span>
     </button>
+    <p class="settings-hint">
+      Si dichiara una volta e resta qui, non fra le rilevazioni: peso e pliche cambiano a
+      ogni controllo, l'altezza no.
+    </p>
   </div>
-  <p class="settings-hint">
-    Si dichiarano una volta e restano qui, non fra le rilevazioni: peso e pliche cambiano a
-    ogni controllo, questi no.
-  </p>
-</div>
+</ng-container>
 
 <p class="sectiontitle">Il tuo account</p>
 <div class="infocard">
@@ -138,6 +163,8 @@
   </div>
 </div>
 
+<!-- Lo apre solo la sezione Corpo, che il coach non ha. -->
+<ng-container *ngIf="!auth.isCoach">
 <div class="bottomsheet-overlay" #heightSheetOverlay [class.show]="heightModalOpen"
      (click)="onHeightOverlayClick($event)">
   <div class="bottomsheet" [class.show]="heightModalOpen">
@@ -162,3 +189,4 @@
     </div>
   </div>
 </div>
+</ng-container>

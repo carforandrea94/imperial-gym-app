@@ -811,7 +811,20 @@ lucide-icon svg.filled{fill:currentColor;}
 .builder-item .measure-input-wrap{flex:1.6;}
 .builder-item .builder-qty{flex:1;}
 
+/* La riga con "rimuovi" accanto a "salva". I due tasti erano di due famiglie
+   diverse - .confirmbtn ha raggio, altezza, corpo e ombra tutti piu' piccoli
+   di .savebtn - e affiancati si vedeva: uno squadrato e uno a pastiglia. Ora
+   sono lo stesso tasto in due colori, che e' quello per cui .savebtn.cancel
+   esiste. Larghezze uguali: nessuno dei due e' "quello giusto" da spingere. */
 .builder-savebar{display:flex;gap:10px;}
+.builder-savebar .savebtn{width:auto;flex:1;}
+
+/* L'uscita da un editor. Stessa famiglia del tasto primario - stesso raggio,
+   stessa altezza, stessa ombra - ma larga quanto il suo testo, perche' e' una
+   via d'uscita e non l'azione della pagina. Prima era .confirmbtn, con un
+   raggio piu' stretto di tutto il resto della schermata. */
+.editorback{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 18px;border-radius:var(--r-xl);background:var(--surface-card);border:1px solid var(--border-line);box-shadow:var(--shadow-card);font-family:'Inter',sans-serif;font-weight:700;font-size:var(--text-md);color:var(--label);cursor:pointer;transition:filter .2s ease;}
+.editorback:active{filter:brightness(0.92);}
 
 .authfield input[type="file"]{font-family:'Inter',sans-serif;font-size:var(--text-sm);color:var(--label-2);background:var(--surface-raise);border:1px dashed var(--border-line);border-radius:var(--r-sm);padding:10px;width:100%;}
 .authfield input[type="file"]::file-selector-button{font-family:'Inter',sans-serif;font-weight:600;font-size:var(--text-xs);color:var(--label);background:var(--surface-raise-2);border:1px solid var(--border-line);border-radius:var(--r-xs);padding:6px 10px;margin-right:10px;cursor:pointer;}
