@@ -668,15 +668,61 @@ lucide-icon svg.filled{fill:currentColor;}
 /* Il messaggio che non e' un errore: l'email per reimpostare la password e'
    partita, e un fondo rosso direbbe il contrario. */
 .authinfo{font-size:var(--text-sm);color:var(--label-2);background:var(--surface-raise);border:1px solid var(--border-line);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:14px;line-height:1.45;}
-/* Separa l'accesso dalla registrazione: senza, i due link sotto al tasto
-   sembravano altri due modi di entrare. */
-.authsep{display:flex;align-items:center;gap:10px;margin:20px 0 4px;color:var(--label-3);font-size:var(--text-xs);}
-.authsep::before,.authsep::after{content:'';flex:1;height:1px;background:var(--border-line);}
 /* L'occhio dentro il campo: tocca 44 senza allargare la riga, perche' esce
    dal padding del contenitore invece di aggiungersi. */
 .pwtoggle{width:44px;height:44px;margin:-9px -10px -9px 0;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--label-3);background:none;border:none;cursor:pointer;}
 .pwtoggle:active{color:var(--accent);}
 .pwtoggle svg{display:block;}
+
+/* ---------- L'accesso a tutto schermo ----------
+   Le altre due schermate di questo blocco (le due registrazioni) restano
+   una card al centro: hanno dentro campi, spiegazioni e un codice da
+   incollare, e la card li tiene insieme. L'accesso no: dentro non c'e'
+   nessuna informazione, solo due campi, quindi la card non separava niente
+   da niente. Qui la pagina e' il modulo, e .authfull e' l'interruttore che
+   lo dice — .authscreen da sola continua a valere per le altre due. */
+/* Il margine negativo annulla il corridoio di .wrap (16px per lato): senza,
+   "a tutto schermo" sarebbe a tutto schermo meno 32px, e il modulo tornerebbe
+   largo quanto la card che ha sostituito. Non trabocca: quei 32px sono
+   esattamente il padding che .wrap toglie. */
+.authscreen.authfull{align-items:stretch;padding:0;margin-inline:-16px;}
+.authflow{width:100%;max-width:420px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;
+  justify-content:center;padding:28px 20px calc(28px + env(safe-area-inset-bottom));}
+.authfull .authlogo{width:76px;height:76px;margin-bottom:14px;}
+.authfull .authtitle{font-size:30px;letter-spacing:-.018em;}
+/* Il sottotitolo chiude la testata e basta: sotto ci sono le due tacche, che
+   dicono gia' che si sta accedendo. Il margine lo mette la tacchiera. */
+.authfull .authsub{margin-bottom:0;}
+
+/* Le due strade, dette una volta sola. Prima erano tre link sotto al tasto,
+   due dei quali dicevano quasi la stessa cosa, e la parola "account"
+   compariva tre volte in quattro righe. */
+.authtabs{display:flex;gap:4px;padding:4px;margin:26px 0 22px;border:1px solid var(--border-line);border-radius:var(--r-lg);}
+.authtab{flex:1;min-height:40px;display:flex;align-items:center;justify-content:center;border:none;background:none;
+  border-radius:var(--r-md);cursor:pointer;font-family:'Inter',sans-serif;font-size:var(--text-md);font-weight:600;color:var(--label-3);}
+/* La tacca scelta si stacca salendo di un gradino, non accendendosi: il pieno
+   d'accento qui competerebbe con il tasto "Accedi", che e' l'azione vera. */
+.authtab[aria-pressed="true"]{background:var(--surface-raise-2);color:var(--label);}
+
+/* Il posto dell'azione e' sempre alto uguale. Senza, passando da "Accedi" a
+   "Crea un account" il modulo si accorcia di una trentina di px e le due
+   tacche scivolano via da sotto il dito che le ha appena toccate. */
+.authfoot{padding-top:26px;min-height:148px;}
+
+/* Le due vie della registrazione: una riga per ciascuna, con scritto a chi
+   serve. Portano alle stesse due pagine di prima. */
+.authrole{display:flex;align-items:center;gap:12px;width:100%;min-height:68px;padding:13px 15px;margin-bottom:10px;
+  text-align:left;cursor:pointer;background:var(--surface-raise);border:1px solid var(--border-line);
+  border-radius:var(--r-lg);font-family:'Inter',sans-serif;color:var(--label);text-decoration:none;}
+.authrole:active{background:var(--surface-raise-2);}
+.authrole .rn{flex:1;min-width:0;}
+.authrole .rt{display:block;font-weight:700;font-size:var(--text-lg);letter-spacing:-.005em;}
+.authrole .rs{display:block;font-size:var(--text-sm);color:var(--label-3);margin-top:3px;line-height:1.35;}
+.authrole .rc{flex-shrink:0;display:flex;color:var(--label-3);}
+/* Il codice del coach si chiede nella pagina dopo: dirlo qui evita di
+   arrivarci, scoprirlo e tornare indietro. */
+.authnote{font-size:var(--text-sm);color:var(--label-3);line-height:1.5;text-align:center;padding:0 6px;}
+
 
 /* ===================== COACH — BACHECA ===================== */
 .bacheca-textarea{width:100%;min-height:80px;resize:vertical;background:var(--surface-raise);border:1px solid var(--border-line);border-radius:var(--r-md);padding:12px;font-family:'Inter',sans-serif;font-size:var(--text-md);color:var(--label);}

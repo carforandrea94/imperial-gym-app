@@ -1,12 +1,23 @@
-<div class="authscreen">
-  <div class="authcard infocard">
+<div class="authscreen authfull">
+  <div class="authflow">
     <div class="authhead">
       <app-logo class="authlogo"></app-logo>
       <h1 class="authtitle">Imperial Gym</h1>
-      <div class="authsub">Accedi al tuo account</div>
+      <div class="authsub">La tua scheda e la tua dieta.</div>
     </div>
 
-    <form #f="ngForm" (ngSubmit)="submit(f)" novalidate>
+    <!-- Le due strade dette una volta sola, prima di scrivere qualcosa. Non e'
+         un tablist: le due tacche non scorrono con le frecce, e dichiararlo
+         tale prometterebbe una tastiera che non c'e'. E' il gruppo di premuti
+         che l'app usa gia' altrove (tema, sesso). -->
+    <div class="authtabs" role="group" aria-label="Accedi o crea un account">
+      <button type="button" class="authtab" [attr.aria-pressed]="mode === 'login'"
+        (click)="setMode('login')">Accedi</button>
+      <button type="button" class="authtab" [attr.aria-pressed]="mode === 'register'"
+        (click)="setMode('register')">Crea un account</button>
+    </div>
+
+    <form #f="ngForm" (ngSubmit)="submit(f)" novalidate *ngIf="mode === 'login'">
 
       <div class="authfield">
         <label for="email">Email</label>
@@ -53,20 +64,43 @@
       <p class="autherror" role="alert" *ngIf="errorMsg">{{ errorMsg }}</p>
       <p class="authinfo" role="status" *ngIf="infoMsg">{{ infoMsg }}</p>
 
-      <button class="savebtn" type="submit" [disabled]="loading">
-        {{ loading ? 'Accesso in corso…' : 'Accedi' }}
-      </button>
+      <div class="authfoot">
+        <button class="savebtn" type="submit" [disabled]="loading">
+          {{ loading ? 'Accesso in corso…' : 'Accedi' }}
+        </button>
 
-      <!-- Senza questo, una password dimenticata chiudeva fuori dall'app e
-           basta: non c'era nessun modo di rientrare. -->
-      <button type="button" class="authlink quiet" [disabled]="sendingReset" (click)="resetPassword()">
-        {{ sendingReset ? 'Invio in corso…' : 'Password dimenticata?' }}
-      </button>
+        <!-- Senza questo, una password dimenticata chiudeva fuori dall'app e
+             basta: non c'era nessun modo di rientrare. -->
+        <button type="button" class="authlink quiet" [disabled]="sendingReset" (click)="resetPassword()">
+          {{ sendingReset ? 'Invio in corso…' : 'Password dimenticata?' }}
+        </button>
+      </div>
     </form>
 
-    <div class="authsep"><span>Non hai un account?</span></div>
+    <ng-container *ngIf="mode === 'register'">
+      <!-- Le due pagine di registrazione sono rimaste quelle: cambia solo da
+           dove ci si arriva. -->
+      <a class="authrole" routerLink="/registrati">
+        <span class="rn">
+          <span class="rt">Sono un cliente</span>
+          <span class="rs">Mi allena un coach</span>
+        </span>
+        <span class="rc"><lucide-icon name="chevron-right" [size]="18"></lucide-icon></span>
+      </a>
+      <a class="authrole" routerLink="/coach/registrati">
+        <span class="rn">
+          <span class="rt">Sono un coach</span>
+          <span class="rs">Seguo dei clienti</span>
+        </span>
+        <span class="rc"><lucide-icon name="chevron-right" [size]="18"></lucide-icon></span>
+      </a>
 
-    <a class="authlink" routerLink="/registrati">Crea il tuo account cliente</a>
-    <a class="authlink" routerLink="/coach/registrati">Crea il tuo account coach</a>
+      <div class="authfoot">
+        <p class="authnote">
+          Per iscriverti come cliente serve il codice del tuo coach:
+          se non ce l'hai, chiediglielo.
+        </p>
+      </div>
+    </ng-container>
   </div>
 </div>

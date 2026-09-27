@@ -18,6 +18,11 @@ export class LoginComponent {
   email = '';
   password = '';
 
+  /** Quale delle due tacche e' scelta. Prima erano tre link sotto al tasto,
+   *  due dei quali dicevano quasi la stessa cosa: la scelta fra entrare e
+   *  iscriversi ora si fa prima di scrivere qualcosa, non dopo. */
+  mode: 'login' | 'register' = 'login';
+
   loading = false;
   errorMsg = '';
 
@@ -34,6 +39,17 @@ export class LoginComponent {
 
   togglePassword(): void {
     this.showPassword = !this.showPassword;
+  }
+
+  /**
+   * Cambia tacca. Ripulisce i messaggi: un errore d'accesso lasciato li'
+   * mentre si guarda come iscriversi parlerebbe di un'altra cosa.
+   */
+  setMode(mode: 'login' | 'register'): void {
+    if (this.mode === mode) return;
+    this.mode = mode;
+    this.errorMsg = '';
+    this.infoMsg = '';
   }
 
   async submit(form: NgForm): Promise<void> {
