@@ -1,6 +1,6 @@
 {
-  "name": "Imperial Gym App",
-  "short_name": "Imperial Gym",
+  "name": "Workout Lab",
+  "short_name": "Workout Lab",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0D0E10",
