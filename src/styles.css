@@ -624,7 +624,10 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .ms-dot.on{border-color:var(--accent);background:var(--accent);box-shadow:inset 0 0 0 3px var(--surface-card);}
 
 /* ===================== AUTH (login / registrazione coach) ===================== */
-.authscreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+/* 100dvh e non 100vh: sul telefono vh conta anche la barra degli indirizzi,
+   quindi la card nasce piu' in basso di dove si vede e salta quando la barra
+   si ritira. 100vh resta come ripiego per i browser che dvh non ce l'hanno. */
+.authscreen{min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;}
 .authcard{width:100%;max-width:380px;}
 /* Testata dell'accesso: marchio, nome e sottotitolo centrati. I campi sotto
    restano allineati a sinistra (si leggono in colonna) e i link in fondo erano
@@ -648,9 +651,32 @@ lucide-icon svg.filled{fill:currentColor;}
 .authfield{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
 .authfield label{font-family:'IBM Plex Mono',monospace;font-size:var(--text-2xs);letter-spacing:.04em;color:var(--label-3);}
 .authfield input{width:100%;}
+/* La riga del campo era alta 36 px: sotto i 44 che l'app tiene ovunque, e
+   su una schermata di accesso i campi sono il bersaglio principale. Vale
+   qui e non su .measure-input-wrap in generale, che vive anche in form
+   fitti dove la riga e' stretta apposta. */
+.authfield .measure-input-wrap{min-height:44px;}
 .fielderr{font-size:var(--text-xs);color:var(--state-danger-text);margin-top:5px;line-height:1.4;}
 .autherror{font-size:var(--text-sm);color:var(--state-danger-text);background:rgba(var(--state-danger-rgb),.10);border:1px solid rgba(var(--state-danger-rgb),.25);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:14px;line-height:1.4;}
-.authlink{display:block;text-align:center;margin-top:18px;font-size:var(--text-sm);color:var(--label-3);text-decoration:underline;}
+/* I link erano alti quanto la loro riga di testo, una ventina di px: sotto i
+   44 che l'app tiene ovunque, e sono gli unici tre bersagli della schermata
+   oltre al tasto. */
+.authlink{display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;text-align:center;font-family:'Inter',sans-serif;font-size:var(--text-sm);color:var(--label-2);text-decoration:underline;text-underline-offset:3px;background:none;border:none;cursor:pointer;}
+/* Quello sotto al tasto e' un ripiego, non una destinazione: resta piu' spento. */
+.authlink.quiet{margin-top:6px;color:var(--label-3);text-decoration:none;}
+.authlink.quiet:disabled{opacity:.55;cursor:default;}
+/* Il messaggio che non e' un errore: l'email per reimpostare la password e'
+   partita, e un fondo rosso direbbe il contrario. */
+.authinfo{font-size:var(--text-sm);color:var(--label-2);background:var(--surface-raise);border:1px solid var(--border-line);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:14px;line-height:1.45;}
+/* Separa l'accesso dalla registrazione: senza, i due link sotto al tasto
+   sembravano altri due modi di entrare. */
+.authsep{display:flex;align-items:center;gap:10px;margin:20px 0 4px;color:var(--label-3);font-size:var(--text-xs);}
+.authsep::before,.authsep::after{content:'';flex:1;height:1px;background:var(--border-line);}
+/* L'occhio dentro il campo: tocca 44 senza allargare la riga, perche' esce
+   dal padding del contenitore invece di aggiungersi. */
+.pwtoggle{width:44px;height:44px;margin:-9px -10px -9px 0;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--label-3);background:none;border:none;cursor:pointer;}
+.pwtoggle:active{color:var(--accent);}
+.pwtoggle svg{display:block;}
 
 /* ===================== COACH — BACHECA ===================== */
 .bacheca-textarea{width:100%;min-height:80px;resize:vertical;background:var(--surface-raise);border:1px solid var(--border-line);border-radius:var(--r-md);padding:12px;font-family:'Inter',sans-serif;font-size:var(--text-md);color:var(--label);}

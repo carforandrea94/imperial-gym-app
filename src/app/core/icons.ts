@@ -1,8 +1,8 @@
 import {
-  ChartLine, Check, ChevronDown, ChevronRight, CirclePlus, Dumbbell, FileText,
-  FileUp, GalleryHorizontal, History, Info, List, Megaphone, Pause, Play, Plus,
-  Ruler, Save, Settings, ShoppingCart, SquarePen, Timer, Trash2, User, Users,
-  Utensils, X
+  ChartLine, Check, ChevronDown, ChevronRight, CirclePlus, Dumbbell, Eye, EyeOff,
+  FileText, FileUp, GalleryHorizontal, History, Info, List, Megaphone, Pause,
+  Play, Plus, Ruler, Save, Settings, ShoppingCart, SquarePen, Timer, Trash2,
+  User, Users, Utensils, X
 } from 'lucide-angular';
 
 /**
@@ -27,8 +27,8 @@ const SportShoe = [
  * muscolari (workout-data.service.ts) e il marchio (components/logo).
  */
 export const APP_ICONS = {
-  ChartLine, Check, ChevronDown, ChevronRight, CirclePlus, Dumbbell, FileText,
-  FileUp, GalleryHorizontal, History, Info, List, Megaphone, Pause, Play, Plus,
-  Ruler, Save, Settings, ShoppingCart, SportShoe, SquarePen, Timer, Trash2,
-  User, Users, Utensils, X
+  ChartLine, Check, ChevronDown, ChevronRight, CirclePlus, Dumbbell, Eye, EyeOff,
+  FileText, FileUp, GalleryHorizontal, History, Info, List, Megaphone, Pause,
+  Play, Plus, Ruler, Save, Settings, ShoppingCart, SportShoe, SquarePen, Timer,
+  Trash2, User, Users, Utensils, X
 };
