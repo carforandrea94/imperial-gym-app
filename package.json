@@ -6,7 +6,8 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "test:rules": "npx --yes firebase-tools@13 emulators:exec --only firestore --project prova-regole \"node test/firestore-rules.mjs\""
   },
   "prettier": {
     "printWidth": 100,
@@ -40,6 +41,7 @@
     "@angular/build": "^21.1.0",
     "@angular/cli": "^21.1.0",
     "@angular/compiler-cli": "^21.1.0",
+    "@firebase/rules-unit-testing": "^5.0.2",
     "jsdom": "^27.1.0",
     "typescript": "~5.9.2",
     "vitest": "^4.0.8"

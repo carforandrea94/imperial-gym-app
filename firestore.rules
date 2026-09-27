@@ -7,6 +7,14 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Il coach a cui questo utente e' agganciato. Costa una lettura, quindi
+    // vale la pena solo dove il documento in gioco non porta gia' il coachId
+    // con se' (le sottoraccolte, che sono dati del cliente e basta).
+    function isCoachOf(uid) {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(uid)).data.coachId == request.auth.uid;
+    }
+
     function myProfile() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
@@ -64,26 +72,39 @@ service cloud.firestore {
         (resource.data.coachId == request.auth.uid)
       );
 
-      // Chiudere il proprio account. Solo il proprio: un coach non puo'
-      // cancellare un client, ne' viceversa. Le sottoraccolte non se ne vanno
-      // da sole - Firestore non cancella a cascata - quindi l'app le svuota
-      // prima, finche' c'e' ancora una sessione che ne ha il permesso.
-      allow delete: if isSignedIn() && request.auth.uid == uid;
+      // Chiudere un account: il proprio, o quello di un proprio cliente.
+      // Le sottoraccolte non se ne vanno da sole - Firestore non cancella a
+      // cascata - quindi l'app le svuota PRIMA del documento. Non e' un
+      // dettaglio: cancellato il profilo, isCoachOf() qui sotto non trova piu'
+      // il coachId e quei documenti diventerebbero indelebili per sempre.
+      allow delete: if isSignedIn() && (
+        request.auth.uid == uid ||
+        resource.data.coachId == request.auth.uid
+      );
 
       // Dati personali del client: allenamenti salvati, uscite di corsa,
-      // misurazioni, stato/bozze. Solo il proprietario puo' leggere/scrivere
-      // (nessuna condivisione col coach, per ora).
+      // misurazioni, stato/bozze. Li scrive solo il proprietario.
+      //
+      // Il coach li legge e li cancella, ma solo per i propri clienti: quando
+      // rimuove un cliente deve poter cancellare anche questi, e per cancellare
+      // un insieme di documenti bisogna prima leggerli - una query li restituisce
+      // per intero, non esiste "elenca senza vedere". E' un allargamento vero di
+      // cosa il coach vede, deciso apposta.
       match /sessions/{id} {
         allow read, write: if isSignedIn() && request.auth.uid == uid;
+        allow read, delete: if isCoachOf(uid);
       }
       match /runs/{id} {
         allow read, write: if isSignedIn() && request.auth.uid == uid;
+        allow read, delete: if isCoachOf(uid);
       }
       match /measurements/{id} {
         allow read, write: if isSignedIn() && request.auth.uid == uid;
+        allow read, delete: if isCoachOf(uid);
       }
       match /state/{id} {
         allow read, write: if isSignedIn() && request.auth.uid == uid;
+        allow read, delete: if isCoachOf(uid);
       }
 
       // Protocolli (scheda + dieta) creati dal coach per questo client.
@@ -117,7 +138,13 @@ service cloud.firestore {
     // coach in fase di registrazione, PRIMA di avere un account (quindi lettura libera).
     // Non contiene dati personali, solo il riferimento all'uid del coach.
     match /coachCodes/{code} {
-      allow read: if true;
+      // get e non read: `read` comprende anche `list`, e con la raccolta
+      // elencabile chiunque, senza nemmeno un account, si scaricava tutti i
+      // codici e gli uid dei coach - e poi si iscriveva come cliente di uno
+      // qualsiasi senza essere mai stato invitato. Verificato dall'esterno.
+      // L'app cerca sempre un codice preciso (getDoc), quindi non perde niente.
+      allow get: if true;
+      allow list: if false;
       allow create: if isSignedIn() && request.auth.uid == request.resource.data.coachId;
       allow update: if false;
       // Il coach si porta via il proprio codice quando chiude l'account: se

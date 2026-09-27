@@ -7,6 +7,8 @@ import { doc, getDoc } from 'firebase/firestore';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { ProtocolService } from '../../services/protocol.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
+import { AuthService } from '../../core/services/auth.service';
+import { ToastService } from '../../services/toast.service';
 import { ZoneFixService } from '../../core/utils/zone.util';
 import { UserProfile } from '../../core/models/user.model';
 import { Protocol } from '../../models/protocol.model';
@@ -16,7 +18,22 @@ import { Protocol } from '../../models/protocol.model';
   standalone: true,
   imports: [CommonModule, LucideAngularModule],
   templateUrl: './coach-client-detail.component.html',
-  styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
+  styles: [`
+    :host { display: block; animation: fade .4s var(--spring-soft); }
+    /* Togliere un cliente non e' un'azione della pagina come le altre: sta in
+       fondo, staccata, e non porta il colore dell'accento. */
+    .dangerbtn {
+      width: 100%; min-height: 48px; display: flex; align-items: center;
+      justify-content: center; gap: 8px; border-radius: var(--r-md);
+      background: var(--state-danger-soft); border: 1px solid var(--state-danger-soft-border);
+      color: var(--state-danger-text); font-family: 'Inter', sans-serif;
+      font-weight: 600; font-size: var(--text-md); cursor: pointer;
+    }
+    .dangerbtn:disabled { opacity: .55; cursor: default; }
+    .danger-hint {
+      font-size: var(--text-xs); line-height: 1.5; color: var(--label-3); margin: 10px 0 0;
+    }
+  `]
 })
 export class CoachClientDetailComponent implements OnInit, OnDestroy {
   clientId = '';
@@ -25,6 +42,7 @@ export class CoachClientDetailComponent implements OnInit, OnDestroy {
   loading = true;
   errorMsg = '';
   busyId: string | null = null;
+  removingClient = false;
   private paramSub: Subscription | null = null;
 
   constructor(
@@ -33,6 +51,8 @@ export class CoachClientDetailComponent implements OnInit, OnDestroy {
     private fb: FirebaseService,
     private protocolSvc: ProtocolService,
     private confirm: ConfirmDialogService,
+    private auth: AuthService,
+    private toast: ToastService,
     private zoneFix: ZoneFixService,
     private cdr: ChangeDetectorRef
   ) {}
@@ -105,6 +125,38 @@ export class CoachClientDetailComponent implements OnInit, OnDestroy {
     if (ok) {
       await this.protocolSvc.delete(this.clientId, p.id);
       await this.load();
+    }
+  }
+
+  /**
+   * Toglie il cliente e tutto quello che ha.
+   *
+   * La conferma dice anche cosa NON succede: l'accesso del cliente resta
+   * aperto, perche' chiudere l'utente di qualcun altro su Auth lo puo' fare
+   * solo un server. Tacerlo farebbe credere che sia stato chiuso.
+   */
+  async removeClient(): Promise<void> {
+    if (this.removingClient) return;
+    const nome = this.client?.displayName ?? 'questo cliente';
+    const ok = await this.confirm.confirm(
+      `Togliere ${nome}? Se ne vanno il suo profilo, i protocolli, le sedute salvate, ` +
+      'le uscite di corsa e le misurazioni. Non si annulla. Il suo accesso resta ' +
+      'attivo ma vuoto: per tornare dovra\' iscriversi di nuovo con il tuo codice.',
+      { confirmLabel: 'Togli' }
+    );
+    if (!ok) return;
+
+    this.removingClient = true;
+    this.cdr.detectChanges();
+    try {
+      await this.auth.deleteClient(this.clientId);
+      this.toast.success(`${nome} non e' piu' fra i tuoi clienti.`);
+      this.router.navigate(['/coach/clienti']);
+    } catch (e: any) {
+      console.error('Errore rimozione cliente:', e);
+      this.toast.error(e?.message || 'Non sono riuscito a togliere il cliente. Riprova.');
+      this.removingClient = false;
+      this.cdr.detectChanges();
     }
   }
 
