@@ -18,39 +18,44 @@
   </p>
 </div>
 
-<p class="sectiontitle">Corpo</p>
-<div class="infocard">
-  <div class="rows">
-    <div class="account-row">
-      <span class="account-row-label" id="sesso-lbl">Sesso</span>
-      <div class="viewtoggle labeltoggle" role="group" aria-labelledby="sesso-lbl">
-        <button class="viewtogglebtn tap44 tap44-v" [class.active]="sex === 'm'"
-                [attr.aria-pressed]="sex === 'm'" (click)="setSex('m')">Uomo</button>
-        <button class="viewtogglebtn tap44 tap44-v" [class.active]="sex === 'f'"
-                [attr.aria-pressed]="sex === 'f'" (click)="setSex('f')">Donna</button>
+<!-- Altezza, sesso e data di nascita esistono per le formule di composizione
+     corporea, che vivono nelle Misure: schermata che il coach non ha. Per lui
+     erano tre campi da riempire senza che niente li leggesse mai. -->
+<ng-container *ngIf="!auth.isCoach">
+  <p class="sectiontitle">Corpo</p>
+  <div class="infocard">
+    <div class="rows">
+      <div class="account-row">
+        <span class="account-row-label" id="sesso-lbl">Sesso</span>
+        <div class="viewtoggle labeltoggle" role="group" aria-labelledby="sesso-lbl">
+          <button class="viewtogglebtn tap44 tap44-v" [class.active]="sex === 'm'"
+                  [attr.aria-pressed]="sex === 'm'" (click)="setSex('m')">Uomo</button>
+          <button class="viewtogglebtn tap44 tap44-v" [class.active]="sex === 'f'"
+                  [attr.aria-pressed]="sex === 'f'" (click)="setSex('f')">Donna</button>
+        </div>
       </div>
-    </div>
 
-    <div class="account-row">
-      <label class="account-row-label" for="nascita">Data di nascita</label>
-      <input id="nascita" class="daterow" type="date" [class.unset]="!birthDate"
-             [value]="birthDate ?? ''" [max]="maxBirthDate" [min]="minBirthDate"
-             (change)="setBirthDate($event)" />
-    </div>
+      <div class="account-row">
+        <label class="account-row-label" for="nascita">Data di nascita</label>
+        <input id="nascita" class="daterow" type="date" [class.unset]="!birthDate"
+               [value]="birthDate ?? ''" [max]="maxBirthDate" [min]="minBirthDate"
+               (change)="setBirthDate($event)" />
+      </div>
 
-    <button type="button" class="account-row heightrow" (click)="openHeightModal()">
-      <span class="account-row-label">Altezza</span>
-      <span class="heightrow-right">
-        <span class="account-row-value" [class.unset]="!heightSet">{{ heightLabel }}</span>
-        <lucide-icon name="chevron-right" [size]="13"></lucide-icon>
-      </span>
-    </button>
+      <button type="button" class="account-row heightrow" (click)="openHeightModal()">
+        <span class="account-row-label">Altezza</span>
+        <span class="heightrow-right">
+          <span class="account-row-value" [class.unset]="!heightSet">{{ heightLabel }}</span>
+          <lucide-icon name="chevron-right" [size]="13"></lucide-icon>
+        </span>
+      </button>
+    </div>
+    <p class="settings-hint">
+      Si dichiarano una volta e restano qui, non fra le rilevazioni: peso e pliche cambiano a
+      ogni controllo, questi no.
+    </p>
   </div>
-  <p class="settings-hint">
-    Si dichiarano una volta e restano qui, non fra le rilevazioni: peso e pliche cambiano a
-    ogni controllo, questi no.
-  </p>
-</div>
+</ng-container>
 
 <p class="sectiontitle">Il tuo account</p>
 <div class="infocard">
@@ -138,6 +143,8 @@
   </div>
 </div>
 
+<!-- Lo apre solo la sezione Corpo, che il coach non ha. -->
+<ng-container *ngIf="!auth.isCoach">
 <div class="bottomsheet-overlay" #heightSheetOverlay [class.show]="heightModalOpen"
      (click)="onHeightOverlayClick($event)">
   <div class="bottomsheet" [class.show]="heightModalOpen">
@@ -162,3 +169,4 @@
     </div>
   </div>
 </div>
+</ng-container>
