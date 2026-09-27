@@ -14,13 +14,9 @@
   </div>
   <div class="method-info">
     <div class="method-title">Impostazioni</div>
-    <div class="method-sub">Tema, dati dell'account<ng-container *ngIf="auth.isCoach"> e codice coach</ng-container></div>
+    <div class="method-sub">Tema, dati dell'account<ng-container *ngIf="auth.isCoach">, codice coach</ng-container> e uscita</div>
   </div>
   <span class="chev">
     <lucide-icon name="chevron-right" [size]="13"></lucide-icon>
   </span>
-</div>
-
-<div class="savebar">
-  <button class="confirmbtn cancel w-full" (click)="logout()">Esci</button>
 </div>

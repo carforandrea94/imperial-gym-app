@@ -1,4 +1,4 @@
-import { loginErrorMessage, resetErrorMessage, RESET_SENT_MESSAGE } from './auth-errors.util';
+import { loginErrorMessage, resetErrorMessage, deleteAccountErrorMessage, RESET_SENT_MESSAGE } from './auth-errors.util';
 
 describe('loginErrorMessage', () => {
   /* Firebase non distingue fra utente inesistente e password sbagliata, e
@@ -62,5 +62,33 @@ describe('RESET_SENT_MESSAGE', () => {
 
   it('avvisa dello spam, che e\' dove finisce', () => {
     expect(RESET_SENT_MESSAGE).toContain('spam');
+  });
+});
+
+describe('deleteAccountErrorMessage', () => {
+  /* Qui la password si riscrive apposta, quindi sbagliarla e' il caso
+     normale e va detto con quelle parole, non con un errore generico. */
+  it('la password sbagliata si chiama col suo nome', () => {
+    expect(deleteAccountErrorMessage({ code: 'auth/wrong-password' })).toBe('Password non corretta.');
+    expect(deleteAccountErrorMessage({ code: 'auth/invalid-credential' })).toBe('Password non corretta.');
+  });
+
+  it('senza rete non e\' colpa della password', () => {
+    expect(deleteAccountErrorMessage({ code: 'auth/network-request-failed' })).toContain('connessione');
+  });
+
+  it('un permesso negato parla dei dati, non delle regole', () => {
+    expect(deleteAccountErrorMessage({ code: 'permission-denied' })).toContain('cancellare i tuoi dati');
+  });
+
+  /* I nostri errori (un coach con clienti, una sessione scaduta) arrivano
+     gia' scritti per una persona: riscriverli li peggiorerebbe. */
+  it('lascia passare i messaggi che ci siamo scritti noi', () => {
+    expect(deleteAccountErrorMessage(new Error('Hai ancora 3 clienti collegati.')))
+      .toBe('Hai ancora 3 clienti collegati.');
+  });
+
+  it('un errore muto resta comprensibile', () => {
+    expect(deleteAccountErrorMessage({})).toContain('chiudere l\'account');
   });
 });

@@ -43,6 +43,29 @@ export function resetErrorMessage(e: any): string {
 }
 
 /**
+ * I messaggi di chi sta chiudendo il proprio account.
+ *
+ * La password sbagliata e' il caso normale, non un guasto: la si riscrive
+ * apposta, ed e' li' che si sbaglia. Gli altri errori arrivano da noi (un
+ * coach con clienti, una sessione scaduta) e hanno gia' un testo loro.
+ */
+export function deleteAccountErrorMessage(e: any): string {
+  switch (e?.code) {
+    case 'auth/wrong-password':
+    case 'auth/invalid-credential':
+      return 'Password non corretta.';
+    case 'auth/too-many-requests':
+      return 'Troppi tentativi. Riprova tra qualche minuto.';
+    case 'auth/network-request-failed':
+      return 'Nessuna connessione. Controlla la rete e riprova.';
+    case 'permission-denied':
+      return 'Non e\' stato possibile cancellare i tuoi dati. Riprova, e se continua scrivi al tuo coach.';
+    default:
+      return e?.message || 'Non sono riuscito a chiudere l\'account. Riprova.';
+  }
+}
+
+/**
  * Cosa si dice a chi ha chiesto di reimpostare la password.
  *
  * Non si dice "ti ho mandato un'email": vorrebbe dire confermare che quel

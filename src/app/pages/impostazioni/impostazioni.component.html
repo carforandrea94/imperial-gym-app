@@ -79,6 +79,65 @@
   </div>
 </ng-container>
 
+<p class="sectiontitle">Uscita</p>
+<div class="infocard">
+  <button type="button" class="confirmbtn cancel w-full" (click)="logout()">Esci</button>
+  <p class="settings-hint">
+    Uscire non cancella niente: rientri con la stessa email e ritrovi tutto.
+  </p>
+</div>
+
+<p class="sectiontitle">Chiudere l'account</p>
+<div class="infocard">
+  <p class="settings-hint" style="margin:0 0 12px">
+    <ng-container *ngIf="!auth.isCoach">Se ne vanno il tuo profilo, le sedute salvate, le
+      uscite di corsa, le misurazioni e il programma che il tuo coach ti ha caricato.</ng-container>
+    <ng-container *ngIf="auth.isCoach">Se ne vanno il tuo profilo e il tuo codice coach. Puoi
+      farlo solo quando non hai piu' clienti collegati: finche' ci sono, resterebbero senza
+      coach.</ng-container>
+    Non si annulla.
+  </p>
+  <button type="button" class="dangerbtn" (click)="openDeleteSheet()">
+    <lucide-icon name="trash-2" [size]="17"></lucide-icon>
+    Elimina account
+  </button>
+</div>
+
+<!-- La password si riscrive per due motivi: Firebase rifiuta di chiudere un
+     account la cui sessione e' vecchia, e un'azione che non si annulla merita
+     piu' di un tocco. -->
+<div class="bottomsheet-overlay" #deleteSheetOverlay [class.show]="deleteSheetOpen"
+     (click)="onDeleteOverlayClick($event)">
+  <div class="bottomsheet" [class.show]="deleteSheetOpen">
+    <div class="grabber"></div>
+    <p class="confirmtext sheet-title">Chiudere l'account?</p>
+
+    <p class="sheet-text">
+      Stai per chiudere <b>{{ auth.currentUser()?.email }}</b> e cancellare quello che
+      contiene. Non si torna indietro. Scrivi la tua password per confermare.
+    </p>
+
+    <div class="authfield">
+      <label for="del-pw">Password</label>
+      <div class="measure-input-wrap">
+        <input id="del-pw" type="password" autocomplete="current-password"
+          [(ngModel)]="deletePassword" name="deletePassword"
+          placeholder="La tua password"
+          aria-describedby="del-err" />
+      </div>
+    </div>
+
+    <p class="sheet-err" id="del-err" role="alert" *ngIf="deleteError">{{ deleteError }}</p>
+
+    <div class="confirmbtns">
+      <button class="confirmbtn cancel" (click)="closeDeleteSheet()" [disabled]="deleting">Annulla</button>
+      <button class="dangerbtn" (click)="confirmDelete()" [disabled]="deleting || !deletePassword">
+        {{ deleting ? 'Chiudo…' : 'Elimina' }}
+      </button>
+    </div>
+  </div>
+</div>
+
 <div class="bottomsheet-overlay" #heightSheetOverlay [class.show]="heightModalOpen"
      (click)="onHeightOverlayClick($event)">
   <div class="bottomsheet" [class.show]="heightModalOpen">

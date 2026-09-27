@@ -6,12 +6,15 @@ import {
   signOut,
   sendPasswordResetEmail,
   deleteUser,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
   User
 } from 'firebase/auth';
 import {
   doc,
   getDoc,
   setDoc,
+  deleteDoc,
   query,
   collection,
   where,
@@ -37,6 +40,14 @@ const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // esclusi 0/O/1/I/L per l
  * resta nullo e le guardie rimandano all'accesso.
  */
 export const PROFILE_MISSING = 'app/profile-missing';
+
+/**
+ * Le raccolte personali di un utente, quelle che si cancellano insieme al suo
+ * account. Non ci sono i protocolli: li scrive il coach e vanno tolti a parte,
+ * con il permesso che le regole danno al proprietario solo per la
+ * cancellazione.
+ */
+const SOTTORACCOLTE = ['sessions', 'runs', 'measurements', 'state'] as const;
 
 function generateCode(length = 6): string {
   let out = '';
@@ -201,6 +212,67 @@ export class AuthService {
       await setDoc(doc(this.fb.db, 'coachCodes', pairingCode), { coachId: profile.uid });
       this.currentUser.set(profile);
       return profile;
+    })());
+  }
+
+  /**
+   * Chiude l'account e cancella quello che si porta dietro.
+   *
+   * Chiede la password e rifa' l'accesso prima di toccare qualsiasi cosa: per
+   * due motivi. Firebase rifiuta la cancellazione di un utente la cui sessione
+   * e' vecchia (auth/requires-recent-login), e soprattutto e' un'azione che non
+   * si annulla - scriverla e' la conferma, un tasto solo no.
+   *
+   * L'ordine non e' indifferente: prima i documenti, per ultimo l'utente.
+   * Le regole permettono di cancellare i propri dati solo a chi e' collegato,
+   * quindi chiudendo prima l'account resterebbero li' per sempre, senza piu'
+   * nessuno che possa toglierli.
+   *
+   * Resta un caso che da qui non si copre: se la cancellazione dell'utente
+   * fallisce dopo che i dati sono spariti, resta una sessione senza profilo.
+   * E' lo stesso stato dell'iscrizione interrotta, e si riprova da capo.
+   * Chiuderlo davvero vorrebbe dire farlo fare al server, non al telefono.
+   */
+  deleteAccount(password: string): Promise<void> {
+    return this.zoneFix.run((async () => {
+      const user = this.fb.auth.currentUser;
+      const profile = this.currentUser();
+      if (!user || !profile) throw new Error('Sessione scaduta. Accedi di nuovo.');
+      if (!user.email) throw new Error('Questo account non ha un\'email: scrivi al tuo coach.');
+
+      await reauthenticateWithCredential(
+        user, EmailAuthProvider.credential(user.email, password)
+      );
+
+      // Un coach che se ne va lascerebbe i suoi clienti agganciati a un
+      // coachId che non esiste piu': niente protocolli, niente avvisi, e
+      // nessun modo di accorgersene dall'app.
+      if (profile.role === 'coach') {
+        const clienti = await this.listClients();
+        if (clienti.length > 0) {
+          throw new Error(
+            `Hai ancora ${clienti.length} ${clienti.length === 1 ? 'cliente' : 'clienti'} collegati. ` +
+            'Finche\' ci sono, chiudere l\'account li lascerebbe senza coach.'
+          );
+        }
+      }
+
+      for (const nome of SOTTORACCOLTE) {
+        const snap = await getDocs(collection(this.fb.db, 'users', user.uid, nome));
+        await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+      }
+      const protocolli = await getDocs(collection(this.fb.db, 'users', user.uid, 'protocols'));
+      await Promise.all(protocolli.docs.map(d => deleteDoc(d.ref)));
+
+      await deleteDoc(doc(this.fb.db, 'users', user.uid));
+      if (profile.role === 'coach' && profile.pairingCode) {
+        // Senza questo il codice resterebbe valido: chi lo usasse si
+        // iscriverebbe a un coach che non c'e' piu'.
+        await deleteDoc(doc(this.fb.db, 'coachCodes', profile.pairingCode));
+      }
+
+      await deleteUser(user);
+      this.currentUser.set(null);
     })());
   }
 
