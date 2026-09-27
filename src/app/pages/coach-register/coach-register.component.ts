@@ -1,13 +1,14 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { LucideAngularModule } from 'lucide-angular';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-coach-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, LucideAngularModule],
   templateUrl: './coach-register.component.html',
   styles: [`:host { display: block; }`]
 })
@@ -19,7 +20,40 @@ export class CoachRegisterComponent {
   loading = false;
   errorMsg = '';
 
-  constructor(private auth: AuthService, private router: Router) {}
+  /** La password sul telefono si sbaglia al buio, e qui la si sta scegliendo. */
+  showPassword = false;
+
+  /**
+   * Si sta finendo un'iscrizione rimasta a meta': l'utente su Auth c'e' gia',
+   * manca il profilo. Email e password sono gia' state scelte.
+   */
+  completa = false;
+  emailInSospeso: string | null = null;
+
+  constructor(
+    private auth: AuthService,
+    private router: Router,
+    route: ActivatedRoute
+  ) {
+    if (route.snapshot.queryParamMap.get('completa') === '1') {
+      if (this.auth.hasPendingProfile()) {
+        this.completa = true;
+        this.emailInSospeso = this.auth.pendingEmail();
+      } else {
+        this.router.navigate(['/login']);
+      }
+    }
+  }
+
+  togglePassword(): void {
+    this.showPassword = !this.showPassword;
+  }
+
+  /** Lascia perdere l'iscrizione a meta' e chiude la sessione. */
+  async annulla(): Promise<void> {
+    await this.auth.logout();
+    this.router.navigate(['/login']);
+  }
 
   async submit(form: NgForm): Promise<void> {
     if (form.invalid) {
@@ -35,7 +69,9 @@ export class CoachRegisterComponent {
 
     try {
       await Promise.race([
-        this.auth.registerCoach(this.email, this.password, this.displayName),
+        this.completa
+          ? this.auth.completeCoachProfile(this.displayName)
+          : this.auth.registerCoach(this.email, this.password, this.displayName),
         timeout
       ]);
       this.router.navigate(['/coach/bacheca']);

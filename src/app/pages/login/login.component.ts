@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { LucideAngularModule } from 'lucide-angular';
-import { AuthService } from '../../core/services/auth.service';
+import { AuthService, PROFILE_MISSING } from '../../core/services/auth.service';
 import { LogoComponent } from '../../components/logo/logo.component';
 import { loginErrorMessage, resetErrorMessage, RESET_SENT_MESSAGE } from '../../core/utils/auth-errors.util';
 
@@ -77,6 +77,13 @@ export class LoginComponent {
       }
     } catch (e: any) {
       console.error('Errore login:', e);
+      // Un'iscrizione rimasta a meta': la sessione e' aperta e manca solo il
+      // profilo. Invece di rimbalzare con un messaggio che non dice cosa fare,
+      // si va a finirla.
+      if (e?.code === PROFILE_MISSING) {
+        this.router.navigate(['/registrati'], { queryParams: { completa: '1' } });
+        return;
+      }
       this.errorMsg = loginErrorMessage(e);
     } finally {
       this.loading = false;

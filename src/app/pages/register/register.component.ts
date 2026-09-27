@@ -1,13 +1,14 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { LucideAngularModule } from 'lucide-angular';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, LucideAngularModule],
   templateUrl: './register.component.html',
   styles: [`:host { display: block; }`]
 })
@@ -20,7 +21,44 @@ export class RegisterComponent {
   loading = false;
   errorMsg = '';
 
-  constructor(private auth: AuthService, private router: Router) {}
+  /** La password sul telefono si sbaglia al buio, e qui la si sta scegliendo. */
+  showPassword = false;
+
+  /**
+   * Si sta finendo un'iscrizione rimasta a meta', non iniziandone una nuova:
+   * l'utente su Auth c'e' gia', manca il profilo. Email e password sono gia'
+   * state scelte, quindi qui si chiede solo quello che manca.
+   */
+  completa = false;
+  /** L'indirizzo della sessione da completare, per dire di chi si tratta. */
+  emailInSospeso: string | null = null;
+
+  constructor(
+    private auth: AuthService,
+    private router: Router,
+    route: ActivatedRoute
+  ) {
+    if (route.snapshot.queryParamMap.get('completa') === '1') {
+      // Ci si arriva solo dall'accesso, con una sessione aperta senza profilo.
+      // Scritto a mano nella barra degli indirizzi non vuol dire niente.
+      if (this.auth.hasPendingProfile()) {
+        this.completa = true;
+        this.emailInSospeso = this.auth.pendingEmail();
+      } else {
+        this.router.navigate(['/login']);
+      }
+    }
+  }
+
+  togglePassword(): void {
+    this.showPassword = !this.showPassword;
+  }
+
+  /** Lascia perdere l'iscrizione a meta' e chiude la sessione. */
+  async annulla(): Promise<void> {
+    await this.auth.logout();
+    this.router.navigate(['/login']);
+  }
 
   async submit(form: NgForm): Promise<void> {
     if (form.invalid) {
@@ -36,7 +74,9 @@ export class RegisterComponent {
 
     try {
       await Promise.race([
-        this.auth.registerClient(this.displayName, this.email, this.password, this.coachCode),
+        this.completa
+          ? this.auth.completeClientProfile(this.displayName, this.coachCode)
+          : this.auth.registerClient(this.displayName, this.email, this.password, this.coachCode),
         timeout
       ]);
       this.router.navigate(['/scheda']);

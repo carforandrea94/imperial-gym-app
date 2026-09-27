@@ -5,6 +5,7 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   sendPasswordResetEmail,
+  deleteUser,
   User
 } from 'firebase/auth';
 import {
@@ -21,6 +22,21 @@ import { UserProfile, Sex } from '../models/user.model';
 import { ZoneFixService } from '../utils/zone.util';
 
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // esclusi 0/O/1/I/L per leggibilita'
+
+/**
+ * L'accesso e' riuscito ma il profilo non c'e'.
+ *
+ * Succede quando la registrazione ha creato l'utente su Auth e poi non e'
+ * riuscita a scrivere il documento del profilo. Chi ci finisce dentro non
+ * entra ("profilo non trovato") e non puo' nemmeno reiscriversi ("email gia'
+ * registrata"): senza un codice riconoscibile qui, l'unica uscita sarebbe
+ * cancellare l'utente dalla console di Firebase.
+ *
+ * Chi lo riceve NON e' scollegato: la sessione serve a scrivere il profilo che
+ * manca, ed e' l'unica cosa che quella sessione puo' fare, perche' currentUser
+ * resta nullo e le guardie rimandano all'accesso.
+ */
+export const PROFILE_MISSING = 'app/profile-missing';
 
 function generateCode(length = 6): string {
   let out = '';
@@ -85,8 +101,10 @@ export class AuthService {
       const profile = await this.loadProfile(cred.user.uid);
 
       if (!profile) {
-        await signOut(this.fb.auth);
-        throw new Error('Profilo utente non trovato.');
+        // Niente signOut: la sessione appena aperta e' quello che permette di
+        // scrivere il profilo mancante (le regole consentono la creazione solo
+        // all'utente stesso). Chiuderla renderebbe il guasto irreparabile.
+        throw Object.assign(new Error('Profilo utente non trovato.'), { code: PROFILE_MISSING });
       }
 
       this.currentUser.set(profile);
@@ -105,6 +123,87 @@ export class AuthService {
     return this.zoneFix.run(sendPasswordResetEmail(this.fb.auth, email.trim()));
   }
 
+  /**
+   * Toglie l'utente appena creato su Auth quando la registrazione si e' rotta
+   * a meta'. Se anche questo fallisce - ed e' probabile, visto che la causa
+   * piu' comune e' la rete - non si dice nulla di nuovo: l'errore da mostrare
+   * resta quello della registrazione, e chi resta bloccato lo recupera
+   * all'accesso con completeClientProfile/completeCoachProfile.
+   */
+  private async rollbackAuthUser(user: User): Promise<void> {
+    try {
+      await deleteUser(user);
+    } catch {
+      /* resta l'utente orfano: lo raccoglie il recupero all'accesso */
+    }
+  }
+
+  /** C'e' una sessione aperta senza profilo, cioe' un'iscrizione da finire. */
+  hasPendingProfile(): boolean {
+    return !!this.fb.auth.currentUser && !this.currentUser();
+  }
+
+  /** L'email della sessione da completare, da mostrare a chi la sta finendo. */
+  pendingEmail(): string | null {
+    return this.fb.auth.currentUser?.email ?? null;
+  }
+
+  /**
+   * Scrive il profilo cliente che manca, sulla sessione gia' aperta.
+   * E' la registrazione, meno la parte che era gia' riuscita.
+   */
+  completeClientProfile(displayName: string, coachCode: string): Promise<UserProfile> {
+    return this.zoneFix.run((async () => {
+      const user = this.fb.auth.currentUser;
+      if (!user) throw new Error('Sessione scaduta. Accedi di nuovo.');
+
+      const code = coachCode.trim().toUpperCase();
+      if (!code) throw new Error('Inserisci il codice del tuo coach.');
+      const codeSnap = await getDoc(doc(this.fb.db, 'coachCodes', code));
+      if (!codeSnap.exists()) {
+        throw new Error('Codice coach non valido. Controlla di averlo scritto correttamente.');
+      }
+
+      const profile: UserProfile = {
+        uid: user.uid,
+        email: user.email ?? '',
+        displayName: displayName.trim(),
+        role: 'client',
+        pairingCode: generateCode(),
+        coachId: (codeSnap.data() as { coachId: string }).coachId,
+        paired: true,
+        createdAt: new Date().toISOString()
+      };
+      await setDoc(doc(this.fb.db, 'users', profile.uid), profile);
+      this.currentUser.set(profile);
+      return profile;
+    })());
+  }
+
+  /** Come sopra, per chi si stava iscrivendo come coach. */
+  completeCoachProfile(displayName: string): Promise<UserProfile> {
+    return this.zoneFix.run((async () => {
+      const user = this.fb.auth.currentUser;
+      if (!user) throw new Error('Sessione scaduta. Accedi di nuovo.');
+
+      const pairingCode = await this.generateUniqueCoachCode();
+      const profile: UserProfile = {
+        uid: user.uid,
+        email: user.email ?? '',
+        displayName: displayName.trim(),
+        role: 'coach',
+        pairingCode,
+        coachId: null,
+        paired: true,
+        createdAt: new Date().toISOString()
+      };
+      await setDoc(doc(this.fb.db, 'users', profile.uid), profile);
+      await setDoc(doc(this.fb.db, 'coachCodes', pairingCode), { coachId: profile.uid });
+      this.currentUser.set(profile);
+      return profile;
+    })());
+  }
+
   logout(): Promise<void> {
     return this.zoneFix.run((async () => {
       await signOut(this.fb.auth);
@@ -120,21 +219,32 @@ export class AuthService {
   registerCoach(email: string, password: string, displayName: string): Promise<UserProfile> {
     return this.zoneFix.run((async () => {
       const cred = await createUserWithEmailAndPassword(this.fb.auth, email.trim(), password);
-      const pairingCode = await this.generateUniqueCoachCode();
-      const profile: UserProfile = {
-        uid: cred.user.uid,
-        email: email.trim(),
-        displayName: displayName.trim(),
-        role: 'coach',
-        pairingCode,
-        coachId: null,
-        paired: true,
-        createdAt: new Date().toISOString()
-      };
-      await setDoc(doc(this.fb.db, 'users', profile.uid), profile);
-      await setDoc(doc(this.fb.db, 'coachCodes', pairingCode), { coachId: profile.uid });
-      this.currentUser.set(profile);
-      return profile;
+      let profileWritten = false;
+      try {
+        const pairingCode = await this.generateUniqueCoachCode();
+        const profile: UserProfile = {
+          uid: cred.user.uid,
+          email: email.trim(),
+          displayName: displayName.trim(),
+          role: 'coach',
+          pairingCode,
+          coachId: null,
+          paired: true,
+          createdAt: new Date().toISOString()
+        };
+        await setDoc(doc(this.fb.db, 'users', profile.uid), profile);
+        profileWritten = true;
+        await setDoc(doc(this.fb.db, 'coachCodes', pairingCode), { coachId: profile.uid });
+        this.currentUser.set(profile);
+        return profile;
+      } catch (e) {
+        // Solo se il profilo NON e' stato scritto: se a mancare e' la voce
+        // pubblica del codice, l'account e' sano e ensureCoachCode la rifa'
+        // da sola al primo accesso. Cancellare li' vorrebbe dire buttare via
+        // un account funzionante.
+        if (!profileWritten) await this.rollbackAuthUser(cred.user);
+        throw e;
+      }
     })());
   }
 
@@ -155,19 +265,27 @@ export class AuthService {
       const coachId = (codeSnap.data() as { coachId: string }).coachId;
 
       const cred = await createUserWithEmailAndPassword(this.fb.auth, email.trim(), password);
-      const profile: UserProfile = {
-        uid: cred.user.uid,
-        email: email.trim(),
-        displayName: displayName.trim(),
-        role: 'client',
-        pairingCode: generateCode(),
-        coachId,
-        paired: true,
-        createdAt: new Date().toISOString()
-      };
-      await setDoc(doc(this.fb.db, 'users', profile.uid), profile);
-      this.currentUser.set(profile);
-      return profile;
+      try {
+        const profile: UserProfile = {
+          uid: cred.user.uid,
+          email: email.trim(),
+          displayName: displayName.trim(),
+          role: 'client',
+          pairingCode: generateCode(),
+          coachId,
+          paired: true,
+          createdAt: new Date().toISOString()
+        };
+        await setDoc(doc(this.fb.db, 'users', profile.uid), profile);
+        this.currentUser.set(profile);
+        return profile;
+      } catch (e) {
+        // L'utente su Auth c'e' gia' e il profilo no: lasciarlo li' chiude
+        // fuori per sempre chi ci ha provato. Toglierlo rimette le cose come
+        // prima del tentativo, e "riprova" torna a voler dire qualcosa.
+        await this.rollbackAuthUser(cred.user);
+        throw e;
+      }
     })());
   }
 
