@@ -432,13 +432,21 @@ export class AuthService {
    * la ricrea. Idempotente, sicuro da richiamare ad ogni apertura pagina.
    */
   /**
-   * Salva i dati del corpo sul profilo: altezza, sesso, data di nascita, o
-   * un sottoinsieme qualsiasi. `null` toglie il valore.
+   * Salva sul profilo i campi che l'utente cambia da solo: nome, cognome,
+   * data di nascita, sesso e altezza, o un sottoinsieme qualsiasi. `null`
+   * toglie il valore.
    *
-   * Sono gli unici campi del profilo che l'utente cambia da solo, e stanno qui
-   * e non fra le misurazioni perche' si dichiarano una volta e restano: in
-   * `MeasurementEntry` l'app li richiederebbe a ogni controllo, accanto a peso
-   * e pliche, che invece cambiano ogni volta.
+   * Sono gli unici che l'utente tocca, e le regole non gli lasciano scrivere
+   * altro: uid, ruolo, coachId e codice li decide l'iscrizione.
+   *
+   * Altezza, sesso e data di nascita stanno qui e non fra le misurazioni
+   * perche' si dichiarano una volta e restano: in `MeasurementEntry` l'app li
+   * richiederebbe a ogni controllo, accanto a peso e pliche, che invece
+   * cambiano ogni volta.
+   *
+   * Chi cambia nome o cognome deve passare anche displayName ricomposto: e'
+   * quello che l'app mostra ovunque, e lasciarlo indietro farebbe comparire il
+   * nome vecchio in navbar e nella lista del coach.
    *
    * Scrive in merge invece che rimpiazzare il documento: il profilo porta
    * campi che quella schermata non conosce (pairingCode, coachId, paired) e
@@ -447,7 +455,14 @@ export class AuthService {
    * Aggiorna anche il signal, altrimenti il valore resterebbe quello vecchio
    * fino al prossimo accesso: `currentUser` non rilegge da solo.
    */
-  patchBody(patch: { heightCm?: number | null; sex?: Sex | null; birthDate?: string | null }): Promise<void> {
+  patchBody(patch: {
+    heightCm?: number | null;
+    sex?: Sex | null;
+    birthDate?: string | null;
+    displayName?: string;
+    firstName?: string;
+    lastName?: string;
+  }): Promise<void> {
     return this.zoneFix.run((async () => {
       const user = this.currentUser();
       if (!user) throw new Error('Nessun utente collegato.');

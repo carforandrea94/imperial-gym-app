@@ -13,7 +13,7 @@
  */
 import { initializeTestEnvironment, assertFails, assertSucceeds }
   from '@firebase/rules-unit-testing';
-import { doc, getDoc, getDocs, setDoc, deleteDoc, collection } from 'firebase/firestore';
+import { doc, getDoc, getDocs, setDoc, deleteDoc, updateDoc, collection } from 'firebase/firestore';
 import { readFileSync } from 'node:fs';
 
 const env = await initializeTestEnvironment({
@@ -96,6 +96,21 @@ await prova('con data e versione si crea',
   assertSucceeds(setDoc(doc(nuovo, 'users', NUOVO), {
     ...profiloBase, privacyAcceptedAt: '2026-09-27T00:00:00.000Z', privacyVersion: '2026-09-27'
   })));
+
+console.log('\n— i campi che uno cambia di suo —');
+const io = env.authenticatedContext(ESTRANEO).firestore();
+await prova('cambia nome, cognome e nome intero',
+  assertSucceeds(updateDoc(doc(io, 'users', ESTRANEO), { firstName: 'Anna', lastName: 'Rossi', displayName: 'Anna Rossi' })));
+await prova('cambia data di nascita e sesso',
+  assertSucceeds(updateDoc(doc(io, 'users', ESTRANEO), { birthDate: '1994-05-01', sex: 'f' })));
+await prova('NON puo\' svuotare il nome intero',
+  assertFails(updateDoc(doc(io, 'users', ESTRANEO), { displayName: '' })));
+await prova('NON puo\' cambiarsi il ruolo',
+  assertFails(updateDoc(doc(io, 'users', ESTRANEO), { role: 'coach' })));
+await prova('NON puo\' cambiarsi il coach',
+  assertFails(updateDoc(doc(io, 'users', ESTRANEO), { coachId: COACH })));
+await prova('NON puo\' riscrivere quando ha accettato l\'informativa',
+  assertFails(updateDoc(doc(io, 'users', ESTRANEO), { privacyAcceptedAt: '2030-01-01T00:00:00.000Z' })));
 
 await env.cleanup();
 console.log(ko === 0 ? '\nTUTTO COME DEVE ESSERE' : `\n${ko} CONTROLLI FALLITI`);

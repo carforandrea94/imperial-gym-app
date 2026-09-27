@@ -19,15 +19,33 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    // I soli campi del profilo che l'utente cambia da solo: altezza, sesso
-    // e data di nascita.
-    // Si dichiarano una volta e restano, quindi vivono sul profilo e non fra
-    // le misurazioni. La forbice dell'altezza e i due valori del sesso sono
-    // ripetuti qui e non solo nel client perche' la validazione dell'app e' un
-    // suggerimento: a scrivere sul documento e' il dispositivo, non l'app.
-    function bodyFieldsOnly() {
+    // I soli campi del profilo che l'utente cambia da solo: nome, cognome,
+    // data di nascita, sesso e altezza. Tutto il resto - uid, ruolo, coachId,
+    // codice, accettazione dell'informativa - lo decide l'iscrizione e da qui
+    // non si tocca.
+    // Le forbici sono ripetute qui e non solo nel client perche' la validazione
+    // dell'app e' un suggerimento: a scrivere sul documento e' il dispositivo,
+    // non l'app.
+    function selfEditableFields() {
       let keys = request.resource.data.diff(resource.data).affectedKeys();
-      return keys.hasOnly(['heightCm', 'sex', 'birthDate']) &&
+      return keys.hasOnly(['heightCm', 'sex', 'birthDate', 'displayName', 'firstName', 'lastName']) &&
+        // displayName e' quello che l'app mostra ovunque: vuoto lascerebbe
+        // schermate senza nome e un avatar senza iniziale.
+        (!keys.hasAny(['displayName']) || (
+          request.resource.data.displayName is string &&
+          request.resource.data.displayName.size() >= 1 &&
+          request.resource.data.displayName.size() <= 80
+        )) &&
+        // Il cognome puo' essere vuoto - c'e' chi non lo mette - ma non altro
+        // che una stringa, e non un romanzo.
+        (!keys.hasAny(['firstName']) || (
+          request.resource.data.firstName is string &&
+          request.resource.data.firstName.size() <= 80
+        )) &&
+        (!keys.hasAny(['lastName']) || (
+          request.resource.data.lastName is string &&
+          request.resource.data.lastName.size() <= 80
+        )) &&
         (!keys.hasAny(['heightCm']) || request.resource.data.heightCm == null || (
           request.resource.data.heightCm is number &&
           request.resource.data.heightCm >= 100 &&
@@ -75,7 +93,7 @@ service cloud.firestore {
         (request.auth.uid == uid &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['paired']) &&
           resource.data.paired == false && request.resource.data.paired == true) ||
-        (request.auth.uid == uid && bodyFieldsOnly()) ||
+        (request.auth.uid == uid && selfEditableFields()) ||
         (resource.data.coachId == request.auth.uid)
       );
 

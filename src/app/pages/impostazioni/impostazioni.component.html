@@ -18,41 +18,61 @@
   </p>
 </div>
 
-<!-- Altezza, sesso e data di nascita esistono per le formule di composizione
-     corporea, che vivono nelle Misure: schermata che il coach non ha. Per lui
-     erano tre campi da riempire senza che niente li leggesse mai. -->
+<!-- Nome, cognome, data di nascita e sesso: sono di chiunque abbia un
+     account, coach compreso. -->
+<p class="sectiontitle">Dati personali</p>
+<div class="infocard">
+  <div class="rows">
+    <div class="account-row">
+      <label class="account-row-label" for="nome">Nome</label>
+      <!-- Si salva quando il campo perde il fuoco, come la data: senza un
+           tasto "salva" il riscontro e' che il valore resta li' tornando. -->
+      <input id="nome" class="textrow" type="text" autocomplete="given-name"
+             [value]="nome" placeholder="Il tuo nome" maxlength="80"
+             (change)="setNome($event)" />
+    </div>
+
+    <div class="account-row">
+      <label class="account-row-label" for="cognome">Cognome</label>
+      <input id="cognome" class="textrow" type="text" autocomplete="family-name"
+             [value]="cognome" [class.unset]="!cognome" placeholder="Da impostare" maxlength="80"
+             (change)="setCognome($event)" />
+    </div>
+
+    <div class="account-row">
+      <label class="account-row-label" for="nascita">Data di nascita</label>
+      <input id="nascita" class="daterow" type="date" [class.unset]="!birthDate"
+             [value]="birthDate ?? ''" [max]="maxBirthDate" [min]="minBirthDate"
+             (change)="setBirthDate($event)" />
+    </div>
+
+    <div class="account-row">
+      <span class="account-row-label" id="sesso-lbl">Sesso</span>
+      <div class="viewtoggle labeltoggle" role="group" aria-labelledby="sesso-lbl">
+        <button class="viewtogglebtn tap44 tap44-v" [class.active]="sex === 'm'"
+                [attr.aria-pressed]="sex === 'm'" (click)="setSex('m')">Uomo</button>
+        <button class="viewtogglebtn tap44 tap44-v" [class.active]="sex === 'f'"
+                [attr.aria-pressed]="sex === 'f'" (click)="setSex('f')">Donna</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- L'altezza invece serve alle formule di composizione corporea, che vivono
+     nelle Misure: schermata che il coach non ha. -->
 <ng-container *ngIf="!auth.isCoach">
   <p class="sectiontitle">Corpo</p>
   <div class="infocard">
-    <div class="rows">
-      <div class="account-row">
-        <span class="account-row-label" id="sesso-lbl">Sesso</span>
-        <div class="viewtoggle labeltoggle" role="group" aria-labelledby="sesso-lbl">
-          <button class="viewtogglebtn tap44 tap44-v" [class.active]="sex === 'm'"
-                  [attr.aria-pressed]="sex === 'm'" (click)="setSex('m')">Uomo</button>
-          <button class="viewtogglebtn tap44 tap44-v" [class.active]="sex === 'f'"
-                  [attr.aria-pressed]="sex === 'f'" (click)="setSex('f')">Donna</button>
-        </div>
-      </div>
-
-      <div class="account-row">
-        <label class="account-row-label" for="nascita">Data di nascita</label>
-        <input id="nascita" class="daterow" type="date" [class.unset]="!birthDate"
-               [value]="birthDate ?? ''" [max]="maxBirthDate" [min]="minBirthDate"
-               (change)="setBirthDate($event)" />
-      </div>
-
-      <button type="button" class="account-row heightrow" (click)="openHeightModal()">
-        <span class="account-row-label">Altezza</span>
-        <span class="heightrow-right">
-          <span class="account-row-value" [class.unset]="!heightSet">{{ heightLabel }}</span>
-          <lucide-icon name="chevron-right" [size]="13"></lucide-icon>
-        </span>
-      </button>
-    </div>
+    <button type="button" class="account-row heightrow" (click)="openHeightModal()">
+      <span class="account-row-label">Altezza</span>
+      <span class="heightrow-right">
+        <span class="account-row-value" [class.unset]="!heightSet">{{ heightLabel }}</span>
+        <lucide-icon name="chevron-right" [size]="13"></lucide-icon>
+      </span>
+    </button>
     <p class="settings-hint">
-      Si dichiarano una volta e restano qui, non fra le rilevazioni: peso e pliche cambiano a
-      ogni controllo, questi no.
+      Si dichiara una volta e resta qui, non fra le rilevazioni: peso e pliche cambiano a
+      ogni controllo, l'altezza no.
     </p>
   </div>
 </ng-container>
