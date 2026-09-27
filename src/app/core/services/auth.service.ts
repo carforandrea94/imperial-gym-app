@@ -4,6 +4,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
+  sendPasswordResetEmail,
   User
 } from 'firebase/auth';
 import {
@@ -91,6 +92,17 @@ export class AuthService {
       this.currentUser.set(profile);
       return profile;
     })());
+  }
+
+  /**
+   * Manda l'email per reimpostare la password.
+   *
+   * Non dice se quell'indirizzo esiste, e Firebase nemmeno: su un indirizzo
+   * sconosciuto non fallisce. Confermarlo vorrebbe dire far sapere a chiunque
+   * quali indirizzi sono registrati, provandone uno per volta.
+   */
+  sendPasswordReset(email: string): Promise<void> {
+    return this.zoneFix.run(sendPasswordResetEmail(this.fb.auth, email.trim()));
   }
 
   logout(): Promise<void> {

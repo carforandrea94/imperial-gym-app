@@ -1,46 +1,106 @@
-<div class="authscreen">
-  <div class="authcard infocard">
+<div class="authscreen authfull">
+  <div class="authflow">
     <div class="authhead">
       <app-logo class="authlogo"></app-logo>
-      <div class="authtitle">Imperial Gym</div>
-      <div class="authsub">Accedi al tuo account</div>
+      <h1 class="authtitle">Imperial Gym</h1>
+      <div class="authsub">La tua scheda e la tua dieta.</div>
     </div>
 
-    <form #f="ngForm" (ngSubmit)="submit(f)" novalidate>
+    <!-- Le due strade dette una volta sola, prima di scrivere qualcosa. Non e'
+         un tablist: le due tacche non scorrono con le frecce, e dichiararlo
+         tale prometterebbe una tastiera che non c'e'. E' il gruppo di premuti
+         che l'app usa gia' altrove (tema, sesso). -->
+    <div class="authtabs" role="group" aria-label="Accedi o crea un account">
+      <button type="button" class="authtab" [attr.aria-pressed]="mode === 'login'"
+        (click)="setMode('login')">Accedi</button>
+      <button type="button" class="authtab" [attr.aria-pressed]="mode === 'register'"
+        (click)="setMode('register')">Crea un account</button>
+    </div>
+
+    <form #f="ngForm" (ngSubmit)="submit(f)" novalidate *ngIf="mode === 'login'">
 
       <div class="authfield">
-        <label>Email</label>
+        <label for="email">Email</label>
         <div class="measure-input-wrap">
-          <input type="email" autocomplete="email" name="email"
+          <!-- Senza autocapitalize la tastiera del telefono mette la maiuscola
+               alla prima lettera, e l'indirizzo non e' piu' quello. -->
+          <input id="email" type="email" inputmode="email" autocomplete="email"
+            autocapitalize="none" autocorrect="off" spellcheck="false" name="email"
             [(ngModel)]="email" #emailCtrl="ngModel"
-            required email placeholder="nome@esempio.com" />
+            required email placeholder="nome@esempio.com"
+            [attr.aria-invalid]="emailCtrl.invalid && (emailCtrl.touched || f.submitted) ? 'true' : null"
+            aria-describedby="email-err" />
         </div>
-        <p class="fielderr" *ngIf="emailCtrl.invalid && (emailCtrl.touched || f.submitted)">
+        <p class="fielderr" id="email-err" *ngIf="emailCtrl.invalid && (emailCtrl.touched || f.submitted)">
           <span *ngIf="emailCtrl.errors?.['required']">L'email e' obbligatoria.</span>
           <span *ngIf="emailCtrl.errors?.['email']">Email non valida.</span>
         </p>
       </div>
 
       <div class="authfield">
-        <label>Password</label>
+        <label for="password">Password</label>
         <div class="measure-input-wrap">
-          <input type="password" autocomplete="current-password" name="password"
+          <input id="password" [type]="showPassword ? 'text' : 'password'"
+            autocomplete="current-password" name="password"
             [(ngModel)]="password" #passCtrl="ngModel"
-            required placeholder="••••••••" />
+            required placeholder="La tua password"
+            [attr.aria-invalid]="passCtrl.invalid && (passCtrl.touched || f.submitted) ? 'true' : null"
+            aria-describedby="pass-err" />
+          <!-- Su una tastiera del telefono la password si sbaglia al buio, e
+               poi non si capisce perche' l'accesso non va. -->
+          <button type="button" class="pwtoggle" (click)="togglePassword()"
+            [attr.aria-pressed]="showPassword"
+            [attr.aria-label]="showPassword ? 'Nascondi la password' : 'Mostra la password'">
+            <lucide-icon [name]="showPassword ? 'eye-off' : 'eye'" [size]="18"></lucide-icon>
+          </button>
         </div>
-        <p class="fielderr" *ngIf="passCtrl.invalid && (passCtrl.touched || f.submitted)">
+        <p class="fielderr" id="pass-err" *ngIf="passCtrl.invalid && (passCtrl.touched || f.submitted)">
           <span *ngIf="passCtrl.errors?.['required']">La password e' obbligatoria.</span>
         </p>
       </div>
 
-      <p class="autherror" *ngIf="errorMsg">{{ errorMsg }}</p>
+      <!-- role="alert" perche' un errore che compare va anche DETTO: senza,
+           chi usa un lettore di schermo preme "Accedi" e non succede niente. -->
+      <p class="autherror" role="alert" *ngIf="errorMsg">{{ errorMsg }}</p>
+      <p class="authinfo" role="status" *ngIf="infoMsg">{{ infoMsg }}</p>
 
-      <button class="savebtn" type="submit" [disabled]="loading">
-        {{ loading ? 'Accesso in corso…' : 'Accedi' }}
-      </button>
+      <div class="authfoot">
+        <button class="savebtn" type="submit" [disabled]="loading">
+          {{ loading ? 'Accesso in corso…' : 'Accedi' }}
+        </button>
+
+        <!-- Senza questo, una password dimenticata chiudeva fuori dall'app e
+             basta: non c'era nessun modo di rientrare. -->
+        <button type="button" class="authlink quiet" [disabled]="sendingReset" (click)="resetPassword()">
+          {{ sendingReset ? 'Invio in corso…' : 'Password dimenticata?' }}
+        </button>
+      </div>
     </form>
 
-    <a class="authlink" routerLink="/registrati">Sei un cliente? Crea il tuo account</a>
-    <a class="authlink" routerLink="/coach/registrati">Sei un coach? Crea il tuo account</a>
+    <ng-container *ngIf="mode === 'register'">
+      <!-- Le due pagine di registrazione sono rimaste quelle: cambia solo da
+           dove ci si arriva. -->
+      <a class="authrole" routerLink="/registrati">
+        <span class="rn">
+          <span class="rt">Sono un cliente</span>
+          <span class="rs">Mi allena un coach</span>
+        </span>
+        <span class="rc"><lucide-icon name="chevron-right" [size]="18"></lucide-icon></span>
+      </a>
+      <a class="authrole" routerLink="/coach/registrati">
+        <span class="rn">
+          <span class="rt">Sono un coach</span>
+          <span class="rs">Seguo dei clienti</span>
+        </span>
+        <span class="rc"><lucide-icon name="chevron-right" [size]="18"></lucide-icon></span>
+      </a>
+
+      <div class="authfoot">
+        <p class="authnote">
+          Per iscriverti come cliente serve il codice del tuo coach:
+          se non ce l'hai, chiediglielo.
+        </p>
+      </div>
+    </ng-container>
   </div>
 </div>
