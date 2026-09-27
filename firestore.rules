@@ -53,8 +53,15 @@ service cloud.firestore {
       // Creazione: solo il proprio documento, in fase di registrazione/creazione account.
       // Un coach si autodichiara coach (coachId nullo); un client viene creato con un
       // coachId gia' valorizzato (assegnato dal coach che lo crea).
+      // L'accettazione dell'informativa e' parte del profilo, non un di piu':
+      // senza non c'e' base per trattare peso, pliche, eta' e sesso. Pretenderla
+      // qui e non solo nel modulo e' il motivo per cui la regola esiste - a
+      // scrivere sul documento e' il dispositivo, non l'app. La versione serve
+      // quanto la data: senza, non si saprebbe COSA e' stato accettato.
       allow create: if isSignedIn() && request.auth.uid == uid &&
         request.resource.data.uid == uid &&
+        request.resource.data.privacyAcceptedAt is string &&
+        request.resource.data.privacyVersion is string &&
         (
           (request.resource.data.role == 'coach' && request.resource.data.coachId == null) ||
           (request.resource.data.role == 'client' && request.resource.data.coachId is string)

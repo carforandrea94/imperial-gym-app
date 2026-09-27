@@ -46,6 +46,7 @@ vi.mock('firebase/auth', () => ({
 }));
 
 import { mockDocs, firestoreMock } from '../../../test-support/firestore-mock';
+import { PRIVACY_VERSION } from '../privacy';
 
 // La setDoc originale, presa UNA volta sola: riprenderla dentro il beforeEach
 // significherebbe catturare la spia del giro precedente, e la chiamata
@@ -248,6 +249,43 @@ describe('AuthService — iscrizioni che si rompono a meta\'', () => {
     it('un cliente che non esiste piu\' lo dice', async () => {
       await entraComeCoach();
       await expect(service.deleteClient('mai-esistito')).rejects.toThrow(/non esiste piu\'/);
+    });
+  });
+
+  /* Le regole pretendono data e versione su ogni profilo nuovo: se una delle
+     quattro strade che creano un profilo se ne dimenticasse, l'iscrizione
+     fallirebbe in produzione con un permission-denied e basta. */
+  describe('l\'accettazione dell\'informativa finisce sul profilo', () => {
+    const haLAccettazione = (p: any) => {
+      expect(typeof p.privacyAcceptedAt).toBe('string');
+      expect(p.privacyAcceptedAt.length).toBeGreaterThan(0);
+      expect(p.privacyVersion).toBe(PRIVACY_VERSION);
+    };
+
+    it('iscrivendosi come cliente', async () => {
+      mockDocs.set('KP6WS2', { coachId: 'coach-1' });
+      haLAccettazione(await service.registerClient('Anna', 'anna@e.com', 'pw1234', 'KP6WS2'));
+    });
+
+    it('iscrivendosi come coach', async () => {
+      haLAccettazione(await service.registerCoach('c@e.com', 'pw1234', 'Carlo'));
+    });
+
+    it('finendo un\'iscrizione interrotta, da cliente', async () => {
+      mockDocs.set('KP6WS2', { coachId: 'coach-1' });
+      await service.login('orfano@e.com', 'pw1234').catch(() => {});
+      haLAccettazione(await service.completeClientProfile('Anna', 'KP6WS2'));
+    });
+
+    it('finendo un\'iscrizione interrotta, da coach', async () => {
+      await service.login('orfano@e.com', 'pw1234').catch(() => {});
+      haLAccettazione(await service.completeCoachProfile('Carlo'));
+    });
+
+    it('e finisce anche nel documento scritto, non solo nel valore di ritorno', async () => {
+      mockDocs.set('KP6WS2', { coachId: 'coach-1' });
+      await service.registerClient('Anna', 'anna@e.com', 'pw1234', 'KP6WS2');
+      haLAccettazione(mockDocs.get('uid-anna@e.com'));
     });
   });
 });

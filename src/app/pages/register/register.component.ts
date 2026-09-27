@@ -18,6 +18,10 @@ export class RegisterComponent {
   password = '';
   coachCode = '';
 
+  /** L'informativa accettata. Parte spenta: un consenso prespuntato non e' un
+   *  consenso, e le regole rifiutano un profilo senza. */
+  privacyOk = false;
+
   loading = false;
   errorMsg = '';
 

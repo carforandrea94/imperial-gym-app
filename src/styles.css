@@ -1118,3 +1118,20 @@ lucide-icon svg.filled{fill:currentColor;}
 
 .apptoast{position:fixed;left:50%;bottom:calc(var(--tabbar-h) + var(--tabbar-gap) + 12px);transform:translateX(-50%);z-index:65;padding:10px 20px;border-radius:var(--r-pill);background:var(--accent);color:var(--accent-contrast);font-weight:600;font-size:var(--text-md);box-shadow:var(--shadow-float);animation:fade .2s ease;white-space:nowrap;max-width:calc(100vw - 32px);text-overflow:ellipsis;overflow:hidden;}
 .apptoast.error{background:var(--state-danger);color:#fff;}
+
+/* La spunta dell'informativa. La riga intera e' il bersaglio, etichetta
+   compresa: una casella di 16px da sola sarebbe un quarto dei 44 che l'app
+   tiene ovunque. */
+.authcheck{display:flex;align-items:flex-start;gap:10px;min-height:44px;padding:6px 0;}
+/* La casella e' disegnata qui, non dal browser: l'app azzera l'appearance
+   nativa di tutti i controlli (vedi il reset in cima), quindi una checkbox
+   lasciata a se' non si vede proprio - e anche riaccendendola avrebbe la
+   faccia del sistema, diversa fra iPhone e Android, unica in tutta l'app. */
+.authcheck input[type="checkbox"]{position:relative;width:22px;height:22px;flex-shrink:0;margin:1px 0 0;cursor:pointer;border:1.5px solid var(--border-line);border-radius:var(--r-xs);background:var(--surface-raise);}
+.authcheck input[type="checkbox"]:checked{background:var(--accent);border-color:var(--accent);}
+/* La spunta e' due segmenti ruotati, non un glifo: cosi' non dipende da quale
+   font ha risolto il sistema. */
+.authcheck input[type="checkbox"]:checked::after{content:'';position:absolute;left:7px;top:3px;width:5px;height:10px;border:solid var(--accent-contrast);border-width:0 2px 2px 0;transform:rotate(45deg);}
+.authcheck input[type="checkbox"]:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.authcheck label{flex:1;min-width:0;font-size:var(--text-sm);line-height:1.45;color:var(--label-2);cursor:pointer;}
+.authcheck a{color:var(--accent);text-decoration:underline;text-underline-offset:3px;}

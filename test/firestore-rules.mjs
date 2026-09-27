@@ -84,6 +84,19 @@ await prova('non legge le misurazioni di un altro cliente',
 await prova('cancella il PROPRIO profilo',
   assertSucceeds(deleteDoc(doc(altro, 'users', ALTRO_COACH))));
 
+console.log('\n— l\'informativa —');
+const NUOVO = 'cliente-nuovo';
+const nuovo = env.authenticatedContext(NUOVO).firestore();
+const profiloBase = { uid: NUOVO, role: 'client', coachId: COACH, email: 'n@e.com' };
+await prova('non si crea un profilo senza accettazione',
+  assertFails(setDoc(doc(nuovo, 'users', NUOVO), profiloBase)));
+await prova('nemmeno con la sola data, senza la versione',
+  assertFails(setDoc(doc(nuovo, 'users', NUOVO), { ...profiloBase, privacyAcceptedAt: '2026-09-27T00:00:00.000Z' })));
+await prova('con data e versione si crea',
+  assertSucceeds(setDoc(doc(nuovo, 'users', NUOVO), {
+    ...profiloBase, privacyAcceptedAt: '2026-09-27T00:00:00.000Z', privacyVersion: '2026-09-27'
+  })));
+
 await env.cleanup();
 console.log(ko === 0 ? '\nTUTTO COME DEVE ESSERE' : `\n${ko} CONTROLLI FALLITI`);
 process.exit(ko === 0 ? 0 : 1);
