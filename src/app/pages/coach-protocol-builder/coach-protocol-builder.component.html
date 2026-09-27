@@ -71,7 +71,7 @@
 
   <!-- ===================== IL SINGOLO GIORNO ===================== -->
   <ng-container *ngIf="tab === 'scheda' && !editingExercise && editingDay as ed">
-    <button class="confirmbtn cancel mb-4" (click)="closeDay()">← Giorni</button>
+    <button class="editorback mb-4" (click)="closeDay()">← Giorni</button>
 
     <div class="authfield">
       <label for="day-label">Nome giorno</label>
@@ -128,7 +128,7 @@
 
   <!-- ===================== EDITOR ESERCIZIO ===================== -->
   <ng-container *ngIf="tab === 'scheda' && editingExercise as ee">
-    <button class="confirmbtn cancel mb-4" (click)="cancelExercise()">← Annulla</button>
+    <button class="editorback mb-4" (click)="cancelExercise()">← Annulla</button>
 
     <div class="authfield">
       <label>Nome esercizio</label>
@@ -274,8 +274,8 @@
     </div>
 
     <div class="savebar builder-savebar">
-      <button class="confirmbtn cancel" style="flex:1" (click)="removeExerciseFromEditor()">Rimuovi</button>
-      <button class="savebtn" style="flex:1.4" (click)="saveExercise()">Salva esercizio</button>
+      <button class="savebtn cancel" (click)="removeExerciseFromEditor()">Rimuovi</button>
+      <button class="savebtn" (click)="saveExercise()">Salva esercizio</button>
     </div>
   </ng-container>
 
@@ -312,7 +312,7 @@
 
     <!-- Editor del piano selezionato -->
     <ng-container *ngIf="editingPlan && !editingMeal">
-      <button class="confirmbtn cancel mb-4" (click)="closePlan()">← Torna ai piani</button>
+      <button class="editorback mb-4" (click)="closePlan()">← Torna ai piani</button>
 
       <div class="authfield mb-4">
         <label>Nome del piano</label>
@@ -410,7 +410,7 @@
 
     <!-- Editor del pasto selezionato -->
     <ng-container *ngIf="editingPlan && editingMeal as em">
-      <button class="confirmbtn cancel mb-4" (click)="closeMeal()">← Torna ai pasti</button>
+      <button class="editorback mb-4" (click)="closeMeal()">← Torna ai pasti</button>
 
       <div class="authfield mb-4">
         <label>Nome pasto</label>
@@ -530,8 +530,8 @@
       </div>
 
       <div class="savebar builder-savebar">
-        <button class="confirmbtn cancel" style="flex:1" (click)="removeMealFromEditor()">Rimuovi pasto</button>
-        <button class="savebtn" style="flex:1.4" (click)="closeMeal()">Fatto</button>
+        <button class="savebtn cancel" (click)="removeMealFromEditor()">Rimuovi pasto</button>
+        <button class="savebtn" (click)="closeMeal()">Fatto</button>
       </div>
     </ng-container>
 
