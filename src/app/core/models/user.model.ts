@@ -33,6 +33,13 @@ export interface UserProfile {
    *  formule di composizione corporea. Assente sui profili creati prima. */
   birthDate?: string | null;
   createdAt: string;
+  /**
+   * Quando l'utente ha accettato l'informativa, e quale versione. Assenti sui
+   * profili creati prima che l'informativa esistesse: chi li legge deve
+   * reggere l'assenza.
+   */
+  privacyAcceptedAt?: string;
+  privacyVersion?: string;
 }
 
 export interface Announcement {

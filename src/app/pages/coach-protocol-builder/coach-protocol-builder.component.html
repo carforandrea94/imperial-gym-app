@@ -89,13 +89,22 @@
 
     <p class="sectiontitle mt-4">Esercizi</p>
 
+    <!-- Il tasto sta sopra l'elenco, non sotto: in un giorno da sette esercizi
+         bisognava attraversarli tutti per arrivare ad aggiungere l'ottavo. -->
+    <button type="button" class="confirmbtn cancel w-full mb-3" (click)="addExercise(ed.day)">
+      + Aggiungi esercizio
+    </button>
+
     <div *ngIf="ed.day.ex.length === 0" class="history-empty mb-3">
       Nessun esercizio ancora.
     </div>
 
     <div class="grouplist mb-3" *ngIf="ed.day.ex.length > 0">
-      <div class="daycard press-fx protocol-row" *ngFor="let ex of ed.day.ex"
+      <div class="daycard press-fx protocol-row" *ngFor="let ex of ed.day.ex; let ei = index"
            (click)="editExercise(ed.day, ex)">
+        <!-- Il numero di riferimento, come lo vede il cliente: e' con quello
+             che ci si dice a che esercizio si e' arrivati. -->
+        <div class="badge">{{ ei + 1 }}</div>
         <div class="info">
           <div class="lbl">{{ ex.name || 'Esercizio senza nome' }}</div>
           <div class="meta">{{ ex.muscle }} &nbsp;·&nbsp; {{ exerciseSummary(ex) }}</div>
@@ -105,8 +114,6 @@
         </span>
       </div>
     </div>
-
-    <button class="confirmbtn cancel w-full" (click)="addExercise(ed.day)">+ Aggiungi esercizio</button>
 
     <div class="savebar mt-4">
       <button class="savebtn" [disabled]="saving" (click)="saveDay()">

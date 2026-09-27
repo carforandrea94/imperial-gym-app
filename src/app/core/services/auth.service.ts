@@ -23,6 +23,7 @@ import {
 import { FirebaseService } from './firebase.service';
 import { UserProfile, Sex } from '../models/user.model';
 import { ZoneFixService } from '../utils/zone.util';
+import { PRIVACY_VERSION } from '../privacy';
 
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // esclusi 0/O/1/I/L per leggibilita'
 
@@ -48,6 +49,18 @@ export const PROFILE_MISSING = 'app/profile-missing';
  * cancellazione.
  */
 const SOTTORACCOLTE = ['sessions', 'runs', 'measurements', 'state'] as const;
+
+/**
+ * L'accettazione dell'informativa, come finisce sul profilo.
+ *
+ * Non basta la data: senza la versione, fra sei mesi non si saprebbe COSA ha
+ * accettato chi si e' iscritto oggi. Le regole pretendono tutti e due su ogni
+ * profilo nuovo, quindi ogni strada che ne crea uno passa di qui - ed e' il
+ * modo di non dimenticarsene aggiungendone una domani.
+ */
+function privacyAccettata(): { privacyAcceptedAt: string; privacyVersion: string } {
+  return { privacyAcceptedAt: new Date().toISOString(), privacyVersion: PRIVACY_VERSION };
+}
 
 function generateCode(length = 6): string {
   let out = '';
@@ -223,7 +236,8 @@ export class AuthService {
         pairingCode: generateCode(),
         coachId: (codeSnap.data() as { coachId: string }).coachId,
         paired: true,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        ...privacyAccettata()
       };
       await setDoc(doc(this.fb.db, 'users', profile.uid), profile);
       this.currentUser.set(profile);
@@ -246,7 +260,8 @@ export class AuthService {
         pairingCode,
         coachId: null,
         paired: true,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        ...privacyAccettata()
       };
       await setDoc(doc(this.fb.db, 'users', profile.uid), profile);
       await setDoc(doc(this.fb.db, 'coachCodes', pairingCode), { coachId: profile.uid });
@@ -335,7 +350,8 @@ export class AuthService {
           pairingCode,
           coachId: null,
           paired: true,
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
+          ...privacyAccettata()
         };
         await setDoc(doc(this.fb.db, 'users', profile.uid), profile);
         profileWritten = true;
@@ -379,7 +395,8 @@ export class AuthService {
           pairingCode: generateCode(),
           coachId,
           paired: true,
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
+          ...privacyAccettata()
         };
         await setDoc(doc(this.fb.db, 'users', profile.uid), profile);
         this.currentUser.set(profile);

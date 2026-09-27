@@ -18,6 +18,12 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/register/register.component').then(m => m.RegisterComponent)
   },
   {
+    // Senza guardia: la si legge PRIMA di avere un account, ed e' il
+    // collegamento che il modulo d'iscrizione apre.
+    path: 'privacy',
+    loadComponent: () => import('./pages/privacy/privacy.component').then(m => m.PrivacyComponent)
+  },
+  {
     path: 'coach/registrati',
     canActivate: [guestGuard],
     loadComponent: () => import('./pages/coach-register/coach-register.component').then(m => m.CoachRegisterComponent)
