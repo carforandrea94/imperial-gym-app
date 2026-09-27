@@ -31,7 +31,12 @@ export const firestoreMock = {
   // FirebaseService, non deve fare danni.
   initializeFirestore: () => ({}) as any,
   collection: (_db: any, ...segments: string[]) => ({ path: segments.join('/') }),
-  doc: (_col: any, id: string) => ({ id }),
+  // Firestore accetta due forme: doc(collezione, id) e doc(db, 'users', uid,
+  // 'protocols', id). In entrambe l'identificativo e' l'ultimo segmento, ed e'
+  // quello la chiave della mappa. Prima si prendeva il primo: con la forma
+  // lunga il documento finiva sotto 'users' e ogni utente sovrascriveva il
+  // precedente.
+  doc: (_col: any, ...segmenti: string[]) => ({ id: segmenti[segmenti.length - 1] }),
   query: (col: any) => col,
   where: () => ({}),
 
