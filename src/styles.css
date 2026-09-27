@@ -778,7 +778,6 @@ lucide-icon svg.filled{fill:currentColor;}
 .weekplan-input{flex:1;}
 .weekplan-input input{width:100%;text-align:center;}
 
-.builder-day{margin-bottom:16px;}
 .builder-exercise{border-top:1px solid var(--border-line);padding-top:14px;margin-top:14px;}
 .builder-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 /* Il riquadro del cluster nell'editor del coach. Sta dentro la scheda

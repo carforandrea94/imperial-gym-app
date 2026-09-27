@@ -18,6 +18,7 @@ import { FoodItem, DietPlan, NamedMeal, MealCombination, SupplementItem, newDiet
 import { ProtocolBuilderStateService } from '../../services/protocol-builder-state.service';
 import { ToastService } from '../../services/toast.service';
 import { PdfImportService } from '../../services/pdf-import.service';
+import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 
 type Tab = 'scheda' | 'dieta' | 'corsa' | 'info';
 
@@ -33,11 +34,22 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
   protocolId = '';
   protocol: Protocol | null = null;
   loading = true;
+  errorMsg = '';
   saving = false;
   saveMsg = '';
   private paramSub: Subscription | null = null;
 
   tab: Tab = 'scheda';
+  /**
+   * Il giorno che si sta scrivendo, o null quando si e' sull'elenco.
+   *
+   * La scheda del coach mostrava tutti i giorni aperti uno sotto l'altro, con
+   * dentro nomi, recuperi ed esercizi: su sei giorni era una pagina lunga
+   * decine di schermate, e per arrivare al quinto giorno si scorreva tutto il
+   * resto. Ora fa come la vede il cliente e come fa gia' la dieta qui accanto:
+   * prima l'elenco, poi il giorno.
+   */
+  editingDay: { day: Day; index: number } | null = null;
   editingPlan: DietPlan | null = null;
   private _editingMeal: NamedMeal | null = null;
   get editingMeal(): NamedMeal | null { return this._editingMeal; }
@@ -73,7 +85,8 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
     public workoutData: WorkoutDataService,
     private cdr: ChangeDetectorRef,
     private protocolBuilderState: ProtocolBuilderStateService,
-    private toast: ToastService
+    private toast: ToastService,
+    private confirm: ConfirmDialogService
   ) {}
 
   ngOnInit(): void {
@@ -91,32 +104,93 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
     this.protocolBuilderState.editingSubform.set(false);
   }
 
-  private async load(): Promise<void> {
+  /**
+   * Questa pagina e' dove si atterra subito dopo aver caricato i PDF, cioe'
+   * nel momento in cui la connessione ha appena finito di lavorare. Una
+   * lettura Firestore li' puo' restare sospesa a tempo indeterminato senza
+   * mai risolversi ne' rigettarsi - e' lo stesso motivo per cui
+   * FirebaseService forza il long-polling - e senza un limite di tempo la
+   * schermata restava su "Caricamento..." per sempre, senza dire niente e
+   * senza un modo per riprovare. Succedeva davvero: il protocollo era
+   * salvato e corretto, ma la pagina non lo mostrava mai.
+   */
+  load(): Promise<void> {
+    return this.caricaProtocollo();
+  }
+
+  private async caricaProtocollo(): Promise<void> {
     this.loading = true;
-    this.protocol = await this.protocolSvc.get(this.clientId, this.protocolId);
-    if (!this.protocol) { this.router.navigate(['/coach/clienti', this.clientId]); return; }
-    // Il form ha sempre qualcosa a cui legarsi: i protocolli creati prima della
-    // sezione Corsa non hanno l'obiettivo, quelli salvati quando era in
-    // chilometri hanno un campo che non esiste piu'. Un obiettivo a zero vale
-    // come "non impostato" e il cliente non vede barre.
-    this.protocol.running = normalizeRunGoal(this.protocol.running);
-    this.loading = false;
+    this.errorMsg = '';
     this.cdr.detectChanges();
+
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('TIMEOUT')), 12000)
+    );
+
+    try {
+      const protocollo = await Promise.race([
+        this.protocolSvc.get(this.clientId, this.protocolId),
+        timeout
+      ]);
+      if (!protocollo) { this.router.navigate(['/coach/clienti', this.clientId]); return; }
+      this.protocol = protocollo;
+      // Il form ha sempre qualcosa a cui legarsi: i protocolli creati prima della
+      // sezione Corsa non hanno l'obiettivo, quelli salvati quando era in
+      // chilometri hanno un campo che non esiste piu'. Un obiettivo a zero vale
+      // come "non impostato" e il cliente non vede barre.
+      this.protocol.running = normalizeRunGoal(this.protocol.running);
+    } catch (e: any) {
+      console.error('Errore caricamento protocollo:', e);
+      this.errorMsg = e?.message === 'TIMEOUT'
+        ? 'La connessione sta impiegando troppo tempo. Il protocollo e\' salvato: controlla la rete e riprova.'
+        : 'Errore nel caricamento del protocollo. Riprova.';
+    } finally {
+      this.loading = false;
+      this.cdr.detectChanges();
+    }
   }
 
   // ===== Scheda =====
 
+  /** Aggiunge un giorno e ci entra subito: chi lo crea lo vuole riempire. */
   addDay(): void {
     if (!this.protocol) return;
     const n = this.protocol.workout.days.length + 1;
     const day: Day = { id: `day${n}`, label: `Giorno ${n}`, rec: '60-90"', ex: [] };
     this.protocol.workout.days.push(day);
+    this.openDay(day, this.protocol.workout.days.length - 1);
+  }
+
+  openDay(day: Day, index: number): void {
+    this.editingDay = { day, index };
     this.cdr.detectChanges();
   }
 
-  removeDay(i: number): void {
-    this.protocol?.workout.days.splice(i, 1);
+  /** Torna all'elenco. Non scrive niente: il salvataggio e' un gesto a parte. */
+  closeDay(): void {
+    this.editingDay = null;
     this.cdr.detectChanges();
+  }
+
+  async removeDay(i: number): Promise<void> {
+    const giorno = this.protocol?.workout.days[i];
+    if (!giorno) return;
+    const quanti = giorno.ex.length;
+    const ok = await this.confirm.confirm(
+      `Rimuovere "${giorno.label}"?` +
+      (quanti > 0 ? ` Se ne vanno anche i suoi ${quanti} esercizi.` : '')
+    );
+    if (!ok) return;
+    this.protocol?.workout.days.splice(i, 1);
+    if (this.editingDay?.index === i) this.editingDay = null;
+    this.cdr.detectChanges();
+  }
+
+  /** Quanti esercizi ha un giorno, detto come lo legge il cliente. */
+  dayCount(day: Day): string {
+    const n = day.ex.length;
+    if (n === 0) return 'Nessun esercizio';
+    return n === 1 ? '1 esercizio' : `${n} esercizi`;
   }
 
   // --- Editor esercizio (nome, muscolo, schema, progressione settimanale se wave) ---
@@ -513,8 +587,53 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
 
   // ===== Salvataggio =====
 
+  /**
+   * Salva restando nel builder: il coach ha finito un giorno, non il
+   * protocollo. save() invece chiude e torna al cliente, che e' giusto quando
+   * si e' finito davvero ma qui butterebbe fuori a meta' lavoro.
+   */
+  async saveDay(): Promise<void> {
+    if (!await this.persist()) return;
+    this.toast.success('Giorno salvato ✓');
+    this.closeDay();
+  }
+
   async save(activateAfter: boolean): Promise<void> {
-    if (!this.protocol) return;
+    if (!await this.persist()) return;
+
+    if (!activateAfter) {
+      this.toast.success('Bozza salvata ✓');
+      this.router.navigate(['/coach/clienti', this.clientId]);
+      return;
+    }
+
+    // L'attivazione e' una seconda scrittura: il tasto resta occupato anche
+    // per lei, o sembrerebbe finito mentre sta ancora lavorando.
+    this.saving = true;
+    this.protocolBuilderState.saving.set(true);
+    this.cdr.detectChanges();
+    try {
+      await this.protocolSvc.activate(this.clientId, this.protocolId);
+      this.toast.success('Protocollo attivato ✓');
+      this.router.navigate(['/coach/clienti', this.clientId]);
+    } catch (e: any) {
+      console.error('Errore attivazione protocollo:', e);
+      this.saveMsg = e?.message || 'Errore durante l\'attivazione.';
+      this.toast.error('Errore durante l\'attivazione. Riprova.');
+    } finally {
+      this.saving = false;
+      this.protocolBuilderState.saving.set(false);
+      this.cdr.detectChanges();
+    }
+  }
+
+  /**
+   * Scrive il protocollo e controlla che sia arrivato davvero. Non naviga e
+   * non dice niente: decide chi chiama. Torna false se qualcosa e' andato
+   * storto, e in quel caso il messaggio e' gia' a schermo.
+   */
+  private async persist(): Promise<boolean> {
+    if (!this.protocol) return false;
     this.saving = true;
     this.saveMsg = '';
     this.protocolBuilderState.saving.set(true);
@@ -545,22 +664,18 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
       if (mismatch) {
         this.saveMsg = `Attenzione: il salvataggio sembra incompleto (${mismatch}). Riprova prima di attivare.`;
         this.toast.error('Salvataggio incompleto, riprova.');
-        this.saving = false;
-        return;
+        return false;
       }
-
-      if (activateAfter) {
-        await this.protocolSvc.activate(this.clientId, this.protocolId);
-      }
-      this.toast.success(activateAfter ? 'Protocollo attivato ✓' : 'Bozza salvata ✓');
-      this.router.navigate(['/coach/clienti', this.clientId]);
+      return true;
     } catch (e: any) {
       console.error('Errore salvataggio protocollo:', e);
       this.saveMsg = e?.message || 'Errore durante il salvataggio.';
       this.toast.error('Errore durante il salvataggio. Riprova.');
+      return false;
     } finally {
       this.saving = false;
       this.protocolBuilderState.saving.set(false);
+      this.cdr.detectChanges();
     }
   }
 
