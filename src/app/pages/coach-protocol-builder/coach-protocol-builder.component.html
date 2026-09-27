@@ -11,7 +11,7 @@
 
 <ng-container *ngIf="!loading && !errorMsg && protocol">
 
-  <ng-container *ngIf="!editingExercise && !editingMeal">
+  <ng-container *ngIf="!editingExercise && !editingMeal && !editingDay">
     <div class="authfield mb-4">
       <label>Nome protocollo</label>
       <div class="measure-input-wrap">
@@ -28,58 +28,95 @@
   </ng-container>
 
   <!-- ===================== SCHEDA ===================== -->
-  <ng-container *ngIf="tab === 'scheda' && !editingExercise">
+  <!-- L'ELENCO DEI GIORNI: la stessa forma che vede il cliente in Scheda.
+       Prima erano tutti aperti uno sotto l'altro, nomi e recuperi e esercizi
+       compresi: su sei giorni si scorrevano decine di schermate per arrivare
+       all'ultimo. -->
+  <ng-container *ngIf="tab === 'scheda' && !editingExercise && !editingDay">
 
     <p class="sectiontitle">Programma</p>
     <div class="infocard mb-4">
       <div class="authfield mb-0">
-        <label>Data inizio programma</label>
+        <label for="prog-start">Data inizio programma</label>
         <div class="measure-input-wrap">
-          <input type="date" [(ngModel)]="protocol.workout.programStart" />
+          <input id="prog-start" type="date" [(ngModel)]="protocol.workout.programStart" />
         </div>
       </div>
     </div>
 
     <p class="sectiontitle">Giorni di allenamento</p>
-    <div class="infocard builder-day" *ngFor="let day of protocol.workout.days; let di = index">
-      <div class="authfield">
-        <label>Nome giorno</label>
-        <div class="measure-input-wrap">
-          <input type="text" [(ngModel)]="day.label" placeholder="Es. Petto · Spalle · Tricipiti" />
+
+    <div *ngIf="protocol.workout.days.length === 0" class="history-empty mb-3">
+      Nessun giorno ancora.<br>Aggiungine uno per iniziare a scrivere la scheda.
+    </div>
+
+    <div class="grouplist" *ngIf="protocol.workout.days.length > 0">
+      <div class="daycard press-fx" *ngFor="let day of protocol.workout.days; let di = index"
+           (click)="openDay(day, di)">
+        <div class="badge">{{ di + 1 }}</div>
+        <div class="info">
+          <div class="lbl">{{ day.label || 'Giorno senza nome' }}</div>
+          <div class="meta">{{ dayCount(day) }} &nbsp;·&nbsp; rec {{ day.rec }}</div>
         </div>
+        <span class="chev">
+          <lucide-icon name="chevron-right" [size]="13"></lucide-icon>
+        </span>
       </div>
-      <div class="authfield">
-        <label>Recupero (testo mostrato, es. 60-90")</label>
-        <div class="measure-input-wrap">
-          <input type="text" [(ngModel)]="day.rec" placeholder='60-90"' />
-        </div>
-      </div>
-
-      <p class="sectiontitle mt-4">Esercizi</p>
-
-      <div *ngIf="day.ex.length === 0" class="history-empty mb-3">
-        Nessun esercizio ancora.
-      </div>
-
-      <div class="grouplist mb-3" *ngIf="day.ex.length > 0">
-        <div class="daycard press-fx protocol-row" *ngFor="let ex of day.ex" (click)="editExercise(day, ex)">
-          <div class="info">
-            <div class="lbl">{{ ex.name || 'Esercizio senza nome' }}</div>
-            <div class="meta">{{ ex.muscle }} &nbsp;·&nbsp; {{ exerciseSummary(ex) }}</div>
-          </div>
-          <span class="chev">
-            <lucide-icon name="chevron-right" [size]="13"></lucide-icon>
-          </span>
-        </div>
-      </div>
-
-      <button class="confirmbtn cancel w-full" (click)="addExercise(day)">+ Aggiungi esercizio</button>
-      <button class="savebtn delete-session-btn mt-4" (click)="removeDay(di)">Rimuovi giorno</button>
     </div>
 
     <div class="savebar">
       <button class="savebtn" (click)="addDay()">+ Aggiungi giorno</button>
     </div>
+  </ng-container>
+
+  <!-- ===================== IL SINGOLO GIORNO ===================== -->
+  <ng-container *ngIf="tab === 'scheda' && !editingExercise && editingDay as ed">
+    <button class="confirmbtn cancel mb-4" (click)="closeDay()">← Giorni</button>
+
+    <div class="authfield">
+      <label for="day-label">Nome giorno</label>
+      <div class="measure-input-wrap">
+        <input id="day-label" type="text" [(ngModel)]="ed.day.label"
+               placeholder="Es. Petto · Spalle · Tricipiti" />
+      </div>
+    </div>
+    <div class="authfield">
+      <label for="day-rec">Recupero (testo mostrato, es. 60-90")</label>
+      <div class="measure-input-wrap">
+        <input id="day-rec" type="text" [(ngModel)]="ed.day.rec" placeholder='60-90"' />
+      </div>
+    </div>
+
+    <p class="sectiontitle mt-4">Esercizi</p>
+
+    <div *ngIf="ed.day.ex.length === 0" class="history-empty mb-3">
+      Nessun esercizio ancora.
+    </div>
+
+    <div class="grouplist mb-3" *ngIf="ed.day.ex.length > 0">
+      <div class="daycard press-fx protocol-row" *ngFor="let ex of ed.day.ex"
+           (click)="editExercise(ed.day, ex)">
+        <div class="info">
+          <div class="lbl">{{ ex.name || 'Esercizio senza nome' }}</div>
+          <div class="meta">{{ ex.muscle }} &nbsp;·&nbsp; {{ exerciseSummary(ex) }}</div>
+        </div>
+        <span class="chev">
+          <lucide-icon name="chevron-right" [size]="13"></lucide-icon>
+        </span>
+      </div>
+    </div>
+
+    <button class="confirmbtn cancel w-full" (click)="addExercise(ed.day)">+ Aggiungi esercizio</button>
+
+    <div class="savebar mt-4">
+      <button class="savebtn" [disabled]="saving" (click)="saveDay()">
+        {{ saving ? 'Salvo…' : 'Salva giorno' }}
+      </button>
+    </div>
+
+    <p class="autherror" role="alert" *ngIf="saveMsg">{{ saveMsg }}</p>
+
+    <button class="savebtn delete-session-btn mt-4" (click)="removeDay(ed.index)">Rimuovi giorno</button>
   </ng-container>
 
   <!-- ===================== EDITOR ESERCIZIO ===================== -->
