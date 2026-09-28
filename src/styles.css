@@ -472,8 +472,16 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
    rosso, mentre chiudere la serie e' una decisione e resta neutra. */
 .clusterundo{width:100%;min-height:44px;border:none;border-radius:var(--r-md);background:transparent;color:var(--state-danger-text);font-family:'Inter',sans-serif;font-size:var(--text-sm);font-weight:600;cursor:pointer;}
 .clusterundo:disabled{opacity:.45;cursor:not-allowed;}
-.clusterclose{width:100%;min-height:44px;border-radius:var(--r-md);border:1px dashed var(--border-line);background:transparent;color:var(--label-2);font-family:'Inter',sans-serif;font-size:var(--text-sm);font-weight:600;cursor:pointer;}
-.clusterclose:disabled{opacity:.45;cursor:not-allowed;}
+/* Le due scelte a esaurimento: un altro blocco, oppure basta. Affiancate e
+   della stessa misura, perche' sono pari - non c'e' quella "giusta", dipende
+   da cosa esce. Il testo si stringe su schermi piccoli invece di andare a capo
+   dentro un tasto alto 52. */
+.clusterfork{display:flex;gap:10px;}
+.clusterfork .setdone{flex:1;min-width:0;font-size:var(--text-md);padding:0 10px;}
+/* Il gemello calmo del tasto pieno: stessa forma e stessa altezza, colore
+   della superficie. Chiudere la serie non e' meno legittimo che farne un
+   altro, quindi non puo' sembrare un ripensamento. */
+.setdone.calmo{background:var(--surface-card);color:var(--label);border:1px solid var(--border-line);}
 /* Togliere sta dentro la card aperta, sotto ai comandi: e' un'azione che
    distrugge, non deve stare a portata di pollice mentre si scorre l'elenco. */
 .setremove{width:100%;min-height:44px;border:none;border-radius:var(--r-md);background:transparent;color:var(--state-danger-text);font-family:'Inter',sans-serif;font-size:var(--text-sm);font-weight:600;cursor:pointer;}

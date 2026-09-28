@@ -127,22 +127,31 @@
         <button type="button" class="setdone" *ngIf="!row.done && !isCluster(vm, row)" [disabled]="setsLocked"
           (click)="confirmSet(vm, j)">Fatta</button>
 
-        <button type="button" class="setdone" *ngIf="!row.done && isCluster(vm, row)" [disabled]="setsLocked"
+        <!-- A esaurimento, dopo ogni blocco le scelte sono due e sono pari:
+             un altro, oppure basta. Stanno affiancate e dello stesso peso,
+             perche' prima il "chiudo" era un tasto tratteggiato sotto a uno
+             rosso, e non si capiva che la serie si poteva finire. -->
+        <div class="clusterfork" *ngIf="!row.done && isCluster(vm, row) && canCloseCluster(vm, row)">
+          <button type="button" class="setdone" [disabled]="setsLocked"
+            (click)="doneBlock(vm, j)">Fatto il {{ blockLabel(vm, row).toLowerCase() }}</button>
+          <button type="button" class="setdone calmo" [disabled]="setsLocked"
+            (click)="closeClusterSet(vm, j)"
+            aria-label="Non ne escono altri, chiudi la serie">Chiudo la serie</button>
+        </div>
+
+        <!-- A blocchi contati non c'e' niente da decidere: la serie si chiude
+             da sola quando sono tutti fatti. -->
+        <button type="button" class="setdone"
+          *ngIf="!row.done && isCluster(vm, row) && !canCloseCluster(vm, row)" [disabled]="setsLocked"
           (click)="doneBlock(vm, j)">Fatto il {{ blockLabel(vm, row).toLowerCase() }}</button>
 
         <!-- A esaurimento i blocchi li aggiunge chi si allena, quindi deve
              poterne togliere uno: un tocco di troppo su "fatto il blocco"
-             altrimenti non si disfa. -->
+             altrimenti non si disfa. Sta qui in fondo, con le altre cose che
+             si disfano, non in mezzo alle due scelte. -->
         <button type="button" class="clusterundo" *ngIf="canRemoveBlock(vm, row)"
           [disabled]="setsLocked" (click)="removeBlock(vm, j)">
           Togli l'ultimo blocco
-        </button>
-
-        <!-- A esaurimento la serie non finisce da sola: un altro blocco è
-             sempre possibile finché non sei tu a dire che non ne escono. -->
-        <button type="button" class="clusterclose" *ngIf="!row.done && canCloseCluster(vm, row)"
-          [disabled]="setsLocked" (click)="closeClusterSet(vm, j)">
-          Non ne escono altri · chiudo la serie
         </button>
 
         <button type="button" class="setundo" *ngIf="row.done && !isCluster(vm, row)" [disabled]="setsLocked"
