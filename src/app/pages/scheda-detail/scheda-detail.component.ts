@@ -533,18 +533,16 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
-   * Quanto manca alla fine della pausa, o quanto se n'e' gia' preso in piu'.
+   * Quanto manca alla fine della pausa. Arrivato a zero si ferma li'.
    *
-   * La pausa del coach e' un MINIMO: passata quella, il conto sale invece di
-   * sparire. Un cluster in cui il telefono ti dice "tempo scaduto" spingerebbe
-   * a ripartire prima di essere pronti, che e' l'opposto del motivo per cui il
-   * coach l'ha scritto.
+   * La pausa del coach resta un MINIMO, e il telefono non dice "tempo
+   * scaduto": lo dice la scritta sotto, "pausa passata, quando vuoi". Ma a
+   * dirlo basta quella - un numero che continua a salire chiede di essere
+   * guardato, e durante un cluster si guarda il bilanciere.
    */
   pauseText(vm: ExerciseVM): string {
     const resta = (vm.cluster?.restSec ?? 0) - this.pauseElapsed();
-    return resta >= 0
-      ? this.formatDuration(resta)
-      : '+' + this.formatDuration(-resta);
+    return this.formatDuration(Math.max(0, resta));
   }
 
   pauseOver(vm: ExerciseVM): boolean {
@@ -556,18 +554,33 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.pauseFrom = Date.now();
     this.pauseKey = this.pauseId(vm, rowIdx);
     this.pauseElapsed.set(0);
+    const minimo = vm.cluster?.restSec ?? 0;
     this.pauseTicker = setInterval(() => {
       if (this.pauseFrom === null) return;
       const passati = Math.floor((Date.now() - this.pauseFrom) / 1000);
+      if (passati >= minimo) {
+        // Arrivato a zero il conto si ferma, e con lui il ticker: da qui in
+        // poi non c'e' piu' niente da contare, e un intervallo che continua a
+        // girare per il resto della serie e' solo batteria.
+        this.pauseElapsed.set(minimo);
+        this.fermaTicker();
+        // Una vibrazione alla fine del minimo, come per il recupero lungo: il
+        // telefono e' in tasca o sulla panca, non davanti agli occhi.
+        if (navigator.vibrate) navigator.vibrate(200);
+        return;
+      }
       this.pauseElapsed.set(passati);
-      // Alla fine del minimo una vibrazione, come per il recupero lungo: il
-      // telefono e' in tasca o sulla panca, non davanti agli occhi.
-      if (passati === (vm.cluster?.restSec ?? 0) && navigator.vibrate) navigator.vibrate(200);
     }, 1000);
   }
 
-  private stopPause(): void {
+  /** Ferma il conto lasciando la pausa aperta: il riquadro resta a schermo
+   *  sullo zero, con la scritta che dice che si puo' ripartire. */
+  private fermaTicker(): void {
     if (this.pauseTicker) { clearInterval(this.pauseTicker); this.pauseTicker = null; }
+  }
+
+  private stopPause(): void {
+    this.fermaTicker();
     this.pauseFrom = null;
     this.pauseKey = '';
     this.pauseElapsed.set(0);

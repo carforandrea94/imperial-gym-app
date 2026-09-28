@@ -105,3 +105,72 @@ describe('SchedaDetailComponent — scheda bloccata finche\' la sessione non par
     expect(patchField).toHaveBeenCalled();
   });
 });
+
+/**
+ * La pausa dentro una serie a cluster. Il numero scende fino a zero e li' si
+ * ferma: che la pausa del coach sia un minimo lo dice la scritta sotto, non un
+ * numero che continua a salire mentre si e' sotto il bilanciere.
+ */
+describe('SchedaDetailComponent — la pausa dentro il cluster', () => {
+  function conCluster(restSec: number) {
+    const { component } = makeComponent({ sessionSuQuestoGiorno: true });
+    // Il componente delega la formattazione a WorkoutSessionStateService, che
+    // qui e' uno stub: gli si presta la stessa funzione del servizio vero,
+    // cosi' il testo controllato e' quello che si legge davvero a schermo.
+    (component as any).sessionState.formatDuration = (sec: number) =>
+      `${Math.floor(sec / 60)}:${(sec % 60).toString().padStart(2, '0')}`;
+    const vm = makeVm();
+    vm.cluster = { blocks: [8, 8], restSec, end: 'fixed' };
+    (component as any).startPause(vm, 0);
+    return { component, vm };
+  }
+
+  it('parte dal minimo e scende', () => {
+    const { component, vm } = conCluster(30);
+    expect(component.pauseText(vm)).toBe('0:30');
+
+    vi.advanceTimersByTime(10_000);
+    expect(component.pauseText(vm)).toBe('0:20');
+  });
+
+  it('arrivata a zero si ferma, e non va sotto', () => {
+    const { component, vm } = conCluster(30);
+
+    vi.advanceTimersByTime(30_000);
+    expect(component.pauseText(vm)).toBe('0:00');
+
+    // Un minuto dopo e' ancora zero: prima saliva con il "+".
+    vi.advanceTimersByTime(60_000);
+    expect(component.pauseText(vm)).toBe('0:00');
+  });
+
+  /* Il riquadro resta a schermo: la pausa non e' finita, e' passato il minimo. */
+  it('a zero la pausa resta aperta e dice che si puo\' ripartire', () => {
+    const { component, vm } = conCluster(30);
+    vi.advanceTimersByTime(45_000);
+
+    expect(component.isPausing(vm, 0)).toBe(true);
+    expect(component.pauseOver(vm)).toBe(true);
+  });
+
+  /* Un intervallo che continua a girare per il resto della serie e' solo
+     batteria: a zero non c'e' piu' niente da contare. */
+  it('a zero il ticker si spegne', () => {
+    const { component, vm } = conCluster(30);
+    vi.advanceTimersByTime(30_000);
+    expect(vi.getTimerCount()).toBe(0);
+
+    // E prima di zero invece gira.
+    const secondo = conCluster(30);
+    vi.advanceTimersByTime(5_000);
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
+    expect(secondo.component.pauseText(secondo.vm)).toBe('0:25');
+  });
+
+  it('prima di arrivare a zero non dice ancora che e\' passata', () => {
+    const { component, vm } = conCluster(30);
+    vi.advanceTimersByTime(29_000);
+    expect(component.pauseOver(vm)).toBe(false);
+    expect(component.pauseText(vm)).toBe('0:01');
+  });
+});
