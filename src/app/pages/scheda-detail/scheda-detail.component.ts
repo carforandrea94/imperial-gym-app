@@ -368,8 +368,8 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       const stima = ultima ? oneRepMaxOf(ultima.sets) : null;
       if (stima) {
         const quando = this.giornoMese(ultima.data);
-        oneRmText = `Massimale stimato <b>${this.kg(stima.value)} kg</b>`
-          + ` — dal tuo ${this.kg(stima.from.load)} × ${stima.from.reps}`
+        oneRmText = `Dal massimale stimato di <b>${this.kg(stima.value)} kg</b>`
+          + ` · ${this.kg(stima.from.load)} × ${stima.from.reps}`
           + (quando ? ` del ${quando}` : '');
 
         const precedente = perSessione[perSessione.length - 2];
@@ -384,6 +384,11 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       // fa per prima davanti al bilanciere, e cosi' il numero giusto e' gia'
       // li' senza toccare niente.
       vm.rmPick = targetReps >= 1 && targetReps <= RM_TABLE_MAX_REPS ? targetReps : 1;
+
+      // L'ultima volta si scrive solo se non c'e' la stima: quando c'e', la
+      // riga da cui nasce dice gia' peso e data, e ripeterli costa una riga
+      // in cima a ogni esercizio.
+      if (oneRmText) lastText = '';
 
       if (lastText || oneRmText) {
         vm.insight = { lastText, oneRmText, rmRows: stima ? rmTable(stima.value) : null };

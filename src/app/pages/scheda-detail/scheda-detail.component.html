@@ -60,68 +60,73 @@
           </div>
         </ng-container>
 
-        <div class="stepper" *ngIf="!isCluster(vm, row)">
-          <button type="button" class="stepbtn" [disabled]="setsLocked"
-            (click)="adjustLoad(vm, j, -loadStep)"
-            [attr.aria-label]="'Togli ' + loadStep + ' chili'">−</button>
-          <label class="stepfield">
-            <span class="sr-only">Carico della serie {{ j + 1 }}, in chili</span>
-            <input type="text" inputmode="decimal" [(ngModel)]="row.load"
-              [placeholder]="row.loadPlaceholder || '0'" [disabled]="setsLocked"
-              (input)="onInput()" />
-          </label>
-          <span class="stepunit">kg</span>
-          <button type="button" class="stepbtn" [disabled]="setsLocked"
-            (click)="adjustLoad(vm, j, loadStep)"
-            [attr.aria-label]="'Aggiungi ' + loadStep + ' chili'">+</button>
-        </div>
+        <!-- Carico e ripetizioni sulla STESSA riga. Prima stavano una sopra
+             l'altra, con numeri enormi e tasti da 44: due righe per due numeri
+             che si leggono in un colpo solo, e l'esercizio ci perdeva 63px. -->
+        <div class="stepduo">
+          <div class="stepper" *ngIf="!isCluster(vm, row)">
+            <button type="button" class="stepbtn" [disabled]="setsLocked"
+              (click)="adjustLoad(vm, j, -loadStep)"
+              [attr.aria-label]="'Togli ' + loadStep + ' chili'">−</button>
+            <label class="stepfield">
+              <span class="sr-only">Carico della serie {{ j + 1 }}, in chili</span>
+              <input type="text" inputmode="decimal" [(ngModel)]="row.load"
+                [placeholder]="row.loadPlaceholder || '0'" [disabled]="setsLocked"
+                (input)="onInput()" />
+            </label>
+            <span class="stepunit">kg</span>
+            <button type="button" class="stepbtn" [disabled]="setsLocked"
+              (click)="adjustLoad(vm, j, loadStep)"
+              [attr.aria-label]="'Aggiungi ' + loadStep + ' chili'">+</button>
+          </div>
 
-        <!-- In un cluster il carico e' del BLOCCO: di solito e' lo stesso in
-             tutti, ma al terzo si cala, e la serie deve poterlo dire. -->
-        <div class="stepper" *ngIf="isCluster(vm, row) && block(row) as b">
-          <button type="button" class="stepbtn" [disabled]="setsLocked"
-            (click)="adjustBlockLoad(vm, j, -loadStep)"
-            [attr.aria-label]="'Togli ' + loadStep + ' chili'">−</button>
-          <label class="stepfield">
-            <span class="sr-only">Carico del blocco in corso, in chili</span>
-            <input type="text" inputmode="decimal" [(ngModel)]="b.load"
-              [placeholder]="b.loadPlaceholder || '0'" [disabled]="setsLocked"
-              (input)="onInput()" />
-          </label>
-          <span class="stepunit">kg</span>
-          <button type="button" class="stepbtn" [disabled]="setsLocked"
-            (click)="adjustBlockLoad(vm, j, loadStep)"
-            [attr.aria-label]="'Aggiungi ' + loadStep + ' chili'">+</button>
-        </div>
+          <!-- In un cluster il carico e' del BLOCCO: di solito e' lo stesso in
+               tutti, ma al terzo si cala, e la serie deve poterlo dire. -->
+          <div class="stepper" *ngIf="isCluster(vm, row) && block(row) as b">
+            <button type="button" class="stepbtn" [disabled]="setsLocked"
+              (click)="adjustBlockLoad(vm, j, -loadStep)"
+              [attr.aria-label]="'Togli ' + loadStep + ' chili'">−</button>
+            <label class="stepfield">
+              <span class="sr-only">Carico del blocco in corso, in chili</span>
+              <input type="text" inputmode="decimal" [(ngModel)]="b.load"
+                [placeholder]="b.loadPlaceholder || '0'" [disabled]="setsLocked"
+                (input)="onInput()" />
+            </label>
+            <span class="stepunit">kg</span>
+            <button type="button" class="stepbtn" [disabled]="setsLocked"
+              (click)="adjustBlockLoad(vm, j, loadStep)"
+              [attr.aria-label]="'Aggiungi ' + loadStep + ' chili'">+</button>
+          </div>
 
-        <div class="stepper small" *ngIf="!isCluster(vm, row)">
-          <button type="button" class="stepbtn" [disabled]="setsLocked"
-            (click)="adjustReps(vm, j, -1)" aria-label="Una ripetizione in meno">−</button>
-          <label class="stepfield">
-            <span class="sr-only">Ripetizioni della serie {{ j + 1 }}</span>
-            <input type="text" inputmode="numeric" [(ngModel)]="row.reps"
-              [placeholder]="row.ripPlaceholder || '0'" [disabled]="setsLocked"
-              (input)="onInput()" />
-          </label>
-          <span class="stepunit">rip.</span>
-          <button type="button" class="stepbtn" [disabled]="setsLocked"
-            (click)="adjustReps(vm, j, 1)" aria-label="Una ripetizione in più">+</button>
-        </div>
+          <div class="stepper small" *ngIf="!isCluster(vm, row)">
+            <button type="button" class="stepbtn" [disabled]="setsLocked"
+              (click)="adjustReps(vm, j, -1)" aria-label="Una ripetizione in meno">−</button>
+            <label class="stepfield">
+              <span class="sr-only">Ripetizioni della serie {{ j + 1 }}</span>
+              <input type="text" inputmode="numeric" [(ngModel)]="row.reps"
+                [placeholder]="row.ripPlaceholder || '0'" [disabled]="setsLocked"
+                (input)="onInput()" />
+            </label>
+            <span class="stepunit">rip.</span>
+            <button type="button" class="stepbtn" [disabled]="setsLocked"
+              (click)="adjustReps(vm, j, 1)" aria-label="Una ripetizione in più">+</button>
+          </div>
 
-        <!-- In un cluster le ripetizioni sono del BLOCCO: il carico resta della
-             serie, perché è lo stesso in tutti i blocchi. -->
-        <div class="stepper small" *ngIf="isCluster(vm, row) && block(row) as b">
-          <button type="button" class="stepbtn" [disabled]="setsLocked"
-            (click)="adjustBlockReps(vm, j, -1)" aria-label="Una ripetizione in meno">−</button>
-          <label class="stepfield">
-            <span class="sr-only">Ripetizioni del blocco in corso</span>
-            <input type="text" inputmode="numeric" [(ngModel)]="b.reps"
-              [placeholder]="b.ripPlaceholder || '0'" [disabled]="setsLocked"
-              (input)="onInput()" />
-          </label>
-          <span class="stepunit">rip.</span>
-          <button type="button" class="stepbtn" [disabled]="setsLocked"
-            (click)="adjustBlockReps(vm, j, 1)" aria-label="Una ripetizione in più">+</button>
+          <!-- In un cluster le ripetizioni sono del BLOCCO: il carico resta della
+               serie, perché è lo stesso in tutti i blocchi. -->
+          <div class="stepper small" *ngIf="isCluster(vm, row) && block(row) as b">
+            <button type="button" class="stepbtn" [disabled]="setsLocked"
+              (click)="adjustBlockReps(vm, j, -1)" aria-label="Una ripetizione in meno">−</button>
+            <label class="stepfield">
+              <span class="sr-only">Ripetizioni del blocco in corso</span>
+              <input type="text" inputmode="numeric" [(ngModel)]="b.reps"
+                [placeholder]="b.ripPlaceholder || '0'" [disabled]="setsLocked"
+                (input)="onInput()" />
+            </label>
+            <span class="stepunit">rip.</span>
+            <button type="button" class="stepbtn" [disabled]="setsLocked"
+              (click)="adjustBlockReps(vm, j, 1)" aria-label="Una ripetizione in più">+</button>
+          </div>
         </div>
 
         <button type="button" class="setdone" *ngIf="!row.done && !isCluster(vm, row)" [disabled]="setsLocked"
@@ -178,15 +183,10 @@
   <div class="ex-insights" [class.show]="vm.insightVisible && vm.insight">
     <ng-container *ngIf="vm.insight">
       <div *ngIf="vm.insight.lastText" class="lastsession">{{ vm.insight.lastText }}</div>
-      <!-- Il massimale e la serie da cui viene. -->
-      <div class="suggestion-chip stima" *ngIf="vm.insight.oneRmText"
-        [innerHTML]="vm.insight.oneRmText"></div>
 
       <!-- Che peso mettere: si sceglie per quante ripetizioni lo si vuole e il
-           numero cambia. Sta qui, fra i consigli e sotto il massimale da cui
-           nasce: uno per esercizio, non uno per serie. -->
+           numero cambia. Sotto, in piccolo, da dove viene. -->
       <div class="rmpick" *ngIf="vm.insight.rmRows">
-        <span class="rmpick-lab">Prova questo peso</span>
         <div class="rmpick-row">
           <span class="rmpick-selwrap">
             <select class="rmpick-sel" [(ngModel)]="vm.rmPick"
@@ -199,6 +199,7 @@
           <span class="rmpick-out">{{ rmLoad(vm) }} kg</span>
           <span class="rmpick-pct" *ngIf="rmRow(vm) as r">{{ r.percent }}%</span>
         </div>
+        <p class="rmpick-from" *ngIf="vm.insight.oneRmText" [innerHTML]="vm.insight.oneRmText"></p>
         <p class="rmpick-soft" *ngIf="vm.rmPick > rmSoftOver">
           Sopra le {{ rmSoftOver }} ripetizioni la stima si allarga: prendilo
           come indicazione, non come numero.

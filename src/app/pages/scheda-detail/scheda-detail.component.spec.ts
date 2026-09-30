@@ -199,7 +199,7 @@ describe('SchedaDetailComponent — il massimale stimato per esercizio', () => {
     // 80 x 6 con Brzycki: 80 * 36 / (37 - 6) = 92,9 -> 93 kg.
     const insight = insightDopo([sessione('2026-09-24', [{ load: '80', reps: '6' }])]);
     expect(insight.oneRmText).toContain('<b>93 kg</b>');
-    expect(insight.oneRmText).toContain('dal tuo 80 × 6');
+    expect(insight.oneRmText).toContain('80 × 6');
     expect(insight.oneRmText).toContain('del 24/09');
   });
 
@@ -208,7 +208,7 @@ describe('SchedaDetailComponent — il massimale stimato per esercizio', () => {
     const insight = insightDopo([sessione('2026-09-24', [
       { load: '90', reps: '3' }, { load: '100', reps: '1' }
     ])]);
-    expect(insight.oneRmText).toContain('dal tuo 100 × 1');
+    expect(insight.oneRmText).toContain('100 × 1');
     expect(insight.oneRmText).toContain('<b>100 kg</b>');
   });
 
@@ -235,7 +235,7 @@ describe('SchedaDetailComponent — il massimale stimato per esercizio', () => {
       { load: '62,5-55', reps: '5+5+3', blocks: [{ load: '62,5' }, { load: '55' }] },
       { load: '70', reps: '5' }
     ])]);
-    expect(insight.oneRmText).toContain('dal tuo 70 × 5');
+    expect(insight.oneRmText).toContain('70 × 5');
   });
 
   it('con sole serie a cluster non stima niente', () => {
@@ -243,6 +243,13 @@ describe('SchedaDetailComponent — il massimale stimato per esercizio', () => {
       { load: '62,5-55', reps: '5+5+3', blocks: [{ load: '62,5' }, { load: '55' }] }
     ])]);
     expect(insight.oneRmText).toBeNull();
+  });
+
+  it('con la stima non ripete l\'ultima sessione: peso e data stanno gia\' li\'', () => {
+    // "Ultimo (24/09): 80 kg" e "... 80 x 6 del 24/09" dicono la stessa cosa.
+    const insight = insightDopo([sessione('2026-09-24', [{ load: '80', reps: '6' }])]);
+    expect(insight.oneRmText).toContain('80 × 6');
+    expect(insight.lastText).toBe('');
   });
 
   it('oltre le dodici ripetizioni non stima, ma l\'ultima sessione si vede ancora', () => {
