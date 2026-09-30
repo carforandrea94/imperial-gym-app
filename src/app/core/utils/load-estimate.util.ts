@@ -26,6 +26,21 @@ export interface PerformedSet {
 /** Oltre questa soglia la formula perde senso: il limite diventa il fiato, non la forza. */
 const MAX_TRUSTED_REPS = 15;
 
+/**
+ * Oltre questo numero di ripetizioni il massimale non si MOSTRA.
+ *
+ * E' una soglia piu' stretta di MAX_TRUSTED_REPS, e la ragione e' che stampare
+ * un numero e' una promessa piu' grossa che usarlo per scegliere un carico.
+ * Confrontando le sette formule classiche sullo stesso carico, lo scarto fra
+ * la piu' alta e la piu' bassa resta sotto il 7% fino a dieci ripetizioni, e
+ * poi esplode: 11,8% a dodici, 21,9% a quindici, 45,3% a venti. A quel punto
+ * non e' una stima con un margine, e' un'opinione.
+ *
+ * Dentro le dodici, invece, quale formula si usi conta poco: Epley e Brzycki
+ * su una serie da cinque differiscono del 4%, e coincidono esattamente a dieci.
+ */
+export const MAX_REPS_SHOWN = 12;
+
 /** Massimale teorico stimato da una serie. Restituisce 0 se la serie non e' utilizzabile. */
 export function estimateOneRepMax(load: number, reps: number): number {
   if (!isFinite(load) || !isFinite(reps)) return 0;
@@ -75,4 +90,34 @@ export function suggestLoad(sets: PerformedSet[], targetReps: number, step = 5):
   if (!from || targetReps <= 0) return null;
   const load = loadForReps(estimateOneRepMax(from.load, from.reps), targetReps, step);
   return load > 0 ? { load, from } : null;
+}
+
+export interface OneRepMaxEstimate {
+  /** Massimale stimato, arrotondato al mezzo chilo. */
+  value: number;
+  /** La serie da cui viene: senza, il numero non si puo' giudicare. */
+  from: PerformedSet;
+}
+
+/**
+ * Il massimale stimato da un gruppo di serie - tipicamente quelle di una
+ * sessione sola - preso dalla migliore, cioe' quella che esprime il massimale
+ * piu' alto, non quella col carico piu' alto.
+ *
+ * Restituisce null quando non c'e' niente di mostrabile: nessuna serie dentro
+ * le ripetizioni attendibili, o un carico che non e' un numero.
+ *
+ * Quello che questa funzione NON puo' sapere: se la serie e' stata portata
+ * vicino al cedimento. Tutte queste formule lo danno per scontato, e in
+ * un'app dove il carico lo prescrive il coach spesso non e' vero - un 4x10
+ * comodo stima un massimale piu' basso del vero. Per questo chi mostra il
+ * numero deve mostrare anche da dove viene: e' l'unico modo che ha chi legge
+ * per capire quanto crederci.
+ */
+export function oneRepMaxOf(sets: PerformedSet[]): OneRepMaxEstimate | null {
+  const usabili = sets.filter(s => s.reps > 0 && s.reps <= MAX_REPS_SHOWN);
+  const from = bestSet(usabili);
+  if (!from) return null;
+  const value = Math.round(estimateOneRepMax(from.load, from.reps) * 2) / 2;
+  return value > 0 ? { value, from } : null;
 }

@@ -174,3 +174,80 @@ describe('SchedaDetailComponent — la pausa dentro il cluster', () => {
     expect(component.pauseText(vm)).toBe('0:01');
   });
 });
+
+/**
+ * Il massimale stimato dentro la sessione. Il numero da solo non vuol dire
+ * niente: queste formule presumono una serie tirata vicino al cedimento, e qui
+ * il carico lo prescrive il coach, quindi accanto alla stima ci deve sempre
+ * essere la serie da cui viene - e' l'unico modo per capire quanto crederci.
+ */
+describe('SchedaDetailComponent — il massimale stimato per esercizio', () => {
+  /** Una sessione con le serie indicate su "Panca piana". */
+  function sessione(date: string, sets: any[]) {
+    return { id: date, session: { date, exercises: [{ name: 'Panca piana', sets }] } };
+  }
+
+  function insightDopo(sessioni: any[]) {
+    const { component } = makeComponent({ sessionSuQuestoGiorno: true });
+    const vm = makeVm();
+    component.exercises = [vm];
+    (component as any).loadInsights(sessioni);
+    return vm.insight;
+  }
+
+  it('mostra la stima dell\'ultima sessione con la serie da cui viene', () => {
+    // 80 x 6 con Epley: 80 * (1 + 6/30) = 96 kg.
+    const insight = insightDopo([sessione('2026-09-24', [{ load: '80', reps: '6' }])]);
+    expect(insight.oneRmText).toContain('<b>96 kg</b>');
+    expect(insight.oneRmText).toContain('dal tuo 80 × 6');
+    expect(insight.oneRmText).toContain('del 24/09');
+  });
+
+  it('prende la serie col massimale piu\' alto, non quella col carico piu\' alto', () => {
+    // 90 x 3 fa 99; 100 x 1 fa 103,33 -> arrotondato 103,5.
+    const insight = insightDopo([sessione('2026-09-24', [
+      { load: '90', reps: '3' }, { load: '100', reps: '1' }
+    ])]);
+    expect(insight.oneRmText).toContain('dal tuo 100 × 1');
+    expect(insight.oneRmText).toContain('103,5 kg');
+  });
+
+  it('confronta con la sessione precedente e mostra la differenza', () => {
+    const insight = insightDopo([
+      sessione('2026-09-17', [{ load: '75', reps: '6' }]),   // 90
+      sessione('2026-09-24', [{ load: '80', reps: '6' }])    // 96
+    ]);
+    expect(insight.oneRmText).toContain('+6 kg');
+  });
+
+  it('a parita\' di stima non scrive nessuna differenza', () => {
+    const insight = insightDopo([
+      sessione('2026-09-17', [{ load: '80', reps: '6' }]),
+      sessione('2026-09-24', [{ load: '80', reps: '6' }])
+    ]);
+    expect(insight.oneRmText).not.toContain('kg ·');
+  });
+
+  it('ignora le serie a cluster: il loro carico e\' un intervallo, non un numero', () => {
+    // "62,5-55" x "5+5+3" letto come numero darebbe 62 x 5, una serie che non
+    // e' mai esistita. Deve contare solo la serie dritta.
+    const insight = insightDopo([sessione('2026-09-24', [
+      { load: '62,5-55', reps: '5+5+3', blocks: [{ load: '62,5' }, { load: '55' }] },
+      { load: '70', reps: '5' }
+    ])]);
+    expect(insight.oneRmText).toContain('dal tuo 70 × 5');
+  });
+
+  it('con sole serie a cluster non stima niente', () => {
+    const insight = insightDopo([sessione('2026-09-24', [
+      { load: '62,5-55', reps: '5+5+3', blocks: [{ load: '62,5' }, { load: '55' }] }
+    ])]);
+    expect(insight.oneRmText).toBeNull();
+  });
+
+  it('oltre le dodici ripetizioni non stima, ma l\'ultima sessione si vede ancora', () => {
+    const insight = insightDopo([sessione('2026-09-24', [{ load: '40', reps: '20' }])]);
+    expect(insight.oneRmText).toBeNull();
+    expect(insight.lastText).toBe('Ultimo (24/09): 40 kg');
+  });
+});

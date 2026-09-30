@@ -19,7 +19,7 @@ import {
 } from '../../core/utils/cluster.util';
 import { todayLocalISO } from '../../core/utils/date.util';
 import { findClosestSlideIndex, scrollToSlide } from '../../core/utils/horizontal-slider.util';
-import { PerformedSet, suggestLoad } from '../../core/utils/load-estimate.util';
+import { PerformedSet, suggestLoad, oneRepMaxOf } from '../../core/utils/load-estimate.util';
 import { ToastService } from '../../services/toast.service';
 import {
   SerieRow, BlockRow, canAddSet, buildExtraSet, canRemoveSet, removeSetAt, mergeDraftRows
@@ -259,6 +259,19 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  /** "24/09" da una data ISO, o stringa vuota se la data non c'e'. */
+  private giornoMese(iso: string | undefined): string {
+    if (!iso) return '';
+    const d = new Date(iso + 'T00:00:00');
+    if (isNaN(d.getTime())) return '';
+    return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+  }
+
+  /** I chili come si scrivono qui: virgola decimale, e niente ",0" inutile. */
+  private kg(n: number): string {
+    return n.toLocaleString('it-IT', { maximumFractionDigits: 1 });
+  }
+
   private loadInsights(daySessions: { id: string; session: WorkoutSession }[]): void {
     if (daySessions.length === 0) return;
     const sessions = daySessions.map(s => s.session);
@@ -272,6 +285,9 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       // Carico e ripetizioni della stessa serie vanno tenuti insieme: e' la
       // coppia, non il solo carico, a dire quanto e' stato faticoso.
       const performed: PerformedSet[] = [];
+      /** Le stesse serie, ma tenute divise per sessione: serve al massimale,
+       *  che parla dell'ultima volta e non di tutta la storia. */
+      const perSessione: { data: string; sets: PerformedSet[] }[] = [];
 
       sessions.forEach(s => {
         const sexData = s.exercises.find(e => e.name === exName);
@@ -279,11 +295,20 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         const loads = sexData.sets.map(sr => parseFloat(sr.load ?? '') || 0);
         const maxLoad = Math.max(...loads.filter(l => l > 0));
         if (maxLoad > 0) maxLoads.push(maxLoad);
+        const diQuesta: PerformedSet[] = [];
         sexData.sets.forEach(sr => {
+          // Le serie a cluster restano fuori. Il loro carico e le loro
+          // ripetizioni sono riassunti scritti per essere letti ("5+5+3",
+          // "62,5-55"), non numeri: parseFloat ne cava 5 e 62, che sembrano
+          // una serie vera e non lo sono. E un cluster non e' comunque una
+          // serie dritta - fra un blocco e l'altro c'e' una pausa - quindi
+          // nessuna di queste formule lo sa leggere.
+          if (sr.blocks?.length) return;
           const load = parseFloat(sr.load ?? '');
           const reps = parseFloat(sr.reps ?? '');
-          if (load > 0 && reps > 0) performed.push({ load, reps });
+          if (load > 0 && reps > 0) { performed.push({ load, reps }); diQuesta.push({ load, reps }); }
         });
+        if (diQuesta.length > 0) perSessione.push({ data: s.date, sets: diQuesta });
         lastSessionData = sexData.sets.map(sr => ({
           load: sr.load, reps: sr.reps,
           blocks: sr.blocks?.map(b => ({ load: b.load }))
@@ -312,8 +337,7 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       const lastEx = lastSession?.exercises.find(e => e.name === exName);
       let lastText = '';
       if (lastEx && lastSession) {
-        const d = lastSession.date ? new Date(lastSession.date + 'T00:00:00') : null;
-        const dd = d ? `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}` : '';
+        const dd = this.giornoMese(lastSession.date);
         const maxLoad = Math.max(...lastEx.sets.map(s => parseFloat(s.load ?? '') || 0).filter(l => l > 0));
         lastText = dd ? `Ultimo (${dd}): ${maxLoad > 0 ? maxLoad + ' kg' : '—'}` : '';
       }
@@ -329,8 +353,30 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
           + ` — dal tuo ${advice.from.load} kg × ${advice.from.reps}`;
       }
 
-      if (lastText || suggestion) {
-        vm.insight = { lastText, suggestion };
+      // Il massimale stimato dall'ultima volta che l'esercizio e' stato fatto.
+      // Non e' una misura: e' quello che la formula ricava dalla serie migliore
+      // di quella sessione, e vale quanto vale la serie da cui viene - per
+      // questo si mostra anche quella. Il confronto con la sessione prima e'
+      // la parte che si guarda davvero: dice se si sta salendo.
+      let oneRmText: string | null = null;
+      const ultima = perSessione[perSessione.length - 1];
+      const stima = ultima ? oneRepMaxOf(ultima.sets) : null;
+      if (stima) {
+        const quando = this.giornoMese(ultima.data);
+        oneRmText = `Massimale stimato <b>${this.kg(stima.value)} kg</b>`
+          + ` — dal tuo ${this.kg(stima.from.load)} × ${stima.from.reps}`
+          + (quando ? ` del ${quando}` : '');
+
+        const precedente = perSessione[perSessione.length - 2];
+        const prima = precedente ? oneRepMaxOf(precedente.sets) : null;
+        if (prima) {
+          const delta = Math.round((stima.value - prima.value) * 2) / 2;
+          if (delta !== 0) oneRmText += ` · ${delta > 0 ? '+' : '−'}${this.kg(Math.abs(delta))} kg`;
+        }
+      }
+
+      if (lastText || suggestion || oneRmText) {
+        vm.insight = { lastText, suggestion, oneRmText };
         vm.insightVisible = true;
       }
 

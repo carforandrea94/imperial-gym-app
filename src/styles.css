@@ -843,6 +843,11 @@ lucide-icon svg.filled{fill:currentColor;}
 .mycode-copybtn{flex:0 0 auto;padding:12px 18px;}
 .suggestion-chip{font-size:var(--text-sm);line-height:1.45;color:var(--label);padding:10px 12px;border-radius:var(--r-md);background:var(--accent-dim);border:1px solid var(--accent);}
 .suggestion-chip b{color:var(--accent);font-weight:700;}
+/* Il massimale stimato: stessa forma del consiglio, voce piu' bassa. Il
+   consiglio dice cosa fare adesso, la stima racconta com'e' andata - se
+   fossero uguali di tono, la cosa da fare si perderebbe fra le altre. */
+.suggestion-chip.stima{background:var(--surface-raise);border-color:var(--border-line);color:var(--label-2);font-size:var(--text-xs);font-family:'IBM Plex Mono',monospace;line-height:1.5;}
+.suggestion-chip.stima b{color:var(--label);}
 .savebar{margin-top:16px;}
 .savebar.dual{display:flex;gap:10px;}
 .savebar.dual .savebtn{width:auto;flex:1;}

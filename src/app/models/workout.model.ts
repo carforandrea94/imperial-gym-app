@@ -140,4 +140,6 @@ export function normalizeSession(raw: any): WorkoutSession | null {
 export interface ExInsight {
   lastText: string;
   suggestion: string | null;
+  /** Il massimale stimato dall'ultima sessione, gia' scritto per chi legge. */
+  oneRmText: string | null;
 }

@@ -178,6 +178,7 @@
   <div class="ex-insights" [class.show]="vm.insightVisible && vm.insight">
     <ng-container *ngIf="vm.insight">
       <div *ngIf="vm.insight.lastText" class="lastsession">{{ vm.insight.lastText }}</div>
+      <div class="suggestion-chip stima" *ngIf="vm.insight.oneRmText" [innerHTML]="vm.insight.oneRmText"></div>
       <div class="suggestion-chip" *ngIf="vm.insight.suggestion" [innerHTML]="vm.insight.suggestion"></div>
       <div class="suggestion-chip" *ngIf="vm.isFirst && vm.warmup" [innerHTML]="vm.warmup"></div>
     </ng-container>
