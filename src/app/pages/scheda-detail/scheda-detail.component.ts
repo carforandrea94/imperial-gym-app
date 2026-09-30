@@ -19,7 +19,7 @@ import {
 } from '../../core/utils/cluster.util';
 import { todayLocalISO } from '../../core/utils/date.util';
 import { findClosestSlideIndex, scrollToSlide } from '../../core/utils/horizontal-slider.util';
-import { PerformedSet, suggestLoad, oneRepMaxOf } from '../../core/utils/load-estimate.util';
+import { PerformedSet, suggestLoad, oneRepMaxOf, rmTable, MAX_TRUSTED_REPS } from '../../core/utils/load-estimate.util';
 import { ToastService } from '../../services/toast.service';
 import {
   SerieRow, BlockRow, canAddSet, buildExtraSet, canRemoveSet, removeSetAt, mergeDraftRows
@@ -46,6 +46,9 @@ interface ExerciseVM {
   /** Serie a cluster: la forma di OGNI serie di questo esercizio. null = serie
    *  normali, un blocco per serie. */
   cluster: ClusterSpec | null;
+  /** Se la tabella dei massimali di questo esercizio e' aperta. Chiusa di
+   *  default: sotto il bilanciere serve un numero, non quindici. */
+  rmOpen: boolean;
 }
 
 @Component({
@@ -232,7 +235,7 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       }));
       const override = restOverrides[this.restKey(ex.name)];
       const restSeconds = override && override > 0 ? override : protocolDefault;
-      return { ex, rows, open: true, activeRow: 0, insightVisible: false, insight: null, restSeconds, isFirst: exIdx === 0, warmup: null, cluster };
+      return { ex, rows, open: true, activeRow: 0, insightVisible: false, insight: null, restSeconds, isFirst: exIdx === 0, warmup: null, cluster, rmOpen: false };
     });
   }
 
@@ -257,6 +260,15 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       const vm = this.exercises[i];
       if (vm) vm.rows = mergeDraftRows(vm.rows, dex.rows);
     });
+  }
+
+  /** Oltre queste ripetizioni la riga della tabella si fa larga: si mostra
+   *  comunque, ma in tono minore. */
+  readonly rmSoftOver = MAX_TRUSTED_REPS;
+
+  /** Apre e chiude la tabella dei massimali di un esercizio. */
+  toggleRm(vm: ExerciseVM): void {
+    vm.rmOpen = !vm.rmOpen;
   }
 
   /** "24/09" da una data ISO, o stringa vuota se la data non c'e'. */
@@ -376,7 +388,7 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       }
 
       if (lastText || suggestion || oneRmText) {
-        vm.insight = { lastText, suggestion, oneRmText };
+        vm.insight = { lastText, suggestion, oneRmText, rmRows: stima ? rmTable(stima.value) : null };
         vm.insightVisible = true;
       }
 

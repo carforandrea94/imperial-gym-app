@@ -196,26 +196,26 @@ describe('SchedaDetailComponent — il massimale stimato per esercizio', () => {
   }
 
   it('mostra la stima dell\'ultima sessione con la serie da cui viene', () => {
-    // 80 x 6 con Epley: 80 * (1 + 6/30) = 96 kg.
+    // 80 x 6 con Brzycki: 80 * 36 / (37 - 6) = 92,9 -> 93 kg.
     const insight = insightDopo([sessione('2026-09-24', [{ load: '80', reps: '6' }])]);
-    expect(insight.oneRmText).toContain('<b>96 kg</b>');
+    expect(insight.oneRmText).toContain('<b>93 kg</b>');
     expect(insight.oneRmText).toContain('dal tuo 80 × 6');
     expect(insight.oneRmText).toContain('del 24/09');
   });
 
   it('prende la serie col massimale piu\' alto, non quella col carico piu\' alto', () => {
-    // 90 x 3 fa 99; 100 x 1 fa 103,33 -> arrotondato 103,5.
+    // 90 x 3 fa 95,3; 100 x 1 fa 100 esatti - una singola E' il massimale.
     const insight = insightDopo([sessione('2026-09-24', [
       { load: '90', reps: '3' }, { load: '100', reps: '1' }
     ])]);
     expect(insight.oneRmText).toContain('dal tuo 100 × 1');
-    expect(insight.oneRmText).toContain('103,5 kg');
+    expect(insight.oneRmText).toContain('<b>100 kg</b>');
   });
 
   it('confronta con la sessione precedente e mostra la differenza', () => {
     const insight = insightDopo([
-      sessione('2026-09-17', [{ load: '75', reps: '6' }]),   // 90
-      sessione('2026-09-24', [{ load: '80', reps: '6' }])    // 96
+      sessione('2026-09-17', [{ load: '75', reps: '6' }]),   // 87
+      sessione('2026-09-24', [{ load: '80', reps: '6' }])    // 93
     ]);
     expect(insight.oneRmText).toContain('+6 kg');
   });
@@ -249,5 +249,56 @@ describe('SchedaDetailComponent — il massimale stimato per esercizio', () => {
     const insight = insightDopo([sessione('2026-09-24', [{ load: '40', reps: '20' }])]);
     expect(insight.oneRmText).toBeNull();
     expect(insight.lastText).toBe('Ultimo (24/09): 40 kg');
+  });
+});
+
+/**
+ * La tabella dei carichi per ripetizione, dentro la sessione. Il massimale da
+ * solo non dice che peso mettere sul bilanciere oggi: la tabella traduce.
+ */
+describe('SchedaDetailComponent — la tabella dei massimali per esercizio', () => {
+  function conSessione(sets: any[]) {
+    const { component } = makeComponent({ sessionSuQuestoGiorno: true });
+    const vm = makeVm();
+    component.exercises = [vm];
+    (component as any).loadInsights([
+      { id: 'a', session: { date: '2026-09-24', exercises: [{ name: 'Panca piana', sets }] } }
+    ]);
+    return { component, vm };
+  }
+
+  it('porta il carico per ogni ripetizione da 1 a 15', () => {
+    const { vm } = conSessione([{ load: '80', reps: '6' }]);
+    expect(vm.insight.rmRows.length).toBe(15);
+    expect(vm.insight.rmRows[0].reps).toBe(1);
+    expect(vm.insight.rmRows[14].reps).toBe(15);
+  });
+
+  it('la riga di una ripetizione coincide col massimale mostrato sopra', () => {
+    const { vm } = conSessione([{ load: '80', reps: '6' }]);
+    expect(vm.insight.oneRmText).toContain('<b>93 kg</b>');
+    expect(vm.insight.rmRows[0].load).toBe(93);
+  });
+
+  it('alla riga delle ripetizioni fatte ritrova il peso sollevato', () => {
+    // Chi ha appena fatto 80 x 6 deve leggere 80 alla riga "6 rip", altrimenti
+    // la tabella lo smentisce con il bilanciere ancora in mano.
+    const { vm } = conSessione([{ load: '80', reps: '6' }]);
+    expect(vm.insight.rmRows.find((r: any) => r.reps === 6).load).toBe(80);
+  });
+
+  it('senza stima non c\'e\' tabella', () => {
+    const { vm } = conSessione([{ load: '40', reps: '20' }]);
+    expect(vm.insight.oneRmText).toBeNull();
+    expect(vm.insight.rmRows).toBeNull();
+  });
+
+  it('nasce chiusa e si apre al tocco', () => {
+    const { component, vm } = conSessione([{ load: '80', reps: '6' }]);
+    expect(vm.rmOpen).toBeFalsy();
+    component.toggleRm(vm);
+    expect(vm.rmOpen).toBe(true);
+    component.toggleRm(vm);
+    expect(vm.rmOpen).toBe(false);
   });
 });

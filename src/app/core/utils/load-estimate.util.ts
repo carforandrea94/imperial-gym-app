@@ -1,20 +1,40 @@
 /**
- * Stima del carico da usare quando cambia il numero di ripetizioni.
+ * Massimale, e carico da usare per un dato numero di ripetizioni.
  *
  * Il problema: 36 kg per 6 ripetizioni e 36 kg per 10 non sono lo stesso
  * sforzo. Per confrontarli si passa dal massimale teorico (1RM), che e' la
- * moneta comune fra schemi diversi: si stima il 1RM da una serie realmente
- * fatta, poi lo si riconverte nel carico giusto per le ripetizioni previste.
+ * moneta comune fra schemi diversi: si stima il massimale da una serie
+ * realmente fatta, poi lo si riconverte nel carico giusto per le ripetizioni
+ * previste.
  *
- * Formula di Epley (1985), la piu' diffusa in palestra:
+ * Formula di Brzycki (1993), nelle due direzioni:
  *
- *     1RM = carico * (1 + ripetizioni / 30)
+ *     1RM     = carico * 36 / (37 - ripetizioni)
+ *     carico  = 1RM * (37 - ripetizioni) / 36
  *
- * e la sua inversa. E' un'approssimazione lineare: resta attendibile entro le
- * ~12 ripetizioni e sovrastima oltre, dove pero' conta piu' il fiato che la
- * forza. Il carico che restituisce e' quello che permette di completare le
- * ripetizioni chieste arrivando a fine serie in difficolta': e' la definizione
- * stessa di "carico per N ripetizioni", non serve nessun margine aggiuntivo.
+ * Perche' questa e non Epley, che sta in ogni app: perche' qui il massimale
+ * non si mostra da solo, si mostra insieme al carico per ogni numero di
+ * ripetizioni, e in quella tabella Epley si contraddice. Epley dice
+ * 1RM = carico * (1 + rip/30), che a una ripetizione sola da' 1RM = 1,033 *
+ * carico: la sua inversa, richiesta per una ripetizione, restituisce il 96,8%
+ * del massimale. Una tabella che alla riga "1" scrive un numero piu' basso del
+ * massimale che ha appena dichiarato non e' difendibile.
+ *
+ * Brzycki invece vale esattamente 1 a una ripetizione, quindi la riga "1" e'
+ * il massimale, e la sua inversa restituisce (37 - rip) / 36: 100%, 97%, 94%,
+ * 92%, 89%, 86%, 83%, 81%, 78%, 75%, 72%, 69%, 67%, 64%, 61%. E' la tabella
+ * delle percentuali del massimale appesa al muro di qualsiasi palestra - non
+ * una variante, la stessa. La formula riproduce anche la serie di partenza:
+ * chi ha fatto 80 x 6 trova 80 alla riga "6", ed e' l'unico modo perche' la
+ * tabella non sembri sbagliata a chi quel peso l'ha appena sollevato.
+ *
+ * Il prezzo, dichiarato: sopra le dodici ripetizioni Brzycki e' la piu'
+ * generosa delle sette formule classiche (a venti stima il 212% del carico,
+ * dove Epley si ferma al 167%). Per questo la SERIE da cui si stima non puo'
+ * superare le dodici ripetizioni - vedi MAX_TRUSTED_REPS. E' un limite su cio'
+ * che si legge, non su cio' che si proietta: la tabella scende fino a quindici
+ * ripetizioni, perche' in quella direzione il numero e' una percentuale del
+ * massimale e non una stima fatta su una serie sfiancante.
  */
 
 /** Serie realmente eseguita, gia' convertita in numeri. */
@@ -23,35 +43,43 @@ export interface PerformedSet {
   reps: number;
 }
 
-/** Oltre questa soglia la formula perde senso: il limite diventa il fiato, non la forza. */
-const MAX_TRUSTED_REPS = 15;
-
 /**
- * Oltre questo numero di ripetizioni il massimale non si MOSTRA.
+ * Oltre questo numero di ripetizioni non si stima piu' niente da una serie.
  *
- * E' una soglia piu' stretta di MAX_TRUSTED_REPS, e la ragione e' che stampare
- * un numero e' una promessa piu' grossa che usarlo per scegliere un carico.
- * Confrontando le sette formule classiche sullo stesso carico, lo scarto fra
- * la piu' alta e la piu' bassa resta sotto il 7% fino a dieci ripetizioni, e
- * poi esplode: 11,8% a dodici, 21,9% a quindici, 45,3% a venti. A quel punto
- * non e' una stima con un margine, e' un'opinione.
- *
- * Dentro le dodici, invece, quale formula si usi conta poco: Epley e Brzycki
- * su una serie da cinque differiscono del 4%, e coincidono esattamente a dieci.
+ * Confrontando le sette formule classiche (Epley, Brzycki, Lander, Lombardi,
+ * O'Conner, Mayhew, Wathen) sullo stesso carico, lo scarto fra la piu' alta e
+ * la piu' bassa resta sotto il 7% fino a dieci ripetizioni, e poi esplode:
+ * 11,8% a dodici, 21,9% a quindici, 45,3% a venti. Oltre le dodici non e' una
+ * stima con un margine, e' un'opinione - e a quel punto il limite di chi si
+ * allena e' il fiato, non la forza.
  */
-export const MAX_REPS_SHOWN = 12;
+export const MAX_TRUSTED_REPS = 12;
+
+/** Fino a quante ripetizioni scende la tabella dei massimali. */
+export const RM_TABLE_MAX_REPS = 15;
 
 /** Massimale teorico stimato da una serie. Restituisce 0 se la serie non e' utilizzabile. */
 export function estimateOneRepMax(load: number, reps: number): number {
   if (!isFinite(load) || !isFinite(reps)) return 0;
   if (load <= 0 || reps <= 0 || reps > MAX_TRUSTED_REPS) return 0;
-  return load * (1 + reps / 30);
+  return load * 36 / (37 - reps);
+}
+
+/**
+ * Carico che corrisponde a un dato numero di ripetizioni, senza arrotondamenti
+ * da bilanciere: e' la percentuale del massimale, al mezzo chilo. 0 quando i
+ * numeri in ingresso non dicono niente.
+ */
+export function loadAtReps(oneRepMax: number, reps: number): number {
+  if (!isFinite(oneRepMax) || !isFinite(reps)) return 0;
+  if (oneRepMax <= 0 || reps <= 0 || reps > 36) return 0;
+  return Math.round(oneRepMax * (37 - reps) / 36 * 2) / 2;
 }
 
 /** Carico da usare per un dato numero di ripetizioni, arrotondato al passo indicato. */
 export function loadForReps(oneRepMax: number, reps: number, step = 5): number {
   if (oneRepMax <= 0 || reps <= 0 || step <= 0) return 0;
-  const raw = oneRepMax / (1 + reps / 30);
+  const raw = loadAtReps(oneRepMax, reps);
   const rounded = Math.round(raw / step) * step;
   // Sotto un passo intero non c'e' niente da suggerire: meglio nessun numero
   // che un "0 kg" o un carico piu' pesante di quanto la stima dica.
@@ -92,6 +120,29 @@ export function suggestLoad(sets: PerformedSet[], targetReps: number, step = 5):
   return load > 0 ? { load, from } : null;
 }
 
+/** Una riga della tabella: con questo carico si fanno queste ripetizioni. */
+export interface RmRow {
+  reps: number;
+  load: number;
+  /** Percentuale del massimale, arrotondata all'unita': serve a leggere la riga. */
+  percent: number;
+}
+
+/**
+ * La tabella dei massimali: per ogni numero di ripetizioni da 1 a
+ * RM_TABLE_MAX_REPS, il carico corrispondente. La riga 1 e' il massimale
+ * stesso (Brzycki vale esattamente 1 a una ripetizione).
+ */
+export function rmTable(oneRepMax: number, maxReps = RM_TABLE_MAX_REPS): RmRow[] {
+  if (!isFinite(oneRepMax) || oneRepMax <= 0) return [];
+  const rows: RmRow[] = [];
+  for (let reps = 1; reps <= maxReps; reps++) {
+    const load = loadAtReps(oneRepMax, reps);
+    if (load > 0) rows.push({ reps, load, percent: Math.round((37 - reps) / 36 * 100) });
+  }
+  return rows;
+}
+
 export interface OneRepMaxEstimate {
   /** Massimale stimato, arrotondato al mezzo chilo. */
   value: number;
@@ -115,8 +166,7 @@ export interface OneRepMaxEstimate {
  * per capire quanto crederci.
  */
 export function oneRepMaxOf(sets: PerformedSet[]): OneRepMaxEstimate | null {
-  const usabili = sets.filter(s => s.reps > 0 && s.reps <= MAX_REPS_SHOWN);
-  const from = bestSet(usabili);
+  const from = bestSet(sets);
   if (!from) return null;
   const value = Math.round(estimateOneRepMax(from.load, from.reps) * 2) / 2;
   return value > 0 ? { value, from } : null;

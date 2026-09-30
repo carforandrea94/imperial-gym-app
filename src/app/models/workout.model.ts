@@ -137,9 +137,13 @@ export function normalizeSession(raw: any): WorkoutSession | null {
   return session;
 }
 
+import { RmRow } from '../core/utils/load-estimate.util';
+
 export interface ExInsight {
   lastText: string;
   suggestion: string | null;
   /** Il massimale stimato dall'ultima sessione, gia' scritto per chi legge. */
   oneRmText: string | null;
+  /** Il carico per ogni numero di ripetizioni, da 1 a 15. */
+  rmRows: RmRow[] | null;
 }

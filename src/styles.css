@@ -848,6 +848,19 @@ lucide-icon svg.filled{fill:currentColor;}
    fossero uguali di tono, la cosa da fare si perderebbe fra le altre. */
 .suggestion-chip.stima{background:var(--surface-raise);border-color:var(--border-line);color:var(--label-2);font-size:var(--text-xs);font-family:'IBM Plex Mono',monospace;line-height:1.5;}
 .suggestion-chip.stima b{color:var(--label);}
+.suggestion-chip.stima.rmtoggle{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;cursor:pointer;font-family:'IBM Plex Mono',monospace;}
+.rmchev{color:var(--label-3);flex-shrink:0;transition:transform .2s ease;}
+.suggestion-chip.stima.rmtoggle.open .rmchev{transform:rotate(180deg);}
+
+/* La tabella dei massimali: tre colonne, quindici caselle. Le righe oltre le
+   dodici ripetizioni restano piu' spente, perche' la' la formula e' la piu'
+   generosa delle sette e il numero va preso con le pinze. */
+.rmtable{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
+.rmcell{display:flex;flex-direction:column;gap:2px;padding:8px 6px;border-radius:var(--r-sm);background:var(--surface-raise);border:1px solid var(--border-line);min-width:0;}
+.rmhead{font-family:'IBM Plex Mono',monospace;font-size:var(--text-2xs);color:var(--label-3);letter-spacing:.02em;white-space:nowrap;}
+.rmload{font-family:'IBM Plex Mono',monospace;font-size:var(--text-sm);font-weight:700;color:var(--label);font-variant-numeric:tabular-nums;}
+.rmcell.soft{opacity:.55;}
+.rmnote{grid-column:1/-1;margin:2px 0 0;font-size:var(--text-2xs);color:var(--label-3);line-height:1.45;}
 .savebar{margin-top:16px;}
 .savebar.dual{display:flex;gap:10px;}
 .savebar.dual .savebtn{width:auto;flex:1;}
