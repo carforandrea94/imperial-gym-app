@@ -178,7 +178,32 @@
   <div class="ex-insights" [class.show]="vm.insightVisible && vm.insight">
     <ng-container *ngIf="vm.insight">
       <div *ngIf="vm.insight.lastText" class="lastsession">{{ vm.insight.lastText }}</div>
-      <div class="suggestion-chip" *ngIf="vm.insight.suggestion" [innerHTML]="vm.insight.suggestion"></div>
+      <!-- Il massimale e la serie da cui viene. -->
+      <div class="suggestion-chip stima" *ngIf="vm.insight.oneRmText"
+        [innerHTML]="vm.insight.oneRmText"></div>
+
+      <!-- Che peso mettere: si sceglie per quante ripetizioni lo si vuole e il
+           numero cambia. Sta qui, fra i consigli e sotto il massimale da cui
+           nasce: uno per esercizio, non uno per serie. -->
+      <div class="rmpick" *ngIf="vm.insight.rmRows">
+        <span class="rmpick-lab">Prova questo peso</span>
+        <div class="rmpick-row">
+          <span class="rmpick-selwrap">
+            <select class="rmpick-sel" [(ngModel)]="vm.rmPick"
+              [ngModelOptions]="{ standalone: true }"
+              aria-label="Per quante ripetizioni vuoi il carico">
+              <option *ngFor="let r of vm.insight.rmRows" [ngValue]="r.reps">{{ r.reps }} rip.</option>
+            </select>
+            <lucide-icon name="chevron-down" [size]="14" class="rmpick-chev"></lucide-icon>
+          </span>
+          <span class="rmpick-out">{{ rmLoad(vm) }} kg</span>
+          <span class="rmpick-pct" *ngIf="rmRow(vm) as r">{{ r.percent }}%</span>
+        </div>
+        <p class="rmpick-soft" *ngIf="vm.rmPick > rmSoftOver">
+          Sopra le {{ rmSoftOver }} ripetizioni la stima si allarga: prendilo
+          come indicazione, non come numero.
+        </p>
+      </div>
       <div class="suggestion-chip" *ngIf="vm.isFirst && vm.warmup" [innerHTML]="vm.warmup"></div>
     </ng-container>
   </div>

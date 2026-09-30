@@ -19,14 +19,12 @@ import {
 } from '../../core/utils/cluster.util';
 import { todayLocalISO } from '../../core/utils/date.util';
 import { findClosestSlideIndex, scrollToSlide } from '../../core/utils/horizontal-slider.util';
-import { PerformedSet, suggestLoad } from '../../core/utils/load-estimate.util';
+import { PerformedSet, oneRepMaxOf, rmTable, RmRow, RM_TABLE_MAX_REPS, MAX_TRUSTED_REPS } from '../../core/utils/load-estimate.util';
 import { ToastService } from '../../services/toast.service';
 import {
   SerieRow, BlockRow, canAddSet, buildExtraSet, canRemoveSet, removeSetAt, mergeDraftRows
 } from '../../core/utils/extra-sets.util';
 
-/** Passo di arrotondamento del carico consigliato: i dischi da 2,5 kg per lato. */
-const LOAD_STEP_KG = 5;
 
 interface ExerciseVM {
   ex: Exercise;
@@ -46,6 +44,9 @@ interface ExerciseVM {
   /** Serie a cluster: la forma di OGNI serie di questo esercizio. null = serie
    *  normali, un blocco per serie. */
   cluster: ClusterSpec | null;
+  /** Per quante ripetizioni si sta chiedendo il carico. Parte dalle
+   *  ripetizioni previste oggi, che e' la domanda che ci si fa per prima. */
+  rmPick: number;
 }
 
 @Component({
@@ -232,7 +233,7 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       }));
       const override = restOverrides[this.restKey(ex.name)];
       const restSeconds = override && override > 0 ? override : protocolDefault;
-      return { ex, rows, open: true, activeRow: 0, insightVisible: false, insight: null, restSeconds, isFirst: exIdx === 0, warmup: null, cluster };
+      return { ex, rows, open: true, activeRow: 0, insightVisible: false, insight: null, restSeconds, isFirst: exIdx === 0, warmup: null, cluster, rmPick: 1 };
     });
   }
 
@@ -259,6 +260,33 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  /** Oltre queste ripetizioni il numero va preso con le pinze. */
+  readonly rmSoftOver = MAX_TRUSTED_REPS;
+
+  /** La riga scelta nel menu dei massimali, o null se non c'e' una stima. */
+  rmRow(vm: ExerciseVM): RmRow | null {
+    return vm.insight?.rmRows?.find(r => r.reps === vm.rmPick) ?? null;
+  }
+
+  /** Il carico per le ripetizioni scelte, scritto come si scrive qui. */
+  rmLoad(vm: ExerciseVM): string {
+    const r = this.rmRow(vm);
+    return r ? this.kg(r.load) : '—';
+  }
+
+  /** "24/09" da una data ISO, o stringa vuota se la data non c'e'. */
+  private giornoMese(iso: string | undefined): string {
+    if (!iso) return '';
+    const d = new Date(iso + 'T00:00:00');
+    if (isNaN(d.getTime())) return '';
+    return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+  }
+
+  /** I chili come si scrivono qui: virgola decimale, e niente ",0" inutile. */
+  private kg(n: number): string {
+    return n.toLocaleString('it-IT', { maximumFractionDigits: 1 });
+  }
+
   private loadInsights(daySessions: { id: string; session: WorkoutSession }[]): void {
     if (daySessions.length === 0) return;
     const sessions = daySessions.map(s => s.session);
@@ -269,9 +297,11 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       // Collect max loads per session for this exercise
       const maxLoads: number[] = [];
       let lastSessionData: { load: string | null; reps: string | null; blocks?: { load: string | null }[] }[] = [];
-      // Carico e ripetizioni della stessa serie vanno tenuti insieme: e' la
-      // coppia, non il solo carico, a dire quanto e' stato faticoso.
-      const performed: PerformedSet[] = [];
+      /** Carico e ripetizioni della stessa serie vanno tenuti insieme: e' la
+       *  coppia, non il solo carico, a dire quanto e' stato faticoso. Divise
+       *  per sessione, perche' il massimale parla dell'ultima volta e non di
+       *  tutta la storia. */
+      const perSessione: { data: string; sets: PerformedSet[] }[] = [];
 
       sessions.forEach(s => {
         const sexData = s.exercises.find(e => e.name === exName);
@@ -279,11 +309,20 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         const loads = sexData.sets.map(sr => parseFloat(sr.load ?? '') || 0);
         const maxLoad = Math.max(...loads.filter(l => l > 0));
         if (maxLoad > 0) maxLoads.push(maxLoad);
+        const diQuesta: PerformedSet[] = [];
         sexData.sets.forEach(sr => {
+          // Le serie a cluster restano fuori. Il loro carico e le loro
+          // ripetizioni sono riassunti scritti per essere letti ("5+5+3",
+          // "62,5-55"), non numeri: parseFloat ne cava 5 e 62, che sembrano
+          // una serie vera e non lo sono. E un cluster non e' comunque una
+          // serie dritta - fra un blocco e l'altro c'e' una pausa - quindi
+          // nessuna di queste formule lo sa leggere.
+          if (sr.blocks?.length) return;
           const load = parseFloat(sr.load ?? '');
           const reps = parseFloat(sr.reps ?? '');
-          if (load > 0 && reps > 0) performed.push({ load, reps });
+          if (load > 0 && reps > 0) diQuesta.push({ load, reps });
         });
+        if (diQuesta.length > 0) perSessione.push({ data: s.date, sets: diQuesta });
         lastSessionData = sexData.sets.map(sr => ({
           load: sr.load, reps: sr.reps,
           blocks: sr.blocks?.map(b => ({ load: b.load }))
@@ -312,25 +351,42 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       const lastEx = lastSession?.exercises.find(e => e.name === exName);
       let lastText = '';
       if (lastEx && lastSession) {
-        const d = lastSession.date ? new Date(lastSession.date + 'T00:00:00') : null;
-        const dd = d ? `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}` : '';
+        const dd = this.giornoMese(lastSession.date);
         const maxLoad = Math.max(...lastEx.sets.map(s => parseFloat(s.load ?? '') || 0).filter(l => l > 0));
         lastText = dd ? `Ultimo (${dd}): ${maxLoad > 0 ? maxLoad + ' kg' : '—'}` : '';
       }
 
-      // Il carico da provare dipende dalle ripetizioni previste oggi: lo stesso
-      // peso di un 5x6 non regge in un 4x10. Si passa dal massimale stimato
-      // (vedi load-estimate.util) e vale per qualsiasi schema, non solo wave.
-      let suggestion: string | null = null;
       const targetReps = parseInt(vm.rows[0]?.ripPlaceholder ?? '', 10);
-      const advice = isNaN(targetReps) ? null : suggestLoad(performed, targetReps, LOAD_STEP_KG);
-      if (advice) {
-        suggestion = `Prova <b>${advice.load} kg</b> per ${targetReps} rip.`
-          + ` — dal tuo ${advice.from.load} kg × ${advice.from.reps}`;
+
+      // Il massimale stimato dall'ultima volta che l'esercizio e' stato fatto.
+      // Non e' una misura: e' quello che la formula ricava dalla serie migliore
+      // di quella sessione, e vale quanto vale la serie da cui viene - per
+      // questo si mostra anche quella. Il confronto con la sessione prima e'
+      // la parte che si guarda davvero: dice se si sta salendo.
+      let oneRmText: string | null = null;
+      const ultima = perSessione[perSessione.length - 1];
+      const stima = ultima ? oneRepMaxOf(ultima.sets) : null;
+      if (stima) {
+        const quando = this.giornoMese(ultima.data);
+        oneRmText = `Massimale stimato <b>${this.kg(stima.value)} kg</b>`
+          + ` — dal tuo ${this.kg(stima.from.load)} × ${stima.from.reps}`
+          + (quando ? ` del ${quando}` : '');
+
+        const precedente = perSessione[perSessione.length - 2];
+        const prima = precedente ? oneRepMaxOf(precedente.sets) : null;
+        if (prima) {
+          const delta = Math.round((stima.value - prima.value) * 2) / 2;
+          if (delta !== 0) oneRmText += ` · ${delta > 0 ? '+' : '−'}${this.kg(Math.abs(delta))} kg`;
+        }
       }
 
-      if (lastText || suggestion) {
-        vm.insight = { lastText, suggestion };
+      // Il menu parte dalle ripetizioni previste oggi: e' la domanda che ci si
+      // fa per prima davanti al bilanciere, e cosi' il numero giusto e' gia'
+      // li' senza toccare niente.
+      vm.rmPick = targetReps >= 1 && targetReps <= RM_TABLE_MAX_REPS ? targetReps : 1;
+
+      if (lastText || oneRmText) {
+        vm.insight = { lastText, oneRmText, rmRows: stima ? rmTable(stima.value) : null };
         vm.insightVisible = true;
       }
 

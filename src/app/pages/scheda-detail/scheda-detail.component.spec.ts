@@ -174,3 +174,147 @@ describe('SchedaDetailComponent — la pausa dentro il cluster', () => {
     expect(component.pauseText(vm)).toBe('0:01');
   });
 });
+
+/**
+ * Il massimale stimato dentro la sessione. Il numero da solo non vuol dire
+ * niente: queste formule presumono una serie tirata vicino al cedimento, e qui
+ * il carico lo prescrive il coach, quindi accanto alla stima ci deve sempre
+ * essere la serie da cui viene - e' l'unico modo per capire quanto crederci.
+ */
+describe('SchedaDetailComponent — il massimale stimato per esercizio', () => {
+  /** Una sessione con le serie indicate su "Panca piana". */
+  function sessione(date: string, sets: any[]) {
+    return { id: date, session: { date, exercises: [{ name: 'Panca piana', sets }] } };
+  }
+
+  function insightDopo(sessioni: any[]) {
+    const { component } = makeComponent({ sessionSuQuestoGiorno: true });
+    const vm = makeVm();
+    component.exercises = [vm];
+    (component as any).loadInsights(sessioni);
+    return vm.insight;
+  }
+
+  it('mostra la stima dell\'ultima sessione con la serie da cui viene', () => {
+    // 80 x 6 con Brzycki: 80 * 36 / (37 - 6) = 92,9 -> 93 kg.
+    const insight = insightDopo([sessione('2026-09-24', [{ load: '80', reps: '6' }])]);
+    expect(insight.oneRmText).toContain('<b>93 kg</b>');
+    expect(insight.oneRmText).toContain('dal tuo 80 × 6');
+    expect(insight.oneRmText).toContain('del 24/09');
+  });
+
+  it('prende la serie col massimale piu\' alto, non quella col carico piu\' alto', () => {
+    // 90 x 3 fa 95,3; 100 x 1 fa 100 esatti - una singola E' il massimale.
+    const insight = insightDopo([sessione('2026-09-24', [
+      { load: '90', reps: '3' }, { load: '100', reps: '1' }
+    ])]);
+    expect(insight.oneRmText).toContain('dal tuo 100 × 1');
+    expect(insight.oneRmText).toContain('<b>100 kg</b>');
+  });
+
+  it('confronta con la sessione precedente e mostra la differenza', () => {
+    const insight = insightDopo([
+      sessione('2026-09-17', [{ load: '75', reps: '6' }]),   // 87
+      sessione('2026-09-24', [{ load: '80', reps: '6' }])    // 93
+    ]);
+    expect(insight.oneRmText).toContain('+6 kg');
+  });
+
+  it('a parita\' di stima non scrive nessuna differenza', () => {
+    const insight = insightDopo([
+      sessione('2026-09-17', [{ load: '80', reps: '6' }]),
+      sessione('2026-09-24', [{ load: '80', reps: '6' }])
+    ]);
+    expect(insight.oneRmText).not.toContain('kg ·');
+  });
+
+  it('ignora le serie a cluster: il loro carico e\' un intervallo, non un numero', () => {
+    // "62,5-55" x "5+5+3" letto come numero darebbe 62 x 5, una serie che non
+    // e' mai esistita. Deve contare solo la serie dritta.
+    const insight = insightDopo([sessione('2026-09-24', [
+      { load: '62,5-55', reps: '5+5+3', blocks: [{ load: '62,5' }, { load: '55' }] },
+      { load: '70', reps: '5' }
+    ])]);
+    expect(insight.oneRmText).toContain('dal tuo 70 × 5');
+  });
+
+  it('con sole serie a cluster non stima niente', () => {
+    const insight = insightDopo([sessione('2026-09-24', [
+      { load: '62,5-55', reps: '5+5+3', blocks: [{ load: '62,5' }, { load: '55' }] }
+    ])]);
+    expect(insight.oneRmText).toBeNull();
+  });
+
+  it('oltre le dodici ripetizioni non stima, ma l\'ultima sessione si vede ancora', () => {
+    const insight = insightDopo([sessione('2026-09-24', [{ load: '40', reps: '20' }])]);
+    expect(insight.oneRmText).toBeNull();
+    expect(insight.lastText).toBe('Ultimo (24/09): 40 kg');
+  });
+});
+
+/**
+ * La tabella dei carichi per ripetizione, dentro la sessione. Il massimale da
+ * solo non dice che peso mettere sul bilanciere oggi: la tabella traduce.
+ */
+describe('SchedaDetailComponent — la tabella dei massimali per esercizio', () => {
+  function conSessione(sets: any[]) {
+    const { component } = makeComponent({ sessionSuQuestoGiorno: true });
+    const vm = makeVm();
+    component.exercises = [vm];
+    (component as any).loadInsights([
+      { id: 'a', session: { date: '2026-09-24', exercises: [{ name: 'Panca piana', sets }] } }
+    ]);
+    return { component, vm };
+  }
+
+  it('porta il carico per ogni ripetizione da 1 a 15', () => {
+    const { vm } = conSessione([{ load: '80', reps: '6' }]);
+    expect(vm.insight.rmRows.length).toBe(15);
+    expect(vm.insight.rmRows[0].reps).toBe(1);
+    expect(vm.insight.rmRows[14].reps).toBe(15);
+  });
+
+  it('la riga di una ripetizione coincide col massimale mostrato sopra', () => {
+    const { vm } = conSessione([{ load: '80', reps: '6' }]);
+    expect(vm.insight.oneRmText).toContain('<b>93 kg</b>');
+    expect(vm.insight.rmRows[0].load).toBe(93);
+  });
+
+  it('alla riga delle ripetizioni fatte ritrova il peso sollevato', () => {
+    // Chi ha appena fatto 80 x 6 deve leggere 80 alla riga "6 rip", altrimenti
+    // la tabella lo smentisce con il bilanciere ancora in mano.
+    const { vm } = conSessione([{ load: '80', reps: '6' }]);
+    expect(vm.insight.rmRows.find((r: any) => r.reps === 6).load).toBe(80);
+  });
+
+  it('senza stima non c\'e\' tabella', () => {
+    const { vm } = conSessione([{ load: '40', reps: '20' }]);
+    expect(vm.insight.oneRmText).toBeNull();
+    expect(vm.insight.rmRows).toBeNull();
+  });
+
+  it('il menu parte dalle ripetizioni previste oggi', () => {
+    // Il protocollo di prova chiede 10 ripetizioni: la domanda che ci si fa
+    // per prima ha gia' la risposta, senza toccare niente.
+    const { component, vm } = conSessione([{ load: '80', reps: '6' }]);
+    expect(vm.rmPick).toBe(10);
+    expect(component.rmLoad(vm)).toBe('70');     // 75% di 93
+    expect(component.rmRow(vm)!.percent).toBe(75);
+  });
+
+  it('cambiando le ripetizioni cambia il peso', () => {
+    const { component, vm } = conSessione([{ load: '80', reps: '6' }]);
+    vm.rmPick = 1;
+    expect(component.rmLoad(vm)).toBe('93');     // la riga "1" E' il massimale
+    vm.rmPick = 6;
+    expect(component.rmLoad(vm)).toBe('80');     // il peso davvero sollevato
+    vm.rmPick = 3;
+    expect(component.rmLoad(vm)).toBe('88');
+  });
+
+  it('senza stima il menu non ha niente da dire', () => {
+    const { component, vm } = conSessione([{ load: '40', reps: '20' }]);
+    expect(component.rmRow(vm)).toBeNull();
+    expect(component.rmLoad(vm)).toBe('—');
+  });
+});
