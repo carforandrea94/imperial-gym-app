@@ -19,14 +19,12 @@ import {
 } from '../../core/utils/cluster.util';
 import { todayLocalISO } from '../../core/utils/date.util';
 import { findClosestSlideIndex, scrollToSlide } from '../../core/utils/horizontal-slider.util';
-import { PerformedSet, suggestLoad, oneRepMaxOf, rmTable, MAX_TRUSTED_REPS } from '../../core/utils/load-estimate.util';
+import { PerformedSet, oneRepMaxOf, rmTable, RmRow, RM_TABLE_MAX_REPS, MAX_TRUSTED_REPS } from '../../core/utils/load-estimate.util';
 import { ToastService } from '../../services/toast.service';
 import {
   SerieRow, BlockRow, canAddSet, buildExtraSet, canRemoveSet, removeSetAt, mergeDraftRows
 } from '../../core/utils/extra-sets.util';
 
-/** Passo di arrotondamento del carico consigliato: i dischi da 2,5 kg per lato. */
-const LOAD_STEP_KG = 5;
 
 interface ExerciseVM {
   ex: Exercise;
@@ -46,9 +44,9 @@ interface ExerciseVM {
   /** Serie a cluster: la forma di OGNI serie di questo esercizio. null = serie
    *  normali, un blocco per serie. */
   cluster: ClusterSpec | null;
-  /** Se la tabella dei massimali di questo esercizio e' aperta. Chiusa di
-   *  default: sotto il bilanciere serve un numero, non quindici. */
-  rmOpen: boolean;
+  /** Per quante ripetizioni si sta chiedendo il carico. Parte dalle
+   *  ripetizioni previste oggi, che e' la domanda che ci si fa per prima. */
+  rmPick: number;
 }
 
 @Component({
@@ -235,7 +233,7 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       }));
       const override = restOverrides[this.restKey(ex.name)];
       const restSeconds = override && override > 0 ? override : protocolDefault;
-      return { ex, rows, open: true, activeRow: 0, insightVisible: false, insight: null, restSeconds, isFirst: exIdx === 0, warmup: null, cluster, rmOpen: false };
+      return { ex, rows, open: true, activeRow: 0, insightVisible: false, insight: null, restSeconds, isFirst: exIdx === 0, warmup: null, cluster, rmPick: 1 };
     });
   }
 
@@ -262,13 +260,18 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  /** Oltre queste ripetizioni la riga della tabella si fa larga: si mostra
-   *  comunque, ma in tono minore. */
+  /** Oltre queste ripetizioni il numero va preso con le pinze. */
   readonly rmSoftOver = MAX_TRUSTED_REPS;
 
-  /** Apre e chiude la tabella dei massimali di un esercizio. */
-  toggleRm(vm: ExerciseVM): void {
-    vm.rmOpen = !vm.rmOpen;
+  /** La riga scelta nel menu dei massimali, o null se non c'e' una stima. */
+  rmRow(vm: ExerciseVM): RmRow | null {
+    return vm.insight?.rmRows?.find(r => r.reps === vm.rmPick) ?? null;
+  }
+
+  /** Il carico per le ripetizioni scelte, scritto come si scrive qui. */
+  rmLoad(vm: ExerciseVM): string {
+    const r = this.rmRow(vm);
+    return r ? this.kg(r.load) : '—';
   }
 
   /** "24/09" da una data ISO, o stringa vuota se la data non c'e'. */
@@ -294,11 +297,10 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       // Collect max loads per session for this exercise
       const maxLoads: number[] = [];
       let lastSessionData: { load: string | null; reps: string | null; blocks?: { load: string | null }[] }[] = [];
-      // Carico e ripetizioni della stessa serie vanno tenuti insieme: e' la
-      // coppia, non il solo carico, a dire quanto e' stato faticoso.
-      const performed: PerformedSet[] = [];
-      /** Le stesse serie, ma tenute divise per sessione: serve al massimale,
-       *  che parla dell'ultima volta e non di tutta la storia. */
+      /** Carico e ripetizioni della stessa serie vanno tenuti insieme: e' la
+       *  coppia, non il solo carico, a dire quanto e' stato faticoso. Divise
+       *  per sessione, perche' il massimale parla dell'ultima volta e non di
+       *  tutta la storia. */
       const perSessione: { data: string; sets: PerformedSet[] }[] = [];
 
       sessions.forEach(s => {
@@ -318,7 +320,7 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
           if (sr.blocks?.length) return;
           const load = parseFloat(sr.load ?? '');
           const reps = parseFloat(sr.reps ?? '');
-          if (load > 0 && reps > 0) { performed.push({ load, reps }); diQuesta.push({ load, reps }); }
+          if (load > 0 && reps > 0) diQuesta.push({ load, reps });
         });
         if (diQuesta.length > 0) perSessione.push({ data: s.date, sets: diQuesta });
         lastSessionData = sexData.sets.map(sr => ({
@@ -354,16 +356,7 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         lastText = dd ? `Ultimo (${dd}): ${maxLoad > 0 ? maxLoad + ' kg' : '—'}` : '';
       }
 
-      // Il carico da provare dipende dalle ripetizioni previste oggi: lo stesso
-      // peso di un 5x6 non regge in un 4x10. Si passa dal massimale stimato
-      // (vedi load-estimate.util) e vale per qualsiasi schema, non solo wave.
-      let suggestion: string | null = null;
       const targetReps = parseInt(vm.rows[0]?.ripPlaceholder ?? '', 10);
-      const advice = isNaN(targetReps) ? null : suggestLoad(performed, targetReps, LOAD_STEP_KG);
-      if (advice) {
-        suggestion = `Prova <b>${advice.load} kg</b> per ${targetReps} rip.`
-          + ` — dal tuo ${advice.from.load} kg × ${advice.from.reps}`;
-      }
 
       // Il massimale stimato dall'ultima volta che l'esercizio e' stato fatto.
       // Non e' una misura: e' quello che la formula ricava dalla serie migliore
@@ -387,8 +380,13 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       }
 
-      if (lastText || suggestion || oneRmText) {
-        vm.insight = { lastText, suggestion, oneRmText, rmRows: stima ? rmTable(stima.value) : null };
+      // Il menu parte dalle ripetizioni previste oggi: e' la domanda che ci si
+      // fa per prima davanti al bilanciere, e cosi' il numero giusto e' gia'
+      // li' senza toccare niente.
+      vm.rmPick = targetReps >= 1 && targetReps <= RM_TABLE_MAX_REPS ? targetReps : 1;
+
+      if (lastText || oneRmText) {
+        vm.insight = { lastText, oneRmText, rmRows: stima ? rmTable(stima.value) : null };
         vm.insightVisible = true;
       }
 

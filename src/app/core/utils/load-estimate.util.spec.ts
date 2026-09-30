@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  estimateOneRepMax, loadAtReps, loadForReps, bestSet, suggestLoad,
-  oneRepMaxOf, rmTable, RM_TABLE_MAX_REPS
+  estimateOneRepMax, loadAtReps, bestSet, oneRepMaxOf, rmTable, RM_TABLE_MAX_REPS
 } from './load-estimate.util';
 
 describe('load-estimate', () => {
@@ -29,21 +28,9 @@ describe('load-estimate', () => {
 
   it('il carico cala quando le ripetizioni salgono', () => {
     const orm = estimateOneRepMax(36, 6);
-    expect(loadForReps(orm, 6)).toBe(35);
-    expect(loadForReps(orm, 10)).toBe(30);
-    expect(loadForReps(orm, 12)).toBe(30);
-    // Meno ripetizioni, piu' carico
-    expect(loadForReps(orm, 3)).toBeGreaterThan(loadForReps(orm, 10));
-  });
-
-  it('arrotonda al passo richiesto', () => {
-    const orm = estimateOneRepMax(36, 6);
-    expect(loadForReps(orm, 10, 2.5) % 2.5).toBe(0);
-    expect(loadForReps(orm, 10, 1) % 1).toBe(0);
-  });
-
-  it('non suggerisce carichi sotto un passo intero', () => {
-    expect(loadForReps(estimateOneRepMax(2, 8), 10, 5)).toBe(0);
+    expect(loadAtReps(orm, 6)).toBe(36);          // torna la serie di partenza
+    expect(loadAtReps(orm, 10)).toBe(31.5);
+    expect(loadAtReps(orm, 3)).toBeGreaterThan(loadAtReps(orm, 10));
   });
 
   it('la serie di riferimento e\' quella col massimale piu\' alto, non col carico piu\' alto', () => {
@@ -53,19 +40,6 @@ describe('load-estimate', () => {
       { load: 30, reps: 10 }   // 40,0
     ];
     expect(bestSet(sets)).toEqual({ load: 40, reps: 3 });
-  });
-
-  it('il caso dell\'esempio: 36 kg in un 5x6 diventano 30 kg in un 4x10', () => {
-    const s = suggestLoad([{ load: 36, reps: 6 }], 10, 5);
-    expect(s).not.toBeNull();
-    expect(s!.load).toBe(30);
-    expect(s!.from).toEqual({ load: 36, reps: 6 });
-  });
-
-  it('senza storico utilizzabile non suggerisce niente', () => {
-    expect(suggestLoad([], 10)).toBeNull();
-    expect(suggestLoad([{ load: 0, reps: 0 }], 10)).toBeNull();
-    expect(suggestLoad([{ load: 36, reps: 6 }], 0)).toBeNull();
   });
 });
 

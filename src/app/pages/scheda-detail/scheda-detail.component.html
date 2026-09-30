@@ -124,6 +124,29 @@
             (click)="adjustBlockReps(vm, j, 1)" aria-label="Una ripetizione in più">+</button>
         </div>
 
+        <!-- Che peso mettere, sotto le ripetizioni e non in fondo alla scheda:
+             si sceglie per quante ripetizioni lo si vuole e il numero cambia.
+             La riga "1" e' il massimale stesso. -->
+        <div class="rmpick" *ngIf="vm.insight?.rmRows">
+          <span class="rmpick-lab">Prova questo peso</span>
+          <div class="rmpick-row">
+            <span class="rmpick-selwrap">
+              <select class="rmpick-sel" [(ngModel)]="vm.rmPick"
+                [ngModelOptions]="{ standalone: true }"
+                aria-label="Per quante ripetizioni vuoi il carico">
+                <option *ngFor="let r of vm.insight.rmRows" [ngValue]="r.reps">{{ r.reps }} rip.</option>
+              </select>
+              <lucide-icon name="chevron-down" [size]="14" class="rmpick-chev"></lucide-icon>
+            </span>
+            <span class="rmpick-out">{{ rmLoad(vm) }} kg</span>
+            <span class="rmpick-pct" *ngIf="rmRow(vm) as r">{{ r.percent }}%</span>
+          </div>
+          <p class="rmpick-soft" *ngIf="vm.rmPick > rmSoftOver">
+            Sopra le {{ rmSoftOver }} ripetizioni la stima si allarga: prendilo
+            come indicazione, non come numero.
+          </p>
+        </div>
+
         <button type="button" class="setdone" *ngIf="!row.done && !isCluster(vm, row)" [disabled]="setsLocked"
           (click)="confirmSet(vm, j)">Fatta</button>
 
@@ -178,31 +201,10 @@
   <div class="ex-insights" [class.show]="vm.insightVisible && vm.insight">
     <ng-container *ngIf="vm.insight">
       <div *ngIf="vm.insight.lastText" class="lastsession">{{ vm.insight.lastText }}</div>
-      <ng-container *ngIf="vm.insight.oneRmText">
-        <!-- La stima apre la tabella: il massimale da solo non dice che peso
-             mettere, e quindici righe sempre aperte sotto ogni esercizio
-             coprirebbero la scheda. -->
-        <button type="button" class="suggestion-chip stima rmtoggle"
-          [class.open]="vm.rmOpen" (click)="toggleRm(vm)"
-          [attr.aria-expanded]="vm.rmOpen"
-          aria-label="Massimale stimato, apri la tabella dei carichi">
-          <span [innerHTML]="vm.insight.oneRmText"></span>
-          <lucide-icon name="chevron-down" [size]="15" class="rmchev"></lucide-icon>
-        </button>
-
-        <div class="rmtable" *ngIf="vm.rmOpen && vm.insight.rmRows">
-          <div class="rmcell" *ngFor="let r of vm.insight.rmRows"
-            [class.soft]="r.reps > rmSoftOver">
-            <span class="rmhead">{{ r.reps }} rip · {{ r.percent }}%</span>
-            <span class="rmload">{{ r.load }} kg</span>
-          </div>
-          <p class="rmnote">
-            Sopra le {{ rmSoftOver }} ripetizioni la stima si allarga: le ultime
-            righe valgono come indicazione, non come numero.
-          </p>
-        </div>
-      </ng-container>
-      <div class="suggestion-chip" *ngIf="vm.insight.suggestion" [innerHTML]="vm.insight.suggestion"></div>
+      <!-- Il massimale e la serie da cui viene. Il peso da caricare si sceglie
+           su nella serie, sotto le ripetizioni: qui sta solo da dove nasce. -->
+      <div class="suggestion-chip stima" *ngIf="vm.insight.oneRmText"
+        [innerHTML]="vm.insight.oneRmText"></div>
       <div class="suggestion-chip" *ngIf="vm.isFirst && vm.warmup" [innerHTML]="vm.warmup"></div>
     </ng-container>
   </div>

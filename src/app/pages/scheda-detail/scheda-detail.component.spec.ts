@@ -293,12 +293,28 @@ describe('SchedaDetailComponent — la tabella dei massimali per esercizio', () 
     expect(vm.insight.rmRows).toBeNull();
   });
 
-  it('nasce chiusa e si apre al tocco', () => {
+  it('il menu parte dalle ripetizioni previste oggi', () => {
+    // Il protocollo di prova chiede 10 ripetizioni: la domanda che ci si fa
+    // per prima ha gia' la risposta, senza toccare niente.
     const { component, vm } = conSessione([{ load: '80', reps: '6' }]);
-    expect(vm.rmOpen).toBeFalsy();
-    component.toggleRm(vm);
-    expect(vm.rmOpen).toBe(true);
-    component.toggleRm(vm);
-    expect(vm.rmOpen).toBe(false);
+    expect(vm.rmPick).toBe(10);
+    expect(component.rmLoad(vm)).toBe('70');     // 75% di 93
+    expect(component.rmRow(vm)!.percent).toBe(75);
+  });
+
+  it('cambiando le ripetizioni cambia il peso', () => {
+    const { component, vm } = conSessione([{ load: '80', reps: '6' }]);
+    vm.rmPick = 1;
+    expect(component.rmLoad(vm)).toBe('93');     // la riga "1" E' il massimale
+    vm.rmPick = 6;
+    expect(component.rmLoad(vm)).toBe('80');     // il peso davvero sollevato
+    vm.rmPick = 3;
+    expect(component.rmLoad(vm)).toBe('88');
+  });
+
+  it('senza stima il menu non ha niente da dire', () => {
+    const { component, vm } = conSessione([{ load: '40', reps: '20' }]);
+    expect(component.rmRow(vm)).toBeNull();
+    expect(component.rmLoad(vm)).toBe('—');
   });
 });
