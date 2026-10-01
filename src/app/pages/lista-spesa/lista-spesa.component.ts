@@ -6,11 +6,22 @@ import { DietDataService } from '../../services/diet-data.service';
 import { AppStateService } from '../../services/app-state.service';
 import { FoodItem } from '../../models/diet.model';
 
-interface ShoppingItem {
+/** Il macro sotto cui l'alimento compare nella dieta. */
+export type Macro = 'carb' | 'protein' | 'fat';
+
+/**
+ * Una voce della lista: il nome, e basta.
+ *
+ * Grammature, pasti di provenienza e note del coach stavano qui e non ci
+ * stanno piu'. Questa lista si legge in piedi al supermercato: serve sapere
+ * cosa prendere e cosa e' gia' nel carrello. Quanto pesarne lo dice la dieta,
+ * al momento di cucinare, dove quel numero ha un senso - sul banco del pesce
+ * "300 g + 250 g" era solo una riga in piu' da scavalcare.
+ */
+export interface ShoppingItem {
   key: string;
   name: string;
-  qtys: string[];
-  sources: string[]; // "Nome piano · Pasto"
+  cat: Macro;
   checked: boolean;
 }
 
@@ -19,6 +30,21 @@ interface CustomShoppingItem {
   name: string;
   checked: boolean;
 }
+
+/** Un reparto della lista: gli alimenti ancora da prendere, e quanti ne mancano. */
+export interface ShoppingGroup {
+  key: Macro;
+  label: string;
+  daPrendere: ShoppingItem[];
+  presi: number;
+  totale: number;
+}
+
+const MACRO: { key: Macro; label: string }[] = [
+  { key: 'carb', label: 'Carboidrati' },
+  { key: 'protein', label: 'Proteine' },
+  { key: 'fat', label: 'Grassi' }
+];
 
 @Component({
   selector: 'app-lista-spesa',
@@ -34,8 +60,52 @@ export class ListaSpesaComponent implements OnInit {
   loading = true;
   errorMsg = '';
 
-  get checkedCount() {
+  /** Il carrello e' chiuso: quello che conta e' cosa manca. */
+  cartOpen = false;
+
+  get totalCount(): number {
+    return this.items.length + this.customItems.length;
+  }
+
+  get checkedCount(): number {
     return this.items.filter(i => i.checked).length + this.customItems.filter(i => i.checked).length;
+  }
+
+  /** Quanto della spesa e' fatta, da 0 a 100. */
+  get progress(): number {
+    return this.totalCount === 0 ? 0 : Math.round(this.checkedCount / this.totalCount * 100);
+  }
+
+  /**
+   * I reparti, con dentro solo quello che manca. Raggruppare per macro non e'
+   * raggruppare per corsia, ma ci somiglia - pane e riso, banco del fresco,
+   * olio e frutta secca - e soprattutto e' un dato che la dieta ha gia': una
+   * tabella alimento-reparto andrebbe scritta e tenuta aggiornata a mano.
+   */
+  get groups(): ShoppingGroup[] {
+    return MACRO.map(m => {
+      const tutti = this.items.filter(i => i.cat === m.key);
+      return {
+        key: m.key,
+        label: m.label,
+        daPrendere: tutti.filter(i => !i.checked),
+        presi: tutti.filter(i => i.checked).length,
+        totale: tutti.length
+      };
+    }).filter(g => g.totale > 0);
+  }
+
+  /** Gli alimenti aggiunti a mano, ancora da prendere. */
+  get customDaPrendere(): CustomShoppingItem[] {
+    return this.customItems.filter(i => !i.checked);
+  }
+
+  get itemsPresi(): ShoppingItem[] {
+    return this.items.filter(i => i.checked);
+  }
+
+  get customPresi(): CustomShoppingItem[] {
+    return this.customItems.filter(i => i.checked);
   }
 
   constructor(
@@ -74,33 +144,31 @@ export class ListaSpesaComponent implements OnInit {
   private buildItems(checked: Record<string, boolean>): void {
     const map = new Map<string, ShoppingItem>();
 
-    const addFood = (food: FoodItem | null, plan: string, source: string) => {
+    const addFood = (food: FoodItem | null, cat: Macro) => {
       if (!food || !food.name) return;
       const key = food.name.trim().toLowerCase();
+      // Lo stesso alimento in piu' pasti e' una voce sola: al supermercato si
+      // compra una volta. Il macro e' quello sotto cui compare per primo.
       if (!map.has(key)) {
-        map.set(key, { key, name: food.name.trim(), qtys: [], sources: [], checked: !!checked[this.safeKey(key)] });
+        map.set(key, { key, name: food.name.trim(), cat, checked: !!checked[this.safeKey(key)] });
       }
-      const entry = map.get(key)!;
-      if (food.qty && !entry.qtys.includes(food.qty)) entry.qtys.push(food.qty);
-      if (!entry.sources.includes(source)) entry.sources.push(source);
 
       // Alternative annidate del singolo alimento (item.alt, es. "Farina d'avena" ->
       // "Farina di riso"), popolate dal coach builder e dall'import PDF: senza questo
       // giro mancavano dalla lista tutte le alternative-per-alimento, distinte dalle
       // alternative-per-macro del pasto (meal.alternatives) gia' incluse sopra.
-      (food.alt ?? []).forEach(alt => addFood(alt as FoodItem, plan, `${source} (alternativa)`));
+      (food.alt ?? []).forEach(alt => addFood(alt as FoodItem, cat));
     };
 
     for (const plan of this.dietData.diet) {
       for (const meal of plan.meals) {
         for (const combo of meal.combinations) {
-          const label = meal.combinations.length > 1 ? `${plan.name} · ${meal.name} (${combo.label})` : `${plan.name} · ${meal.name}`;
-          addFood(combo.carb, plan.name, label);
-          addFood(combo.protein, plan.name, label);
-          addFood(combo.fat, plan.name, label);
+          addFood(combo.carb, 'carb');
+          addFood(combo.protein, 'protein');
+          addFood(combo.fat, 'fat');
         }
         (['carb', 'protein', 'fat'] as const).forEach(cat => {
-          meal.alternatives[cat].forEach(food => addFood(food, plan.name, `${plan.name} · ${meal.name} (alternativa)`));
+          meal.alternatives[cat].forEach(food => addFood(food, cat));
         });
       }
     }
@@ -111,6 +179,10 @@ export class ListaSpesaComponent implements OnInit {
   toggle(item: ShoppingItem): void {
     item.checked = !item.checked;
     this.appState.patchField(`shoppingChecked.${this.safeKey(item.key)}`, item.checked).catch(() => { /* gia' segnalato da AppStateService */ });
+  }
+
+  toggleCart(): void {
+    this.cartOpen = !this.cartOpen;
   }
 
   private safeKey(key: string): string {
@@ -139,6 +211,7 @@ export class ListaSpesaComponent implements OnInit {
   async resetAll(): Promise<void> {
     this.items.forEach(i => { i.checked = false; });
     this.customItems.forEach(i => { i.checked = false; });
+    this.cartOpen = false;
     await this.appState.patch({ shoppingChecked: {}, shoppingCustomItems: this.customItems });
   }
 }
