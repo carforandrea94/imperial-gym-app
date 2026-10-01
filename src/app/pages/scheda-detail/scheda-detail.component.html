@@ -60,73 +60,36 @@
           </div>
         </ng-container>
 
-        <!-- Carico e ripetizioni sulla STESSA riga. Prima stavano una sopra
-             l'altra, con numeri enormi e tasti da 44: due righe per due numeri
-             che si leggono in un colpo solo, e l'esercizio ci perdeva 63px. -->
-        <div class="stepduo">
-          <div class="stepper" *ngIf="!isCluster(vm, row)">
-            <button type="button" class="stepbtn" [disabled]="setsLocked"
-              (click)="adjustLoad(vm, j, -loadStep)"
-              [attr.aria-label]="'Togli ' + loadStep + ' chili'">−</button>
-            <label class="stepfield">
-              <span class="sr-only">Carico della serie {{ j + 1 }}, in chili</span>
-              <input type="text" inputmode="decimal" [(ngModel)]="row.load"
-                [placeholder]="row.loadPlaceholder || '0'" [disabled]="setsLocked"
-                (input)="onInput()" />
-            </label>
-            <span class="stepunit">kg</span>
-            <button type="button" class="stepbtn" [disabled]="setsLocked"
-              (click)="adjustLoad(vm, j, loadStep)"
-              [attr.aria-label]="'Aggiungi ' + loadStep + ' chili'">+</button>
-          </div>
+        <!-- Carico e ripetizioni, due ruote affiancate. Si scorre per i cambi
+             piccoli e si tocca il numero al centro per scriverlo: senza la
+             scrittura, con un passo da mezzo chilo, arrivare a un carico
+             lontano sarebbero sessanta tacche. -->
+        <div class="wheelduo">
+          <app-number-wheel *ngIf="!isCluster(vm, row)"
+            [value]="numero(row.load)" [placeholder]="numero(row.loadPlaceholder)"
+            [min]="0" [max]="200" [step]="0.5" unit="kg" [disabled]="setsLocked"
+            [label]="'Carico della serie ' + (j + 1) + ', in chili'"
+            (valueChange)="setLoad(vm, j, $event)"></app-number-wheel>
 
           <!-- In un cluster il carico e' del BLOCCO: di solito e' lo stesso in
                tutti, ma al terzo si cala, e la serie deve poterlo dire. -->
-          <div class="stepper" *ngIf="isCluster(vm, row) && block(row) as b">
-            <button type="button" class="stepbtn" [disabled]="setsLocked"
-              (click)="adjustBlockLoad(vm, j, -loadStep)"
-              [attr.aria-label]="'Togli ' + loadStep + ' chili'">−</button>
-            <label class="stepfield">
-              <span class="sr-only">Carico del blocco in corso, in chili</span>
-              <input type="text" inputmode="decimal" [(ngModel)]="b.load"
-                [placeholder]="b.loadPlaceholder || '0'" [disabled]="setsLocked"
-                (input)="onInput()" />
-            </label>
-            <span class="stepunit">kg</span>
-            <button type="button" class="stepbtn" [disabled]="setsLocked"
-              (click)="adjustBlockLoad(vm, j, loadStep)"
-              [attr.aria-label]="'Aggiungi ' + loadStep + ' chili'">+</button>
-          </div>
+          <app-number-wheel *ngIf="isCluster(vm, row) && block(row) as b"
+            [value]="numero(b.load)" [placeholder]="numero(b.loadPlaceholder)"
+            [min]="0" [max]="200" [step]="0.5" unit="kg" [disabled]="setsLocked"
+            label="Carico del blocco in corso, in chili"
+            (valueChange)="setBlockLoad(vm, j, $event)"></app-number-wheel>
 
-          <div class="stepper small" *ngIf="!isCluster(vm, row)">
-            <button type="button" class="stepbtn" [disabled]="setsLocked"
-              (click)="adjustReps(vm, j, -1)" aria-label="Una ripetizione in meno">−</button>
-            <label class="stepfield">
-              <span class="sr-only">Ripetizioni della serie {{ j + 1 }}</span>
-              <input type="text" inputmode="numeric" [(ngModel)]="row.reps"
-                [placeholder]="row.ripPlaceholder || '0'" [disabled]="setsLocked"
-                (input)="onInput()" />
-            </label>
-            <span class="stepunit">rip.</span>
-            <button type="button" class="stepbtn" [disabled]="setsLocked"
-              (click)="adjustReps(vm, j, 1)" aria-label="Una ripetizione in più">+</button>
-          </div>
+          <app-number-wheel *ngIf="!isCluster(vm, row)"
+            [value]="numero(row.reps)" [placeholder]="numero(row.ripPlaceholder)"
+            [min]="1" [max]="40" [step]="1" unit="rip." [disabled]="setsLocked"
+            [label]="'Ripetizioni della serie ' + (j + 1)"
+            (valueChange)="setReps(vm, j, $event)"></app-number-wheel>
 
-          <!-- In un cluster le ripetizioni sono del BLOCCO: il carico resta della
-               serie, perché è lo stesso in tutti i blocchi. -->
-          <div class="stepper small" *ngIf="isCluster(vm, row) && block(row) as b">
-            <button type="button" class="stepbtn" [disabled]="setsLocked"
-              (click)="adjustBlockReps(vm, j, -1)" aria-label="Una ripetizione in meno">−</button>
-            <label class="stepfield">
-              <span class="sr-only">Ripetizioni del blocco in corso</span>
-              <input type="text" inputmode="numeric" [(ngModel)]="b.reps"
-                [placeholder]="b.ripPlaceholder || '0'" [disabled]="setsLocked"
-                (input)="onInput()" />
-            </label>
-            <span class="stepunit">rip.</span>
-            <button type="button" class="stepbtn" [disabled]="setsLocked"
-              (click)="adjustBlockReps(vm, j, 1)" aria-label="Una ripetizione in più">+</button>
-          </div>
+          <app-number-wheel *ngIf="isCluster(vm, row) && block(row) as b"
+            [value]="numero(b.reps)" [placeholder]="numero(b.ripPlaceholder)"
+            [min]="1" [max]="40" [step]="1" unit="rip." [disabled]="setsLocked"
+            label="Ripetizioni del blocco in corso"
+            (valueChange)="setBlockReps(vm, j, $event)"></app-number-wheel>
         </div>
 
         <button type="button" class="setdone" *ngIf="!row.done && !isCluster(vm, row)" [disabled]="setsLocked"

@@ -429,35 +429,6 @@ body.scrolled .navsubtitle{max-height:0;opacity:0;margin-top:0;}
 .setcard-hint{font-family:'IBM Plex Mono',monospace;font-size:var(--text-2xs);color:var(--label-3);}
 
 .stepper{display:flex;align-items:center;gap:10px;}
-/* Carico e ripetizioni affiancati: due righe per due numeri che si leggono in
-   un colpo solo costavano 63px a ogni esercizio. I tasti scendono da 44 a 36 e
-   l'unita' sale a fare da intestazione della colonna - in linea, "kg" e "rip."
-   si mangiavano i 30px che restavano al numero, e un carico come 62,5 veniva
-   tagliato senza dirlo a nessuno. Sopra, invece, il numero ha tutta la
-   larghezza e ci sta anche un 102,5.
-   La griglia riordina i figli senza toccarli: nel markup l'unita' sta fra il
-   numero e il +, qui va in cima e li scavalca. */
-/* Le due colonne non sono uguali: il carico puo' arrivare a cinque caratteri
-   (102,5) mentre le ripetizioni ne hanno due, e dividere a meta' tagliava il
-   carico per lasciare spazio vuoto alle ripetizioni. */
-.stepduo{display:grid;grid-template-columns:1.2fr 1fr;gap:8px;}
-.stepduo .stepper{flex:1;min-width:0;display:grid;grid-template-columns:36px minmax(0,1fr) 36px;grid-template-areas:"u u u" "m v p";align-items:center;gap:1px 4px;}
-.stepduo .stepper > .stepbtn:first-of-type{grid-area:m;}
-.stepduo .stepper > .stepfield{grid-area:v;}
-.stepduo .stepper > .stepunit{grid-area:u;text-align:center;letter-spacing:.06em;}
-.stepduo .stepper > .stepbtn:last-of-type{grid-area:p;}
-.stepduo .stepbtn{width:36px;height:36px;font-size:var(--text-md);}
-.stepduo .stepfield input,.stepduo .stepper.small .stepfield input{font-size:var(--text-xl);}
-.stepduo .stepunit{font-size:var(--text-2xs);}
-.stepbtn{width:44px;height:44px;flex-shrink:0;border-radius:var(--r-md);border:1px solid var(--border-line);background:var(--surface-raise);color:var(--label);font-family:'IBM Plex Mono',monospace;font-size:var(--text-lg);font-weight:700;cursor:pointer;transition:transform .15s ease;}
-.stepbtn:active{transform:scale(0.92);}
-.stepbtn:disabled{opacity:.4;cursor:not-allowed;}
-.stepfield{flex:1;min-width:0;display:block;}
-.stepfield input{width:100%;min-width:0;padding:0;border:none;background:none;outline:none;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:var(--text-3xl);font-weight:700;letter-spacing:-.02em;color:var(--label);}
-.stepfield input::placeholder{color:var(--label-3);font-weight:600;}
-.stepper.small .stepfield input{font-size:var(--text-2xl);}
-.stepunit{font-family:'IBM Plex Mono',monospace;font-size:var(--text-xs);color:var(--label-3);flex-shrink:0;}
-
 .setdone{width:100%;min-height:52px;border-radius:var(--r-lg);border:none;background:var(--accent);color:var(--accent-contrast);font-family:'Inter',sans-serif;font-size:var(--text-lg);font-weight:700;cursor:pointer;}
 .setdone:disabled{opacity:.5;cursor:not-allowed;}
 .setundo{width:100%;min-height:44px;border-radius:var(--r-md);border:1px solid var(--border-line);background:transparent;color:var(--label-2);font-family:'Inter',sans-serif;font-size:var(--text-sm);font-weight:600;cursor:pointer;}
@@ -1101,6 +1072,37 @@ lucide-icon svg.filled{fill:currentColor;}
 .wheel-item.on{color:var(--label);opacity:1;font-size:var(--text-2xl);font-weight:700;}
 .wheel-item:focus-visible{outline:2px solid var(--accent);outline-offset:-4px;border-radius:var(--r-sm);}
 @media (prefers-reduced-motion: reduce){.wheel-item{transition:none;}}
+
+/* La ruota corta, quella dentro la serie: tre tacche invece di cinque e
+   nessuna scatola - la banda sono due righe accese, non un rettangolo grigio.
+   L'unita' sta dentro la banda, cosi' sparisce l'intestazione sopra.
+   Il padding del .wheel fa parte della zona che scorre: e' lui a lasciare lo
+   spazio perche' la prima e l'ultima tacca arrivino al centro, e vale
+   (altezza finestra - altezza tacca) / 2. */
+.wheel-wrap.corta{margin-bottom:0;}
+.wheel-wrap.corta .wheel{height:108px;padding:36px 0;
+  -webkit-mask-image:linear-gradient(transparent,#000 30%,#000 70%,transparent);
+  mask-image:linear-gradient(transparent,#000 30%,#000 70%,transparent);}
+.wheel-wrap.corta .wheel-item{height:36px;font-size:var(--text-md);}
+.wheel-wrap.corta .wheel-item.on{font-size:var(--text-xl);}
+.wheel-wrap.corta .wheel-band{height:36px;border-radius:0;background:none;border:none;border-top:1px solid var(--accent);border-bottom:1px solid var(--accent);padding:0 10px 0 0;}
+.wheel-wrap.corta .wheel-band .unit{font-size:var(--text-2xs);}
+.wheel-wrap.corta.disabled{opacity:.5;}
+
+/* Il campo per scrivere sta esattamente dove sta il numero: stessa riga,
+   stesso corpo, cosi' non c'e' niente da cercare quando si passa da una via
+   all'altra. */
+.wheel-write{position:absolute;left:0;right:0;top:36px;height:36px;z-index:2;width:100%;
+  text-align:center;border:none;background:none;outline:none;
+  font-family:'IBM Plex Mono',monospace;font-size:var(--text-xl);font-weight:700;color:var(--label);}
+/* Mentre si scrive, il numero della ruota si leva di mezzo: il campo e'
+   trasparente - un fondo pieno coprirebbe le due righe della banda, e la
+   ruota sembrerebbe sparita - quindi i due numeri si sovrapporrebbero. */
+.wheel-wrap.corta.writing .wheel-item.on{visibility:hidden;}
+
+/* Le due ruote della serie, una accanto all'altra e della stessa larghezza:
+   con colonne diverse i due numeri non stanno sullo stesso asse. */
+.wheelduo{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 
 /* ===== UTILS ===== */
 /* Scala delle spaziature: gli stacchi verticali fra blocchi si prendono da qui,

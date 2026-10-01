@@ -1,5 +1,6 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectorRef, ElementRef, Renderer2, ViewChild, effect, signal } from '@angular/core';
 import { LucideAngularModule } from 'lucide-angular';
+import { NumberWheelComponent } from '../../components/number-wheel/number-wheel.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -52,7 +53,7 @@ interface ExerciseVM {
 @Component({
   selector: 'app-scheda-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule],
+  imports: [CommonModule, FormsModule, LucideAngularModule, NumberWheelComponent],
   templateUrl: './scheda-detail.component.html',
   styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
 })
@@ -490,34 +491,29 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
    * suggerimento. Senza questo, il primo tocco di "+" partirebbe da zero e
    * butterebbe via il carico proposto.
    */
-  private valueOf(raw: string, placeholder: string): number {
-    const n = parseFloat((raw || placeholder || '').replace(',', '.'));
-    return isFinite(n) ? n : 0;
-  }
-
   private write(n: number): string {
     return (Math.round(n * 100) / 100).toString().replace('.', ',');
   }
 
-  adjustLoad(vm: ExerciseVM, rowIdx: number, delta: number): void {
+  /** Il numero dentro un campo, o null se non c'e'. La ruota vuole numeri,
+   *  la riga li tiene come testo perche' e' cosi' che si salvano. */
+  numero(raw: string | null | undefined): number | null {
+    if (!raw) return null;
+    const n = parseFloat(raw.replace(',', '.'));
+    return isFinite(n) ? n : null;
+  }
+
+  setLoad(vm: ExerciseVM, rowIdx: number, v: number): void {
     if (this.setsLocked) return;
-    const row = vm.rows[rowIdx];
-    const next = Math.max(0, this.valueOf(row.load, row.loadPlaceholder) + delta);
-    row.load = next === 0 ? '' : this.write(next);
+    vm.rows[rowIdx].load = this.write(v);
     this.scheduleDraft();
   }
 
-  adjustReps(vm: ExerciseVM, rowIdx: number, delta: number): void {
+  setReps(vm: ExerciseVM, rowIdx: number, v: number): void {
     if (this.setsLocked) return;
-    const row = vm.rows[rowIdx];
-    const next = Math.max(0, this.valueOf(row.reps, row.ripPlaceholder) + delta);
-    row.reps = next === 0 ? '' : this.write(next);
+    vm.rows[rowIdx].reps = this.write(v);
     this.scheduleDraft();
   }
-
-  /** Il passo del carico: mezzo disco piccolo per lato, che e' il salto vero
-   *  in palestra. Le ripetizioni vanno di una. */
-  readonly loadStep = 2.5;
 
   /** Chiude la serie aperta e passa alla prossima da fare. */
   confirmSet(vm: ExerciseVM, rowIdx: number): void {
@@ -649,21 +645,19 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // --- I comandi ---
 
-  adjustBlockLoad(vm: ExerciseVM, rowIdx: number, delta: number): void {
+  setBlockLoad(vm: ExerciseVM, rowIdx: number, v: number): void {
     if (this.setsLocked) return;
     const b = this.block(vm.rows[rowIdx]);
     if (!b) return;
-    const next = Math.max(0, this.valueOf(b.load, b.loadPlaceholder) + delta);
-    b.load = next === 0 ? '' : this.write(next);
+    b.load = this.write(v);
     this.scheduleDraft();
   }
 
-  adjustBlockReps(vm: ExerciseVM, rowIdx: number, delta: number): void {
+  setBlockReps(vm: ExerciseVM, rowIdx: number, v: number): void {
     if (this.setsLocked) return;
     const b = this.block(vm.rows[rowIdx]);
     if (!b) return;
-    const next = Math.max(0, this.valueOf(b.reps, b.ripPlaceholder) + delta);
-    b.reps = next === 0 ? '' : this.write(next);
+    b.reps = this.write(v);
     this.scheduleDraft();
   }
 
