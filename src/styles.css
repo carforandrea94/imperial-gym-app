@@ -782,9 +782,9 @@ lucide-icon svg.filled{fill:currentColor;}
 .shop-row.ok{opacity:.5;}
 .shop-row.ok .shop-name{text-decoration:line-through;}
 
-/* Il carrello sta in fondo e nasce chiuso: a meta' spesa si scorre quello che
+/* Il carrello sta in cima e nasce chiuso: a meta' spesa si scorre quello che
    manca, non venti righe barrate. */
-.shop-cart{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;margin-top:18px;padding:13px 14px;border:1px dashed var(--border-line);border-radius:var(--r-lg);background:none;color:var(--label-3);font-family:'IBM Plex Mono',monospace;font-size:var(--text-xs);cursor:pointer;}
+.shop-cart{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;padding:13px 14px;border:1px dashed var(--border-line);border-radius:var(--r-lg);background:none;color:var(--label-3);font-family:'IBM Plex Mono',monospace;font-size:var(--text-xs);cursor:pointer;}
 .shop-cart-chev{transition:transform .2s ease;flex-shrink:0;}
 .shop-cart.open .shop-cart-chev{transform:rotate(180deg);}
 .shop-list-cart{margin-top:8px;}

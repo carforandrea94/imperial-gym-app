@@ -20,13 +20,41 @@
     <button class="shop-addbtn" (click)="addCustomItem()">+</button>
   </div>
 
+  <!-- Il carrello, in cima e chiuso: quello che e' gia' dentro esce dalla
+       lista, cosi' a meta' spesa si scorre quello che manca e non venti righe
+       barrate. Si riapre per togliere una spunta sbagliata. -->
+  <ng-container *ngIf="checkedCount > 0">
+    <button type="button" class="shop-cart" [class.open]="cartOpen" (click)="toggleCart()"
+      [attr.aria-expanded]="cartOpen">
+      <lucide-icon name="chevron-down" [size]="14" class="shop-cart-chev"></lucide-icon>
+      Nel carrello ({{ checkedCount }})
+    </button>
+    <div class="shop-list shop-list-cart" *ngIf="cartOpen">
+      <button type="button" class="shop-row ok press-fx" *ngFor="let item of itemsPresi" (click)="toggle(item)">
+        <span class="shop-check on">
+          <lucide-icon name="check" [size]="13" [strokeWidth]="3"></lucide-icon>
+        </span>
+        <span class="shop-name">{{ item.name }}</span>
+      </button>
+      <div class="shop-row ok press-fx" *ngFor="let item of customPresi" (click)="toggleCustom(item)">
+        <span class="shop-check on">
+          <lucide-icon name="check" [size]="13" [strokeWidth]="3"></lucide-icon>
+        </span>
+        <span class="shop-name">{{ item.name }}</span>
+        <button class="delete-btn" (click)="removeCustom(item, $event)" title="Elimina">
+          <lucide-icon name="trash-2" [size]="14"></lucide-icon>
+        </button>
+      </div>
+    </div>
+  </ng-container>
+
   <div *ngIf="totalCount === 0" class="history-empty">
     Nessun alimento trovato nei tuoi piani alimentari.<br>
     Aggiungi alimenti alla dieta per vederli qui, oppure aggiungine uno qui sopra.
   </div>
 
   <!-- I reparti. Dentro c'e' solo quello che manca: il preso scende nel
-       carrello, in fondo. -->
+       carrello, qui sopra. -->
   <ng-container *ngFor="let g of groups">
     <div class="shop-group" *ngIf="g.daPrendere.length > 0">
       <span class="shop-group-tit">{{ g.label }}</span>
@@ -55,31 +83,4 @@
     </div>
   </ng-container>
 
-  <!-- Il carrello: quello che e' gia' dentro esce dalla lista, cosi' a meta'
-       spesa si scorre quello che manca e non venti righe barrate. Si riapre
-       per togliere una spunta sbagliata. -->
-  <ng-container *ngIf="checkedCount > 0">
-    <button type="button" class="shop-cart" [class.open]="cartOpen" (click)="toggleCart()"
-      [attr.aria-expanded]="cartOpen">
-      <lucide-icon name="chevron-down" [size]="14" class="shop-cart-chev"></lucide-icon>
-      Nel carrello ({{ checkedCount }})
-    </button>
-    <div class="shop-list shop-list-cart" *ngIf="cartOpen">
-      <button type="button" class="shop-row ok press-fx" *ngFor="let item of itemsPresi" (click)="toggle(item)">
-        <span class="shop-check on">
-          <lucide-icon name="check" [size]="13" [strokeWidth]="3"></lucide-icon>
-        </span>
-        <span class="shop-name">{{ item.name }}</span>
-      </button>
-      <div class="shop-row ok press-fx" *ngFor="let item of customPresi" (click)="toggleCustom(item)">
-        <span class="shop-check on">
-          <lucide-icon name="check" [size]="13" [strokeWidth]="3"></lucide-icon>
-        </span>
-        <span class="shop-name">{{ item.name }}</span>
-        <button class="delete-btn" (click)="removeCustom(item, $event)" title="Elimina">
-          <lucide-icon name="trash-2" [size]="14"></lucide-icon>
-        </button>
-      </div>
-    </div>
-  </ng-container>
 </ng-container>
