@@ -60,14 +60,27 @@
           </div>
         </ng-container>
 
-        <!-- Carico e ripetizioni, due ruote affiancate. Si scorre per i cambi
+        <!-- Ripetizioni e carico, due ruote affiancate - in quest'ordine,
+             come si dice una serie: dodici per trenta. Si scorre per i cambi
              piccoli e si tocca il numero al centro per scriverlo: senza la
              scrittura, con un passo da mezzo chilo, arrivare a un carico
              lontano sarebbero sessanta tacche. -->
         <div class="wheelduo">
           <app-number-wheel *ngIf="!isCluster(vm, row)"
+            [value]="numero(row.reps)" [placeholder]="numero(row.ripPlaceholder)"
+            [min]="1" [max]="100" [step]="1" unit="rip." [disabled]="setsLocked"
+            [label]="'Ripetizioni della serie ' + (j + 1)"
+            (valueChange)="setReps(vm, j, $event)"></app-number-wheel>
+
+          <app-number-wheel *ngIf="isCluster(vm, row) && block(row) as b"
+            [value]="numero(b.reps)" [placeholder]="numero(b.ripPlaceholder)"
+            [min]="1" [max]="100" [step]="1" unit="rip." [disabled]="setsLocked"
+            label="Ripetizioni del blocco in corso"
+            (valueChange)="setBlockReps(vm, j, $event)"></app-number-wheel>
+
+          <app-number-wheel *ngIf="!isCluster(vm, row)"
             [value]="numero(row.load)" [placeholder]="numero(row.loadPlaceholder)"
-            [min]="0" [max]="200" [step]="0.5" unit="kg" [disabled]="setsLocked"
+            [min]="0" [max]="1000" [step]="0.5" unit="kg" [disabled]="setsLocked"
             [label]="'Carico della serie ' + (j + 1) + ', in chili'"
             (valueChange)="setLoad(vm, j, $event)"></app-number-wheel>
 
@@ -75,21 +88,9 @@
                tutti, ma al terzo si cala, e la serie deve poterlo dire. -->
           <app-number-wheel *ngIf="isCluster(vm, row) && block(row) as b"
             [value]="numero(b.load)" [placeholder]="numero(b.loadPlaceholder)"
-            [min]="0" [max]="200" [step]="0.5" unit="kg" [disabled]="setsLocked"
+            [min]="0" [max]="1000" [step]="0.5" unit="kg" [disabled]="setsLocked"
             label="Carico del blocco in corso, in chili"
             (valueChange)="setBlockLoad(vm, j, $event)"></app-number-wheel>
-
-          <app-number-wheel *ngIf="!isCluster(vm, row)"
-            [value]="numero(row.reps)" [placeholder]="numero(row.ripPlaceholder)"
-            [min]="1" [max]="40" [step]="1" unit="rip." [disabled]="setsLocked"
-            [label]="'Ripetizioni della serie ' + (j + 1)"
-            (valueChange)="setReps(vm, j, $event)"></app-number-wheel>
-
-          <app-number-wheel *ngIf="isCluster(vm, row) && block(row) as b"
-            [value]="numero(b.reps)" [placeholder]="numero(b.ripPlaceholder)"
-            [min]="1" [max]="40" [step]="1" unit="rip." [disabled]="setsLocked"
-            label="Ripetizioni del blocco in corso"
-            (valueChange)="setBlockReps(vm, j, $event)"></app-number-wheel>
         </div>
 
         <button type="button" class="setdone" *ngIf="!row.done && !isCluster(vm, row)" [disabled]="setsLocked"
