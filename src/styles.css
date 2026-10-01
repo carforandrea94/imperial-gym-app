@@ -762,11 +762,33 @@ lucide-icon svg.filled{fill:currentColor;}
 .method-title{font-weight:700;font-size:var(--text-md);color:var(--label);}
 .method-sub{font-size:var(--text-xs);color:var(--label-3);margin-top:3px;line-height:1.4;}
 
-.shop-summary{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;font-family:'IBM Plex Mono',monospace;font-size:var(--text-sm);color:var(--label-2);}
-.shop-resetbtn{padding:8px 14px;font-size:var(--text-xs);min-height:0;}
-.shop-item{gap:12px;transition:opacity .2s ease;}
-.shop-item.checked{opacity:.5;}
-.shop-item.checked .lbl{text-decoration:line-through;}
+/* ===================== LISTA DELLA SPESA =====================
+   Una riga, un nome. Grammature, pasti di provenienza e note stavano qui e
+   non ci stanno piu': la lista si legge in piedi al supermercato, dove le
+   uniche domande sono cosa prendere e cosa e' gia' nel carrello. */
+.shop-top{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.shop-count{font-family:'IBM Plex Mono',monospace;font-size:var(--text-sm);color:var(--label-2);flex-shrink:0;}
+.shop-bar{flex:1;min-width:0;height:5px;border-radius:var(--r-pill);background:var(--surface-raise);overflow:hidden;}
+.shop-bar i{display:block;height:100%;background:var(--accent);border-radius:var(--r-pill);transition:width .3s ease;}
+.shop-clear{flex-shrink:0;min-height:36px;padding:7px 13px;border:1px solid var(--border-line);border-radius:var(--r-pill);background:var(--surface-raise);color:var(--label-2);font-family:'IBM Plex Mono',monospace;font-size:var(--text-2xs);white-space:nowrap;cursor:pointer;}
+
+.shop-group{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:18px 2px 8px;}
+.shop-group-tit{font-family:'IBM Plex Mono',monospace;font-size:var(--text-2xs);letter-spacing:.14em;text-transform:uppercase;color:var(--label-3);}
+.shop-group-n{font-family:'IBM Plex Mono',monospace;font-size:var(--text-2xs);color:var(--label-3);}
+
+.shop-list{display:flex;flex-direction:column;gap:8px;}
+.shop-row{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:12px 14px;border:1px solid var(--border-line);border-radius:var(--r-lg);background:var(--surface-card);text-align:left;cursor:pointer;-webkit-user-select:none;user-select:none;}
+.shop-name{flex:1;min-width:0;font-family:'Inter',sans-serif;font-weight:700;font-size:var(--text-md);color:var(--label);line-height:1.3;}
+.shop-row.ok{opacity:.5;}
+.shop-row.ok .shop-name{text-decoration:line-through;}
+
+/* Il carrello sta in fondo e nasce chiuso: a meta' spesa si scorre quello che
+   manca, non venti righe barrate. */
+.shop-cart{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;margin-top:18px;padding:13px 14px;border:1px dashed var(--border-line);border-radius:var(--r-lg);background:none;color:var(--label-3);font-family:'IBM Plex Mono',monospace;font-size:var(--text-xs);cursor:pointer;}
+.shop-cart-chev{transition:transform .2s ease;flex-shrink:0;}
+.shop-cart.open .shop-cart-chev{transform:rotate(180deg);}
+.shop-list-cart{margin-top:8px;}
+
 .shop-check{width:24px;height:24px;border-radius:var(--r-xs);border:2px solid var(--border-line);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--accent-contrast);transition:border-color .2s ease,background .2s ease;}
 .shop-check.on{border-color:var(--accent);background:var(--accent);}
 .shop-addrow{display:flex;gap:8px;margin-bottom:16px;}
