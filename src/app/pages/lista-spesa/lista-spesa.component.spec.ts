@@ -150,3 +150,86 @@ describe('ListaSpesa — il carrello', () => {
     expect(c.checkedCount).toBe(1);
   });
 });
+
+/**
+ * La ricerca. Cinquanta voci sono troppe da scorrere con una mano sola e il
+ * carrello nell'altra: si scrive il nome e la lista si stringe.
+ */
+describe('ListaSpesa — cercare un alimento', () => {
+  it('senza ricerca passano tutti', () => {
+    const c = componente(DIETA);
+    expect(c.filtroAttivo).toBe(false);
+    expect(c.risultati).toBe(7);
+  });
+
+  it('trova per pezzo di parola, non solo dall\'inizio', () => {
+    const c = componente(DIETA);
+    c.query = 'lama';
+    expect(c.groups.find(g => g.label === 'Proteine')!.daPrendere.map(i => i.name)).toEqual(['Calamaro']);
+    expect(c.risultati).toBe(1);
+  });
+
+  it('ignora maiuscole e accenti: "caffe" trova "Caffè"', () => {
+    const c = componente(DIETA);
+    c.customItems = [{ id: 'x', name: 'Caffè', checked: false }];
+    c.query = 'CAFFE';
+    expect(c.customDaPrendere.map(i => i.name)).toEqual(['Caffè']);
+  });
+
+  it('i reparti senza niente da mostrare spariscono, ma i conteggi restano veri', () => {
+    const c = componente(DIETA);
+    c.query = 'riso';
+    const carbo = c.groups.find(g => g.label === 'Carboidrati')!;
+    expect(carbo.daPrendere.map(i => i.name)).toEqual(['Riso']);
+    // "1 / 14" descrive il reparto, non la ricerca: non si restringe con lei.
+    expect(carbo.totale).toBe(3);
+    expect(c.groups.find(g => g.label === 'Proteine')!.daPrendere).toEqual([]);
+  });
+
+  it('il carrello si apre da solo se la risposta e\' li\' dentro', () => {
+    const c = componente(DIETA);
+    const riso = c.items.find(i => i.name === 'Riso')!;
+    c.toggle(riso);
+    expect(c.carrelloAperto).toBe(false);
+
+    c.query = 'riso';
+    // Nascosto in una sezione chiusa si leggerebbe come "non ce l'hai".
+    expect(c.carrelloAperto).toBe(true);
+    expect(c.itemsPresi.map(i => i.name)).toEqual(['Riso']);
+  });
+
+  it('il carrello resta chiuso se la risposta non e\' li\'', () => {
+    const c = componente(DIETA);
+    c.toggle(c.items.find(i => i.name === 'Riso')!);
+    c.query = 'calamaro';
+    expect(c.carrelloAperto).toBe(false);
+  });
+
+  it('cercato e non trovato e\' diverso da lista vuota', () => {
+    const c = componente(DIETA);
+    c.query = 'ananas';
+    expect(c.risultati).toBe(0);
+    expect(c.nessunRisultato).toBe(true);
+
+    const vuota = componente([]);
+    vuota.query = 'ananas';
+    expect(vuota.nessunRisultato).toBe(false);
+  });
+
+  it('quello che si cercava invano si puo\' aggiungere, e la ricerca si spegne', () => {
+    const c = componente(DIETA);
+    c.query = '  Ananas  ';
+    c.aggiungiCercato();
+    expect(c.customItems.map(i => i.name)).toEqual(['Ananas']);
+    expect(c.query).toBe('');
+    expect(c.filtroAttivo).toBe(false);
+  });
+
+  it('pulire la ricerca rimette tutto in lista', () => {
+    const c = componente(DIETA);
+    c.query = 'riso';
+    c.pulisciRicerca();
+    expect(c.query).toBe('');
+    expect(c.risultati).toBe(7);
+  });
+});
