@@ -57,6 +57,11 @@ export class ListaSpesaComponent implements OnInit {
   items: ShoppingItem[] = [];
   customItems: CustomShoppingItem[] = [];
   newItemName = '';
+
+  /** Quello che si sta cercando. Con cinquanta voci, scorrere per trovare
+   *  "Calamaro" e' piu' lungo che scriverlo. */
+  query = '';
+
   loading = true;
   errorMsg = '';
 
@@ -76,6 +81,30 @@ export class ListaSpesaComponent implements OnInit {
     return this.totalCount === 0 ? 0 : Math.round(this.checkedCount / this.totalCount * 100);
   }
 
+  get filtroAttivo(): boolean {
+    return this.query.trim().length > 0;
+  }
+
+  /**
+   * Senza accenti e senza maiuscole: chi cerca "caffe" sul telefono deve
+   * trovare "Caffè", perche' l'accento sulla tastiera e' un tasto tenuto
+   * premuto e nessuno lo fa mentre spinge un carrello.
+   */
+  private norm(s: string): string {
+    return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  }
+
+  /** Se l'alimento rientra nella ricerca in corso. Senza ricerca, passano tutti. */
+  private trovato(name: string): boolean {
+    return !this.filtroAttivo || this.norm(name).includes(this.norm(this.query));
+  }
+
+  /** Quante voci risponderebbero alla ricerca, carrello compreso. */
+  get risultati(): number {
+    return this.groups.reduce((n, g) => n + g.daPrendere.length, 0)
+      + this.customDaPrendere.length + this.itemsPresi.length + this.customPresi.length;
+  }
+
   /**
    * I reparti, con dentro solo quello che manca. Raggruppare per macro non e'
    * raggruppare per corsia, ma ci somiglia - pane e riso, banco del fresco,
@@ -88,7 +117,9 @@ export class ListaSpesaComponent implements OnInit {
       return {
         key: m.key,
         label: m.label,
-        daPrendere: tutti.filter(i => !i.checked),
+        daPrendere: tutti.filter(i => !i.checked && this.trovato(i.name)),
+        // Presi e totale raccontano il reparto, non la ricerca: restano pieni
+        // anche mentre si cerca, altrimenti "1 / 14" diventerebbe "1 / 1".
         presi: tutti.filter(i => i.checked).length,
         totale: tutti.length
       };
@@ -97,15 +128,40 @@ export class ListaSpesaComponent implements OnInit {
 
   /** Gli alimenti aggiunti a mano, ancora da prendere. */
   get customDaPrendere(): CustomShoppingItem[] {
-    return this.customItems.filter(i => !i.checked);
+    return this.customItems.filter(i => !i.checked && this.trovato(i.name));
   }
 
   get itemsPresi(): ShoppingItem[] {
-    return this.items.filter(i => i.checked);
+    return this.items.filter(i => i.checked && this.trovato(i.name));
   }
 
   get customPresi(): CustomShoppingItem[] {
-    return this.customItems.filter(i => i.checked);
+    return this.customItems.filter(i => i.checked && this.trovato(i.name));
+  }
+
+  /**
+   * Il carrello si apre da solo quando la ricerca trova qualcosa li' dentro:
+   * un alimento che risponde ma resta nascosto in una sezione chiusa si
+   * legge come "non ce l'hai", e lo si ricompra.
+   */
+  get carrelloAperto(): boolean {
+    return this.cartOpen || (this.filtroAttivo && this.itemsPresi.length + this.customPresi.length > 0);
+  }
+
+  /** Si cercava qualcosa e non c'e' niente: diverso da una lista vuota. */
+  get nessunRisultato(): boolean {
+    return this.filtroAttivo && this.totalCount > 0 && this.risultati === 0;
+  }
+
+  pulisciRicerca(): void {
+    this.query = '';
+  }
+
+  /** Aggiunge alla lista quello che si stava cercando senza trovarlo. */
+  aggiungiCercato(): void {
+    this.newItemName = this.query.trim();
+    this.addCustomItem();
+    this.query = '';
   }
 
   constructor(
