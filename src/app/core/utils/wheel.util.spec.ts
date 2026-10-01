@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  wheelValues, wheelIndexAt, wheelOffsetOfIndex, wheelIndexOf, snapToStep
+  wheelValues, wheelIndexAt, wheelOffsetOfIndex, wheelIndexOf, snapToStep, wheelWindow
 } from './wheel.util';
 
 const KG = { min: 0, max: 200, step: 0.5 };
@@ -103,5 +103,48 @@ describe('snapToStep', () => {
     expect(snapToStep(-5, KG)).toBe(0);
     expect(snapToStep(9999, KG)).toBe(200);
     expect(snapToStep(0, RIP)).toBe(1);
+  });
+});
+
+/**
+ * La finestra. Una ruota dei chili senza tetto sarebbe lunga migliaia di
+ * tacche, e disegnarle costa: misurate a 390px con otto esercizi aperti,
+ * 500 kg a mezzo chilo sono 8.328 nodi e 284ms di sola impaginazione.
+ */
+describe('wheelWindow', () => {
+  // La forbice vera del carico: il tetto a 200 non c'e' piu', su una leg
+  // press si va oltre.
+  const KG_VERO = { min: 0, max: 1000, step: 0.5 };
+
+  it('disegna un pezzo di forbice intorno al valore', () => {
+    const f = wheelWindow(KG_VERO, 200, 120);
+    expect(f.min).toBe(140);   // 120 mezzi chili sotto
+    expect(f.max).toBe(260);   // e 120 sopra
+    expect(wheelValues(f).length).toBe(241);
+  });
+
+  it('non scende sotto il minimo vero', () => {
+    const f = wheelWindow(KG_VERO, 10, 120);
+    expect(f.min).toBe(0);
+    expect(f.max).toBe(70);
+  });
+
+  it('non sale sopra il massimo vero', () => {
+    const f = wheelWindow({ min: 0, max: 100, step: 0.5 }, 95, 120);
+    expect(f.max).toBe(100);
+  });
+
+  it('senza valore si apre sul minimo', () => {
+    expect(wheelWindow(KG_VERO, null, 120).min).toBe(0);
+  });
+
+  it('un carico pesante costa come uno leggero', () => {
+    // E' il punto di tutta la faccenda: la ruota di un 400 kg non e' piu'
+    // lunga di quella di un 150. Vicino allo zero e' piu' corta, perche' di
+    // la' la forbice finisce davvero.
+    const medio = wheelValues(wheelWindow(KG_VERO, 150, 120)).length;
+    const pesante = wheelValues(wheelWindow(KG_VERO, 400, 120)).length;
+    expect(pesante).toBe(medio);
+    expect(pesante).toBe(241);
   });
 });

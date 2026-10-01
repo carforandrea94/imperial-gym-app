@@ -50,6 +50,27 @@ export function wheelValues(spec: WheelSpec, extra?: number | null): number[] {
   return out;
 }
 
+/**
+ * La porzione di forbice da disegnare davvero, centrata sul valore.
+ *
+ * Una ruota dei chili con passo da mezzo e nessun tetto sarebbe lunga
+ * migliaia di tacche, e disegnarle tutte costa: misurate a 390px, con otto
+ * esercizi aperti insieme, 500 kg sono 8.328 nodi e 284ms di sola
+ * impaginazione su una CPU da scrivania. Un telefono ci mette molto di piu'.
+ *
+ * Non serve. La ruota e' per gli aggiustamenti piccoli - mezzo chilo, una
+ * ripetizione - mentre i salti grossi si scrivono: basta che intorno al valore
+ * ci siano abbastanza tacche da coprire qualsiasi correzione ragionevole, e
+ * `notches` dice quante per lato. Quando si arriva in cima se ne aggiungono
+ * altre, cosi' un tetto non c'e' comunque.
+ */
+export function wheelWindow(spec: WheelSpec, value: number | null | undefined, notches: number): WheelSpec {
+  const v = value !== null && value !== undefined && isFinite(value) ? value : spec.min;
+  const lo = Math.max(spec.min, v - notches * spec.step);
+  const hi = Math.min(spec.max, v + notches * spec.step);
+  return { min: round2(lo), max: round2(hi), step: spec.step };
+}
+
 /** La tacca che si trova al centro con questo scorrimento. */
 export function wheelIndexAt(scrollTop: number, itemH: number, count: number): number {
   if (!(itemH > 0) || count <= 0) return 0;

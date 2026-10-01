@@ -1,6 +1,6 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { NumberWheelComponent, WHEEL_ITEM_H } from './number-wheel.component';
+import { NumberWheelComponent, WHEEL_ITEM_H, WHEEL_NOTCHES } from './number-wheel.component';
 
 /**
  * La ruota si scorre per i cambi piccoli e si scrive per i salti grossi.
@@ -146,5 +146,59 @@ describe('NumberWheel — scrivendo', () => {
     c.edit(); c.draft = '60'; c.commit();
     expect(emessi).toEqual([60]);
     expect(c.values[c.index]).toBe(60);
+  });
+});
+
+/**
+ * Niente tetto. Prima il carico si fermava a 200 kg, e su una leg press si va
+ * oltre: adesso il limite e' 1000, ma la ruota ne disegna solo un pezzo per
+ * volta e lo allunga quando ci si arriva.
+ */
+describe('NumberWheel — la finestra', () => {
+  it('non disegna tutta la forbice', () => {
+    const { c } = monta({ value: 200, max: 1000 });
+    expect(c.values.length).toBe(WHEEL_NOTCHES * 2 + 1);
+    expect(c.values[c.index]).toBe(200);
+  });
+
+  it('un carico pesante non costa piu\' di uno leggero', () => {
+    // Vicino allo zero la ruota e' piu' corta, perche' di la' la forbice
+    // finisce davvero; piu' in su resta sempre della stessa lunghezza.
+    const leggero = monta({ value: 30, max: 1000 }).c.values.length;
+    const pesante = monta({ value: 200, max: 1000 }).c.values.length;
+    const pesantissimo = monta({ value: 400, max: 1000 }).c.values.length;
+    expect(pesante).toBe(pesantissimo);
+    expect(leggero).toBeLessThanOrEqual(pesante);
+  });
+
+  it('arrivati in cima la ruota si allunga', () => {
+    const { c } = monta({ value: 200, max: 1000 });
+    const prima = c.values.length;
+    const ultimo = c.values[prima - 1];
+
+    scorriA(c, prima - 1);
+
+    expect(c.values.length).toBeGreaterThan(prima);
+    // le tacche gia' presenti non si spostano: aggiungere in testa farebbe
+    // scattare la ruota sotto le dita
+    expect(c.values[prima - 1]).toBe(ultimo);
+  });
+
+  it('si allunga fino al massimo vero, e li\' si ferma', () => {
+    const { c } = monta({ value: 99, max: 100, step: 0.5 });
+    scorriA(c, c.values.length - 1);
+    expect(c.values[c.values.length - 1]).toBe(100);
+    const quante = c.values.length;
+    scorriA(c, c.values.length - 1);
+    expect(c.values.length).toBe(quante);
+  });
+
+  it('scrivere un carico lontano rifa\' la finestra intorno a quello', () => {
+    const { c, emessi } = monta({ value: 30, max: 1000 });
+    c.edit(); c.draft = '250'; c.commit();
+
+    expect(emessi).toEqual([250]);
+    expect(c.values[c.index]).toBe(250);
+    expect(c.values.length).toBe(WHEEL_NOTCHES * 2 + 1);
   });
 });
