@@ -48,10 +48,11 @@
     </ng-template>
     <a class="formatile-link" *ngIf="sex === null" routerLink="/account/impostazioni">Dichiaralo</a>
   </div>
-</div>
 
-<div class="grassocard">
-  <div class="grassocard-head">
+  <!-- Massa grassa e FFMI stanno in riga con le altre: sono due numeri del
+       corpo come il peso e il BMI, e avevano una card larga per uno solo
+       perche' sotto ci stava la spiegazione di cosa fossero. -->
+  <div class="formatile">
     <div class="formatile-cap">Massa grassa</div>
     <div class="formatile-val" *ngIf="bodyFat.pct !== null; else noFat">
       <span class="n">{{ bodyFatLabel }}</span><span class="u">%</span>
@@ -59,44 +60,25 @@
     <ng-template #noFat>
       <div class="formatile-val"><span class="n empty">—</span></div>
     </ng-template>
+    <div class="formatile-note" *ngIf="bodyFat.pct !== null && plicheDate">pliche del {{ plicheDate }}</div>
+    <div class="formatile-note" *ngIf="bodyFat.pct === null">{{ bodyFatMissing }}</div>
+    <a class="formatile-link" *ngIf="bodyFat.pct === null && bodyFatNeedsProfile"
+       routerLink="/account/impostazioni">Completa il profilo</a>
+    <a class="formatile-link" *ngIf="bodyFat.pct === null && !bodyFatNeedsProfile"
+       routerLink="/misure/pliche">Vai alle pliche</a>
   </div>
 
-  <div class="formatile-note" *ngIf="bodyFat.pct !== null">
-    Jackson-Pollock 3 siti<ng-container *ngIf="plicheDate"> · pliche del {{ plicheDate }}</ng-container>
-  </div>
-  <div class="formatile-note" *ngIf="bodyFat.pct === null">{{ bodyFatMissing }}</div>
-
-  <a class="formatile-link" *ngIf="bodyFat.pct === null && bodyFatNeedsProfile"
-     routerLink="/account/impostazioni">Completa il profilo</a>
-  <a class="formatile-link" *ngIf="bodyFat.pct === null && !bodyFatNeedsProfile"
-     routerLink="/misure/pliche">Vai alle pliche</a>
-
-  <p class="grassocard-foot" *ngIf="bodyFat.pct !== null">
-    È una stima su una popolazione di riferimento, non una misura: serve a seguire
-    l'andamento, non a dare un verdetto.
-  </p>
-</div>
-
-<div class="grassocard">
-  <div class="grassocard-head">
-    <div class="formatile-cap">FFMI · massa magra</div>
+  <div class="formatile">
+    <div class="formatile-cap">FFMI</div>
     <div class="formatile-val" *ngIf="ffmiValue !== null; else noFfmi">
       <span class="n">{{ ffmiLabel }}</span>
     </div>
     <ng-template #noFfmi>
       <div class="formatile-val"><span class="n empty">—</span></div>
     </ng-template>
+    <div class="formatile-note" *ngIf="ffmiValue !== null">{{ ffmiNote }}</div>
+    <div class="formatile-note" *ngIf="ffmiValue === null">{{ ffmiMissing }}</div>
   </div>
-
-  <div class="formatile-note" *ngIf="ffmiValue !== null">{{ ffmiNote }}</div>
-  <div class="formatile-note" *ngIf="ffmiValue === null">{{ ffmiMissing }}</div>
-
-  <p class="grassocard-foot" *ngIf="ffmiValue !== null">
-    È il BMI calcolato sulla tua altezza e sulla sola massa magra: a differenza del BMI, due
-    persone con lo stesso FFMI hanno davvero costruito la stessa quantità di muscolo. La fascia
-    tiene conto della statura, perché a parità di muscolo un numero alto è più facile da
-    raggiungere per chi è basso.
-  </p>
 </div>
 
 <p class="sectiontitle">Il lavoro</p>

@@ -64,8 +64,8 @@ import { RunningStateService } from '../../services/running-state.service';
       font-family: 'IBM Plex Mono', monospace; font-size: var(--text-xs);
       font-weight: 500; color: var(--label-3);
     }
-    /* La massa grassa sta larga quanto la griglia: e' il numero che la scheda
-       esiste per dire, e le manca un vicino con cui stare in colonna. */
+    /* Una card larga quanto la griglia: la usa il tonnellaggio, che sotto al
+       numero ha un elenco di giorni e in mezza colonna non ci starebbe. */
     .grassocard {
       display: flex; flex-direction: column; padding: 15px; margin-bottom: 12px;
       border-radius: var(--r-lg); background: var(--surface-card);
