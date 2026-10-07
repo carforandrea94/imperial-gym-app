@@ -36,6 +36,11 @@
   </div>
 </div>
 
+<!-- Il misuratore del viewport: invisibile finche' non lo si accende con
+     localStorage.setItem('diag','1'). Serve a capire perche' la tabbar si
+     appoggia ad altezze diverse fra le sezioni, e va via con la risposta. -->
+<app-viewport-probe></app-viewport-probe>
+
 <app-confirm-dialog></app-confirm-dialog>
 <app-toast></app-toast>
 <app-tabbar *ngIf="showChrome && auth.authReady() && !showRestBar"></app-tabbar>
