@@ -15,6 +15,8 @@ import { SwipeTabsDirective } from './swipe-tabs.directive';
   template: `<div [appSwipeTabs]="tabs" [swipeEnabled]="abilitato">
     <span id="libero"></span>
     <div class="exslider"><span id="dentro-slider"></span></div>
+    <div class="wheel"><span id="dentro-ruota"></span></div>
+    <div class="bottomsheet"><div class="wheel"><span id="ruota-nel-foglio"></span></div></div>
   </div>`
 })
 class Host {
@@ -112,6 +114,30 @@ describe('SwipeTabsDirective', () => {
     url = '/impostazioni';
     const { zona } = monta();
     passata(zona, zona.querySelector('#libero')!, 300, 150);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  /**
+   * Da quando carico e ripetizioni si scelgono con la ruota, ogni serie
+   * aperta ne ha due larghe in mezzo allo schermo. Finche' la ruota era fra i
+   * blocchi, il pollice partiva quasi sempre da li' e la passata fra le
+   * sezioni non partiva mai.
+   */
+  it('una passata che parte dalla ruota di una serie cambia sezione', () => {
+    const { zona } = monta();
+    passata(zona, zona.querySelector('#dentro-ruota')!, 300, 150);
+    expect(navigate).toHaveBeenCalledWith(['/corsa']);
+  });
+
+  it('ma dentro un foglio aperto no, ruota compresa', () => {
+    const { zona } = monta();
+    passata(zona, zona.querySelector('#ruota-nel-foglio')!, 300, 150);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('girare la ruota non cambia sezione: il gesto e\' verticale', () => {
+    const { zona } = monta();
+    passata(zona, zona.querySelector('#dentro-ruota')!, 300, 280, 90);
     expect(navigate).not.toHaveBeenCalled();
   });
 });

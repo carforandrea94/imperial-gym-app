@@ -60,6 +60,47 @@ interface ExerciseVM {
 export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   day!: Day;
   dayIndex = 0;
+
+  /**
+   * Due modi di stare in questa pagina, non due pagine.
+   *
+   * `sessione` e' l'allenamento: le serie vengono dal protocollo e si
+   * registrano mentre si fanno. `storico` e' una seduta gia' salvata, aperta
+   * dallo storico: le stesse serie arrivano dal documento e si correggono con
+   * gli stessi comandi — le stesse ruote, gli stessi blocchi del cluster, lo
+   * stesso "aggiungi una serie". Prima lo storico aveva una schermata sua che
+   * ridisegnava tutto in una tabellina di input, e ogni cosa aggiunta qui
+   * (cluster, ruote, serie in piu') la lasciava un po' piu' indietro.
+   */
+  modo: 'sessione' | 'storico' = 'sessione';
+
+  get isStorico(): boolean {
+    return this.modo === 'storico';
+  }
+
+  /** Storico: l'id del documento della seduta aperta. */
+  sessionKey = '';
+  /** Storico: la seduta com'e' adesso su Firestore. */
+  private sedutaSalvata: WorkoutSession | null = null;
+  /** Storico: la data della seduta. Cambiarla la sposta, e con lei il suo id. */
+  storicoDate = '';
+  readonly maxDate = todayLocalISO();
+  /** La data della seduta, scritta per chi legge. */
+  displayDate = '';
+  /** La seduta chiesta non c'e': link vecchio, o seduta cancellata altrove. */
+  notFound = false;
+  /**
+   * Nello storico non esiste un tasto salva: la seduta e' gia' salvata, e ogni
+   * correzione si scrive da sola. Questo dice com'e' andata, perche' senza
+   * niente a schermo non si saprebbe se la modifica e' arrivata.
+   */
+  statoSalvataggio: 'fermo' | 'salvo' | 'salvato' | 'errore' = 'fermo';
+  /** Quando una correzione non si e' salvata, cosa e' andato storto. Sta
+   *  separato da `errorMsg`, che invece significa "la pagina non c'e'". */
+  erroreSalvataggio = '';
+  /** Dopo ngOnDestroy non si disegna e non si naviga piu': il salvataggio in
+   *  volo puo' risolversi quando la pagina non c'e' piu'. */
+  private distrutto = false;
   exercises: ExerciseVM[] = [];
   loading = true;
   errorMsg = '';
@@ -112,6 +153,11 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    // La modalita' arriva dalla rotta (data.modo), non da un parametro: e' la
+    // rotta a sapere se si sta aprendo un allenamento o una seduta salvata.
+    this.modo = this.route.snapshot.data?.['modo'] === 'storico' ? 'storico' : 'sessione';
+    if (this.isStorico) { this.initStorico(); return; }
+
     this.paramSub = this.route.paramMap.subscribe(params => {
       const n = parseInt(params.get('n') ?? '0', 10);
       // Una bozza in attesa appartiene al giorno che si sta lasciando: va
@@ -143,10 +189,146 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  /**
+   * Lo storico ha un parametro solo, la chiave della seduta. Cambia quando si
+   * sposta la seduta di data (l'id porta la data dentro): la pagina si
+   * ricarica dal documento nuovo invece di tenere in memoria il vecchio.
+   */
+  private initStorico(): void {
+    this.paramSub = this.route.paramMap.subscribe(params => {
+      // Un salvataggio in attesa appartiene alla seduta che si sta lasciando.
+      if (this.draftTimer) { clearTimeout(this.draftTimer); this.draftTimer = null; }
+      this.sessionKey = decodeURIComponent(params.get('key') ?? '');
+      this.statoSalvataggio = 'fermo';
+      this.sliderIndex = 0;
+      setTimeout(() => this.scrollToIndex(0), 0);
+      this.closeRestModal();
+      this.restModalVm = null;
+      this.stopPause();
+      this.loadStorico();
+    });
+  }
+
+  /** La seduta salvata, letta dal documento e messa nella stessa forma che
+   *  usa l'allenamento: da qui in poi la pagina non sa piu' da dove viene. */
+  private async loadStorico(): Promise<void> {
+    const generation = ++this.loadGeneration;
+    this.loading = true;
+    this.errorMsg = '';
+    this.notFound = false;
+
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('TIMEOUT')), 12000)
+    );
+
+    try {
+      const seduta = await Promise.race([this.sessions.get(this.sessionKey), timeout]);
+      if (generation !== this.loadGeneration) return;
+      if (!seduta) { this.notFound = true; return; }
+
+      this.sedutaSalvata = seduta;
+      this.storicoDate = seduta.date;
+      this.setDisplayDate(seduta.date);
+      this.day = this.giornoDaSeduta(seduta);
+      this.buildExercisesFromSession(seduta);
+    } catch (e: any) {
+      if (generation !== this.loadGeneration) return;
+      console.error('Errore caricamento seduta:', e);
+      this.errorMsg = e?.message === 'TIMEOUT'
+        ? 'La connessione sta impiegando troppo tempo. Controlla la rete e riprova.'
+        : 'Errore nel caricamento della seduta. Riprova.';
+    } finally {
+      if (generation === this.loadGeneration) this.loading = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  /**
+   * Il giorno di una seduta salvata. Gli esercizi li detta la seduta - sono
+   * quelli che hai fatto, nell'ordine in cui li hai fatti - e il protocollo ci
+   * mette quello che la seduta non registra: muscolo, note, forma del cluster.
+   * Un esercizio che il protocollo non ha piu' resta comunque leggibile.
+   */
+  private giornoDaSeduta(seduta: WorkoutSession): Day {
+    const protocollo = this.workoutData.days.find(d => d.id === seduta.dayId);
+    return {
+      id: seduta.dayId,
+      label: seduta.dayLabel || protocollo?.label || 'Seduta',
+      rec: protocollo?.rec ?? '',
+      ex: seduta.exercises.map(e =>
+        protocollo?.ex.find(p => p.name === e.name)
+        ?? { name: e.name, scheme: 'plain' as const, sets: e.sets.length, muscle: '' }
+      )
+    };
+  }
+
+  /** Le serie di una seduta salvata, nella stessa forma che usa l'allenamento. */
+  private buildExercisesFromSession(seduta: WorkoutSession): void {
+    this.exercises = this.day.ex.map((ex, exIdx) => {
+      const salvate = seduta.exercises[exIdx]?.sets ?? [];
+      // La forma del cluster viene dal protocollo. Se il protocollo e'
+      // cambiato (o l'esercizio non c'e' piu') la si ricava dai blocchi
+      // salvati, altrimenti i blocchi resterebbero a schermo senza comandi.
+      const cluster = normalizeCluster(ex.cluster) ?? this.clusterDaiBlocchi(salvate);
+      const rows: SerieRow[] = salvate.map(s => {
+        const blocks = cluster && s.blocks?.length
+          ? s.blocks.map(b => ({
+              reps: b.reps ?? '', load: b.load ?? '',
+              ripPlaceholder: '', loadPlaceholder: '', done: b.done
+            }))
+          : undefined;
+        return {
+          // Su una serie a cluster questi due sono il riassunto dei blocchi
+          // ("5+5+3", "62,5-55"): si riscrivono da soli quando la serie si
+          // chiude, e intanto sono quello che si legge nella riga chiusa.
+          reps: s.reps ?? '',
+          load: s.load ?? '',
+          done: s.done,
+          // Nello storico non ci sono suggerimenti: quello che c'e' scritto
+          // e' quello che hai fatto, non quello che potresti fare.
+          ripPlaceholder: '',
+          loadPlaceholder: '',
+          // Una serie salvata e' lavoro registrato e resta dov'e'; si toglie
+          // solo quella aggiunta adesso, come nell'allenamento.
+          extra: false,
+          ...(blocks ? { blocks } : {})
+        };
+      });
+      return {
+        ex, rows, open: true,
+        // Una seduta salvata prima si legge: le righe stanno chiuse, con
+        // dentro il loro "10 x 80 kg", e si apre quella da correggere.
+        activeRow: null,
+        insightVisible: false, insight: null,
+        restSeconds: 0, isFirst: exIdx === 0, warmup: null, cluster, rmPick: 1
+      };
+    });
+  }
+
+  /** La forma del cluster ricavata da com'e' stato fatto, quando il
+   *  protocollo non la dice piu'. */
+  private clusterDaiBlocchi(sets: readonly PerformedSetRecord[]): ClusterSpec | null {
+    const conBlocchi = sets.find(s => (s.blocks?.length ?? 0) > 0);
+    if (!conBlocchi) return null;
+    return normalizeCluster({
+      blocks: conBlocchi.blocks!.map(b => Number(b.reps)),
+      end: 'fixed'
+    });
+  }
+
+  private setDisplayDate(isoDate: string): void {
+    const d = new Date(isoDate + 'T00:00:00');
+    this.displayDate = isNaN(d.getTime()) ? '' : d.toLocaleDateString('it-IT', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    });
+  }
+
   // Aspetta bozze/override/insight da Firestore prima di mostrare le card,
   // cosi' non compaiono prima con dati incompleti (peso pre-compilato,
   // "Ultimo", suggerimento di progressione) e poi si aggiornano di scatto.
   async loadAll(): Promise<void> {
+    // "Riprova" e' lo stesso bottone nelle due modalita'.
+    if (this.isStorico) { await this.loadStorico(); return; }
     // Guardia contro `loadAll()` sovrapposte (vedi `loadGeneration`): la
     // fetch cattura il giorno di QUESTA esecuzione, non quello che risultera'
     // corrente quando la Promise si risolve.
@@ -204,7 +386,16 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.paramSub?.unsubscribe();
     this.stopPause();
-    if (this.draftTimer) clearTimeout(this.draftTimer);
+    if (this.draftTimer) {
+      clearTimeout(this.draftTimer);
+      this.draftTimer = null;
+      // Uscire dalla pagina non e' annullare: nello storico la correzione in
+      // attesa si scrive subito, altrimenti mezzo secondo di ritardo la
+      // perderebbe senza dire niente. La bozza dell'allenamento no: quella
+      // riparte da sola alla prossima apertura del giorno.
+      if (this.isStorico) void this.salvaSeduta();
+    }
+    this.distrutto = true;
     if (this.restSheetOverlayEl?.nativeElement.parentNode === document.body) {
       this.renderer.removeChild(document.body, this.restSheetOverlayEl.nativeElement);
     }
@@ -463,7 +654,9 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.scheduleDraft();
-    if (row.done) {
+    // Il recupero appartiene all'allenamento in corso: nello storico la
+    // spunta e' una correzione, e la fascia col timer non ha senso.
+    if (row.done && !this.isStorico) {
       this.state.startRestTimer(vm.restSeconds, vm.ex.name, this.day.id);
     }
   }
@@ -476,6 +669,9 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
    * correggerla, quella resta dov'e' finche' non la chiude lui.
    */
   private syncActiveRow(vm: ExerciseVM): void {
+    // Nello storico non esiste una "prossima serie da fare": si apre una riga
+    // per correggerla, e chiusa quella non se ne apre un'altra da sola.
+    if (this.isStorico) { vm.activeRow = null; return; }
     const next = vm.rows.findIndex(r => !r.done);
     vm.activeRow = next === -1 ? null : next;
   }
@@ -607,6 +803,10 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private startPause(vm: ExerciseVM, rowIdx: number): void {
+    // La pausa dentro la serie si misura mentre la serie si fa. Nello storico
+    // la serie e' finita da giorni: correggere un blocco non fa partire
+    // nessun conto alla rovescia.
+    if (this.isStorico) return;
     this.stopPause();
     this.pauseFrom = Date.now();
     this.pauseKey = this.pauseId(vm, rowIdx);
@@ -724,8 +924,8 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.syncActiveRow(vm);
     this.scheduleDraft();
     // Finita la serie tocca il recupero lungo dell'esercizio, non piu' quello
-    // corto di dentro.
-    this.state.startRestTimer(vm.restSeconds, vm.ex.name, this.day.id);
+    // corto di dentro. Nello storico non tocca niente: e' una correzione.
+    if (!this.isStorico) this.state.startRestTimer(vm.restSeconds, vm.ex.name, this.day.id);
   }
 
   /** Riapre una serie a cluster per correggerla: i blocchi restano come sono. */
@@ -938,9 +1138,18 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.scheduleDraft();
   }
 
+  /**
+   * Mezzo secondo dopo l'ultimo tocco si scrive. Dove, lo dice la modalita':
+   * nell'allenamento la bozza del giorno (la seduta non esiste ancora), nello
+   * storico la seduta stessa, che esiste e va corretta.
+   */
   private scheduleDraft(): void {
     if (this.draftTimer) clearTimeout(this.draftTimer);
-    this.draftTimer = setTimeout(() => this.saveDraft(), 500);
+    this.draftTimer = setTimeout(() => {
+      this.draftTimer = null;
+      if (this.isStorico) { void this.salvaSeduta(); return; }
+      this.saveDraft();
+    }, 500);
   }
 
   private saveDraft(): void {
@@ -1017,6 +1226,11 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
    *  etichetta. Se il protocollo e' cambiato sotto i piedi, l'id da solo
    *  mentirebbe (vedi matchesDay nel servizio). */
   get isSessionOnThisDay(): boolean {
+    // Nello storico mai, nemmeno se c'e' una sessione aperta sullo stesso
+    // giorno: quella si sta allenando ora, questa e' una seduta di allora.
+    // Da qui passano la card di chiusura, il salvataggio e la barra della
+    // sessione, che su una seduta salvata non devono esistere.
+    if (this.isStorico) return false;
     return this.sessionState.matchesDay(this.day.id, this.day.label);
   }
 
@@ -1070,6 +1284,11 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
    * bloccare i campi mentre si riprende fiato sarebbe solo un intralcio.
    */
   get setsLocked(): boolean {
+    // Nello storico i campi sono sempre aperti. Il blocco esiste per non
+    // registrare un allenamento senza mai far partire il cronometro, e qui
+    // l'allenamento e' finito: resta solo da correggere quello che e' andato
+    // storto (una serie dimenticata, un carico sbagliato).
+    if (this.isStorico) return false;
     return !this.isSessionOnThisDay;
   }
 
@@ -1221,5 +1440,116 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     } finally {
       setTimeout(() => this.state.saveStatus.set('idle'), 2000);
     }
+  }
+
+  // ---- La seduta salvata ----
+  //
+  // Nello storico non c'e' niente da avviare e niente da chiudere: la seduta
+  // esiste. Si corregge, e ogni correzione si scrive da sola mezzo secondo
+  // dopo l'ultimo tocco, come la bozza dell'allenamento.
+
+  /** La durata misurata quel giorno, o 0 per le sedute salvate prima del
+   *  cronometro. Correggere le serie non la cambia: non e' misurabile adesso. */
+  get sedutaDurata(): number {
+    return this.sedutaSalvata?.durationSec ?? 0;
+  }
+
+  get testoSalvataggio(): string {
+    switch (this.statoSalvataggio) {
+      case 'salvo': return 'Salvo\u2026';
+      case 'salvato': return 'Salvato \u2713';
+      case 'errore': return this.erroreSalvataggio;
+    }
+    return 'Le correzioni si salvano da sole.';
+  }
+
+  /**
+   * La data e' l'unica cosa che non si corregge in place: l'id della seduta la
+   * porta dentro (`${dayId}_${data}`), quindi cambiarla sposta il documento.
+   * Ci pensa `moveSession`, che e' anche l'unico a sapere se nella data nuova
+   * c'e' gia' una seduta di questo giorno.
+   */
+  onDateChange(): void {
+    if (!this.storicoDate || this.storicoDate > this.maxDate) {
+      this.statoSalvataggio = 'errore';
+      this.erroreSalvataggio = 'Data non valida: una seduta non puo\' essere senza data o nel futuro.';
+      return;
+    }
+    this.scheduleDraft();
+  }
+
+  /** La seduta come sta a schermo adesso, pronta da scrivere. */
+  private sessioneCorrente(): WorkoutSession {
+    const seduta: WorkoutSession = {
+      dayId: this.day.id,
+      dayLabel: this.sedutaSalvata?.dayLabel || this.day.label,
+      date: this.storicoDate,
+      exercises: this.exercises.map(vm => ({
+        name: vm.ex.name,
+        sets: vm.rows.map(r => this.toPerformedSet(r))
+      }))
+    };
+    if (this.sedutaDurata > 0) seduta.durationSec = this.sedutaDurata;
+    return seduta;
+  }
+
+  private async salvaSeduta(): Promise<void> {
+    if (!this.isStorico || !this.sedutaSalvata) return;
+    if (!this.storicoDate || this.storicoDate > this.maxDate) return;
+
+    const seduta = this.sessioneCorrente();
+    this.statoSalvataggio = 'salvo';
+    this.erroreSalvataggio = '';
+    if (!this.distrutto) this.cdr.detectChanges();
+
+    // moveSession copre i due casi con una chiamata: stessa data e riscrive il
+    // documento, data nuova e lo sposta in una writeBatch dopo aver controllato
+    // che la destinazione sia libera.
+    const esito = await this.sessions.moveSession(seduta, this.sessionKey, this.storicoDate);
+    if (this.distrutto) return;
+
+    if (esito === 'ok') {
+      this.sedutaSalvata = seduta;
+      this.statoSalvataggio = 'salvato';
+      const nuovoId = this.sessions.sessionId(seduta.dayId, this.storicoDate);
+      if (nuovoId !== this.sessionKey) {
+        // La seduta ora vive a un altro indirizzo: restare su quello vecchio
+        // vorrebbe dire guardare un documento che non c'e' piu'.
+        this.toast.success('Seduta spostata \u2713');
+        this.router.navigate(['/scheda/storico', encodeURIComponent(nuovoId)]);
+        return;
+      }
+      this.setDisplayDate(this.storicoDate);
+    } else if (esito === 'collision') {
+      // La data nuova e' occupata: la seduta non si sposta, e il campo torna
+      // a dire la verita' su dov'e'.
+      this.storicoDate = this.sedutaSalvata.date;
+      this.statoSalvataggio = 'errore';
+      this.erroreSalvataggio = 'In quella data c\'e\' gia\' una seduta di questo giorno: la data non e\' stata cambiata.';
+      this.toast.error('Esiste gia\' una seduta in questa data.');
+    } else {
+      this.statoSalvataggio = 'errore';
+      this.erroreSalvataggio = 'Non salvato. Controlla la rete: la correzione resta a schermo.';
+      this.toast.error('Errore durante il salvataggio. Riprova.');
+    }
+    this.cdr.detectChanges();
+  }
+
+  async deleteSession(): Promise<void> {
+    const ok = await this.confirm.confirm('Eliminare questa seduta dallo storico?', {
+      confirmLabel: 'Elimina', dangerous: true
+    });
+    if (!ok) return;
+    // Niente da salvare su una seduta che si sta cancellando.
+    if (this.draftTimer) { clearTimeout(this.draftTimer); this.draftTimer = null; }
+    const fatto = await this.sessions.delete(this.sessionKey);
+    if (this.distrutto) return;
+    if (fatto) {
+      this.router.navigate(['/scheda/storico']);
+      return;
+    }
+    this.statoSalvataggio = 'errore';
+    this.erroreSalvataggio = 'Errore durante l\'eliminazione. Riprova.';
+    this.cdr.detectChanges();
   }
 }

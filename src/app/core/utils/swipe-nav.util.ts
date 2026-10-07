@@ -50,11 +50,21 @@ export function nextTab(tabs: readonly string[], current: string, dir: SwipeDir)
 /**
  * Da dove NON deve partire una passata.
  *
- * Dentro un elenco che scorre di lato — le card degli esercizi, i pasti, la
- * ruota dell'altezza — il gesto e' gia' di qualcun altro; sopra un campo o
- * dentro un foglio aperto, cambiare pagina sarebbe un agguato.
+ * Dentro un elenco che scorre DI LATO il gesto e' gia' di qualcun altro;
+ * sopra un campo o dentro un foglio aperto, cambiare pagina sarebbe un
+ * agguato.
+ *
+ * `.wheel` stava in questo elenco e non ci sta piu'. Ci era finita per la
+ * ruota dell'altezza, che pero' vive dentro un .bottomsheet ed e' gia'
+ * coperta da quello. Da quando carico e ripetizioni si scelgono con la ruota,
+ * ogni serie aperta ne ha due, larghe, in mezzo allo schermo: il pollice
+ * partiva quasi sempre da li' e la passata fra le sezioni non partiva mai.
+ *
+ * Girare la ruota non cambia sezione lo stesso: una rotellata e' quasi tutta
+ * verticale, e swipeDirection chiede che lo spostamento di lato sia almeno il
+ * doppio di quello in su e in giu'.
  */
-export const SWIPE_BLOCKERS = '.exslider, .wheel, .bottomsheet, input, select, textarea';
+export const SWIPE_BLOCKERS = '.exslider, .bottomsheet, input, select, textarea';
 
 export function startsOnBlocker(target: EventTarget | null): boolean {
   const el = target as Element | null;

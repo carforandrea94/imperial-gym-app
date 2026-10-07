@@ -10,8 +10,6 @@
   [showViewToggle]="showViewToggle"
   [viewMode]="currentViewMode()"
   [showSettings]="showSettings"
-  [showSaveEdit]="historyEditState.editMode()"
-  [saveEditSaving]="historyEditState.saving()"
   [showProtocolSave]="showProtocolSave"
   [protocolSaving]="protocolBuilderState.saving()"
   [showSaveMeasure]="showSaveMeasure"
@@ -23,7 +21,6 @@
   (shoppingListClick)="onShoppingList()"
   (viewModeChange)="onViewModeChange($event)"
   (settingsClick)="onSettingsClick()"
-  (saveEditClick)="historyEditState.requestSave()"
   (saveDraftClick)="protocolBuilderState.requestSaveDraft()"
   (saveActivateClick)="protocolBuilderState.requestSaveActivate()"
   (saveMeasureClick)="measureState.requestSave()">

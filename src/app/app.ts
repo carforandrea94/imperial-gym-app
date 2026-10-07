@@ -15,7 +15,6 @@ import { WorkoutStateService } from './services/workout-state.service';
 import { DietStateService } from './services/diet-state.service';
 import { AuthService } from './core/services/auth.service';
 import { CATEGORY_LABELS, MeasureCategory } from './models/measurement.model';
-import { HistoryEditStateService } from './services/history-edit-state.service';
 import { ProtocolBuilderStateService } from './services/protocol-builder-state.service';
 import { MeasureCategoryStateService } from './services/measure-category-state.service';
 import { ThemeService } from './services/theme.service';
@@ -91,7 +90,6 @@ export class App implements OnInit, OnDestroy {
     public dietState: DietStateService,
     public auth: AuthService,
     private swUpdate: SwUpdate,
-    public historyEditState: HistoryEditStateService,
     public protocolBuilderState: ProtocolBuilderStateService,
     public measureState: MeasureCategoryStateService,
     private theme: ThemeService,
@@ -378,6 +376,10 @@ export class App implements OnInit, OnDestroy {
       this.showHistory = false;
       this.showInfo = false;
       this.showAnalytics = false;
+      // La seduta salvata si legge nella stessa schermata dell'allenamento,
+      // quindi anche nelle stesse due viste: elenco o card scorrevoli.
+      this.showViewToggle = true;
+      this.viewToggleTarget = 'scheda';
       return;
     }
 

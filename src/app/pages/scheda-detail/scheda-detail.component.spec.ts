@@ -325,3 +325,275 @@ describe('SchedaDetailComponent — la tabella dei massimali per esercizio', () 
     expect(component.rmLoad(vm)).toBe('—');
   });
 });
+
+/**
+ * La stessa schermata, in modalita' storico.
+ *
+ * Il dettaglio di una seduta salvata non e' piu' una pagina sua: e' questa,
+ * con le serie lette dal documento invece che dal protocollo. Quello che segue
+ * copre le differenze fra le due modalita', perche' sono le uniche cose che
+ * possono rompersi: tutto il resto e' lo stesso codice gia' coperto sopra.
+ */
+function makeStorico(opts: {
+  seduta?: any;
+  giorni?: any[];
+  esitoMove?: 'ok' | 'collision' | 'error';
+  eliminaOk?: boolean;
+} = {}) {
+  const seduta = opts.seduta === undefined ? {
+    dayId: 'day1', dayLabel: 'Petto', date: '2026-10-01', durationSec: 3600,
+    exercises: [{ name: 'Panca piana', sets: [
+      { load: '80', reps: '10', done: true },
+      { load: '85', reps: '8', done: true }
+    ] }]
+  } : opts.seduta;
+
+  const get = vi.fn(() => Promise.resolve(seduta));
+  const moveSession = vi.fn(() => Promise.resolve(opts.esitoMove ?? 'ok'));
+  const cancella = vi.fn(() => Promise.resolve(opts.eliminaOk ?? true));
+  const sessionId = (dayId: string, data: string) => `${dayId}_${data}`;
+  const startRestTimer = vi.fn();
+  const navigate = vi.fn();
+  const confirm = vi.fn(() => Promise.resolve(true));
+
+  const component = TestBed.runInInjectionContext(() => new SchedaDetailComponent(
+    // ActivatedRoute: la modalita' viene da data.modo della rotta.
+    { snapshot: { data: { modo: 'storico' } }, paramMap: { subscribe: () => null } } as any,
+    { navigate } as any,
+    { days: opts.giorni ?? [], MUSCLES: {} } as any,
+    { viewMode: () => 'list', saveStatus: () => 'idle', startRestTimer } as any,
+    { patchField: vi.fn(() => Promise.resolve()) } as any,
+    { get, moveSession, delete: cancella, sessionId } as any,
+    { confirm } as any,
+    { detectChanges: () => {} } as any,
+    { success: vi.fn(), error: vi.fn() } as any,
+    {} as any,
+    { matchesDay: () => true, isPaused: () => false, activeSession: () => ({ dayId: 'day1' }) } as any
+  ));
+
+  component.ngOnInit();
+  component.sessionKey = 'day1_2026-10-01';
+  return { component, get, moveSession, cancella, navigate, confirm, startRestTimer };
+}
+
+async function apri(opts: Parameters<typeof makeStorico>[0] = {}) {
+  const tutto = makeStorico(opts);
+  await (tutto.component as any).loadStorico();
+  return tutto;
+}
+
+describe('SchedaDetailComponent — storico: la seduta salvata nella stessa schermata', () => {
+  it('la rotta decide la modalita\'', () => {
+    const { component } = makeStorico();
+    expect(component.modo).toBe('storico');
+    expect(component.isStorico).toBe(true);
+  });
+
+  it('le serie arrivano dal documento, non dal protocollo', async () => {
+    const { component } = await apri();
+    expect(component.exercises.length).toBe(1);
+    expect(component.exercises[0].rows.map(r => `${r.reps}x${r.load}`)).toEqual(['10x80', '8x85']);
+    expect(component.exercises[0].rows.every(r => r.done)).toBe(true);
+  });
+
+  it('le righe partono chiuse: una seduta salvata prima si legge', async () => {
+    const { component } = await apri();
+    expect(component.exercises[0].activeRow).toBeNull();
+    expect(component.rowSummary(component.exercises[0].rows[0])).toBe('10 × 80 kg');
+  });
+
+  it('i campi sono sempre aperti: la seduta si corregge senza avviare niente', async () => {
+    const { component } = await apri();
+    expect(component.setsLocked).toBe(false);
+  });
+
+  it('una sessione aperta sullo stesso giorno non trasforma lo storico in allenamento', async () => {
+    // matchesDay risponde true: senza la guardia comparirebbero la barra della
+    // sessione e la card che chiude e salva, sopra una seduta di settembre.
+    const { component } = await apri();
+    expect(component.isSessionOnThisDay).toBe(false);
+    expect(component.slideCount).toBe(1);
+  });
+
+  it('il muscolo e la forma del cluster vengono dal protocollo', async () => {
+    const { component } = await apri({ giorni: [{
+      id: 'day1', label: 'Petto', rec: '90', ex: [{ name: 'Panca piana', muscle: 'Petto', scheme: 'plain', sets: 2 }]
+    }] });
+    expect(component.exercises[0].ex.muscle).toBe('Petto');
+  });
+
+  it('un esercizio che il protocollo non ha piu\' resta leggibile', async () => {
+    const { component } = await apri({ giorni: [] });
+    expect(component.exercises[0].ex.name).toBe('Panca piana');
+    expect(component.exercises[0].ex.muscle).toBe('');
+  });
+
+  it('la seduta che non c\'e\' lo dice, e non e\' un errore di rete', async () => {
+    const { component } = await apri({ seduta: null });
+    expect(component.notFound).toBe(true);
+    expect(component.errorMsg).toBe('');
+  });
+
+  it('la durata resta quella misurata allora', async () => {
+    const { component } = await apri();
+    expect(component.sedutaDurata).toBe(3600);
+  });
+});
+
+describe('SchedaDetailComponent — storico: le correzioni si salvano da sole', () => {
+  it('correggere un carico scrive la seduta mezzo secondo dopo', async () => {
+    const { component, moveSession } = await apri();
+    component.setLoad(component.exercises[0], 0, 82.5);
+    expect(moveSession).not.toHaveBeenCalled();
+
+    vi.runAllTimers();
+    await Promise.resolve();
+
+    expect(moveSession).toHaveBeenCalledTimes(1);
+    const [seduta, vecchioId, data] = moveSession.mock.calls[0] as any[];
+    expect(vecchioId).toBe('day1_2026-10-01');
+    expect(data).toBe('2026-10-01');
+    expect(seduta.exercises[0].sets[0].load).toBe('82,5');
+    // Quello che non si e' toccato resta com'era.
+    expect(seduta.exercises[0].sets[1].load).toBe('85');
+    expect(seduta.durationSec).toBe(3600);
+  });
+
+  it('spuntare una serie nello storico non fa partire nessun recupero', async () => {
+    const { component, startRestTimer } = await apri();
+    component.onSetCheck(component.exercises[0], 0);
+    vi.runAllTimers();
+    expect(startRestTimer).not.toHaveBeenCalled();
+  });
+
+  it('si puo\' aggiungere la serie dimenticata, e si puo\' togliere', async () => {
+    const { component } = await apri();
+    const vm = component.exercises[0];
+
+    component.addSet(vm);
+    expect(vm.rows.length).toBe(3);
+    expect(vm.rows[2].extra).toBe(true);
+    // Nasce sul modello dell'ultima: una serie in piu' e' "ancora una come quella".
+    expect(vm.rows[2].loadPlaceholder).toBe('85');
+
+    // Le serie salvate invece restano: sono lavoro registrato.
+    expect(component.canRemove(vm, 0)).toBe(false);
+    expect(component.canRemove(vm, 2)).toBe(true);
+  });
+
+  it('cambiare data sposta la seduta, e l\'indirizzo la segue', async () => {
+    const { component, moveSession, navigate } = await apri();
+    component.storicoDate = '2026-10-02';
+    component.onDateChange();
+    vi.runAllTimers();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(moveSession).toHaveBeenCalledWith(expect.anything(), 'day1_2026-10-01', '2026-10-02');
+    expect(navigate).toHaveBeenCalledWith(['/scheda/storico', 'day1_2026-10-02']);
+  });
+
+  it('una data futura non si salva e lo dice', async () => {
+    const { component, moveSession } = await apri();
+    component.storicoDate = '2099-01-01';
+    component.onDateChange();
+    vi.runAllTimers();
+
+    expect(moveSession).not.toHaveBeenCalled();
+    expect(component.statoSalvataggio).toBe('errore');
+    expect(component.testoSalvataggio).toContain('Data non valida');
+  });
+
+  it('se nella data nuova c\'e\' gia\' una seduta, il campo torna a dire la verita\'', async () => {
+    const { component } = await apri({ esitoMove: 'collision' });
+    component.storicoDate = '2026-10-02';
+    component.onDateChange();
+    vi.runAllTimers();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(component.storicoDate).toBe('2026-10-01');
+    expect(component.statoSalvataggio).toBe('errore');
+  });
+
+  it('un errore di rete non cancella la correzione dallo schermo', async () => {
+    const { component } = await apri({ esitoMove: 'error' });
+    component.setLoad(component.exercises[0], 0, 82.5);
+    vi.runAllTimers();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(component.statoSalvataggio).toBe('errore');
+    expect(component.exercises[0].rows[0].load).toBe('82,5');
+  });
+
+  it('uscendo dalla pagina la correzione in attesa si scrive subito', async () => {
+    const { component, moveSession } = await apri();
+    component.setLoad(component.exercises[0], 0, 82.5);
+    component.ngOnDestroy();
+
+    await Promise.resolve();
+    expect(moveSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('eliminare la seduta riporta allo storico', async () => {
+    const { component, cancella, navigate } = await apri();
+    await component.deleteSession();
+    expect(cancella).toHaveBeenCalledWith('day1_2026-10-01');
+    expect(navigate).toHaveBeenCalledWith(['/scheda/storico']);
+  });
+
+  it('se l\'eliminazione non va, non si va via', async () => {
+    const { component, navigate } = await apri({ eliminaOk: false });
+    await component.deleteSession();
+    expect(navigate).not.toHaveBeenCalled();
+    expect(component.statoSalvataggio).toBe('errore');
+  });
+});
+
+/**
+ * Le serie a cluster di una seduta salvata: i blocchi tornano come sono stati
+ * fatti. La forma la detta il protocollo, e quando il protocollo e' cambiato
+ * sotto i piedi la si ricava da loro, altrimenti i blocchi resterebbero a
+ * schermo senza nessun comando per toccarli.
+ */
+describe('SchedaDetailComponent — storico: i cluster salvati', () => {
+  const SEDUTA_CLUSTER = {
+    dayId: 'day1', dayLabel: 'Petto', date: '2026-10-01',
+    exercises: [{ name: 'Panca piana', sets: [{
+      load: '62,5-55', reps: '5+5+3', done: true,
+      blocks: [
+        { load: '62,5', reps: '5', done: true },
+        { load: '62,5', reps: '5', done: true },
+        { load: '55', reps: '3', done: true }
+      ]
+    }] }]
+  };
+
+  it('i blocchi tornano con dentro quello che e\' stato fatto', async () => {
+    const { component } = await apri({ seduta: SEDUTA_CLUSTER, giorni: [{
+      id: 'day1', label: 'Petto', rec: '90', ex: [{
+        name: 'Panca piana', muscle: 'Petto', scheme: 'plain', sets: 1,
+        cluster: { blocks: [5, 5, 5], restSec: 20, end: 'fixed' }
+      }]
+    }] });
+    const vm = component.exercises[0];
+    expect(component.isCluster(vm, vm.rows[0])).toBe(true);
+    expect(vm.rows[0].blocks!.map(b => `${b.reps}x${b.load}`)).toEqual(['5x62,5', '5x62,5', '3x55']);
+  });
+
+  it('senza il cluster nel protocollo la forma si ricava dai blocchi salvati', async () => {
+    const { component } = await apri({ seduta: SEDUTA_CLUSTER, giorni: [] });
+    const vm = component.exercises[0];
+    expect(component.isCluster(vm, vm.rows[0])).toBe(true);
+    expect(vm.cluster!.blocks).toEqual([5, 5, 3]);
+  });
+
+  it('correggere un blocco non fa partire la pausa dentro la serie', async () => {
+    const { component } = await apri({ seduta: SEDUTA_CLUSTER, giorni: [] });
+    const vm = component.exercises[0];
+    component.undoBlock(vm, 0, 2);
+    component.doneBlock(vm, 0);
+    expect(component.isPausing(vm, 0)).toBe(false);
+  });
+});

@@ -76,8 +76,26 @@ describe('startsOnBlocker', () => {
     expect(startsOnBlocker(dentro('<div class="exslider"><span id="x"></span></div>', '#x'))).toBe(true);
   });
 
-  it('dentro la ruota pure', () => {
-    expect(startsOnBlocker(dentro('<div class="wheel"><span id="x"></span></div>', '#x'))).toBe(true);
+  it('dentro un foglio aperto pure', () => {
+    expect(startsOnBlocker(dentro('<div class="bottomsheet"><span id="x"></span></div>', '#x'))).toBe(true);
+  });
+
+  it('sulla ruota di una serie NO: li\' il pollice ci passa sempre', () => {
+    // Da quando carico e ripetizioni si scelgono con la ruota, ogni serie
+    // aperta ne ha due in mezzo allo schermo. Se bloccassero, la passata fra
+    // le sezioni non partirebbe mai.
+    expect(startsOnBlocker(dentro('<div class="wheel"><span id="x"></span></div>', '#x'))).toBe(false);
+  });
+
+  it('ma la ruota dentro un foglio resta protetta', () => {
+    expect(startsOnBlocker(dentro(
+      '<div class="bottomsheet"><div class="wheel"><span id="x"></span></div></div>', '#x'
+    ))).toBe(true);
+  });
+
+  it('girare la ruota non cambia sezione: il gesto e\' verticale', () => {
+    // 20px di lato e 90 in su non sono una passata, chiunque sia il bersaglio.
+    expect(swipeDirection(-20, 90, 200)).toBeNull();
   });
 
   it('sopra un campo di testo pure', () => {
