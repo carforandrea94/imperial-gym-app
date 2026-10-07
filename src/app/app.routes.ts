@@ -92,9 +92,14 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/history-list/history-list.component').then(m => m.HistoryListComponent)
   },
   {
+    // Il dettaglio di una seduta salvata e' la STESSA pagina dell'allenamento,
+    // in un'altra modalita': le serie si leggono e si correggono con gli stessi
+    // comandi, invece di avere una seconda schermata che disegna le stesse cose
+    // e col tempo diverge.
     path: 'scheda/storico/:key',
     canActivate: [authGuard, clientGuard],
-    loadComponent: () => import('./pages/history-detail/history-detail.component').then(m => m.HistoryDetailComponent)
+    data: { modo: 'storico' },
+    loadComponent: () => import('./pages/scheda-detail/scheda-detail.component').then(m => m.SchedaDetailComponent)
   },
   {
     path: 'scheda/info',

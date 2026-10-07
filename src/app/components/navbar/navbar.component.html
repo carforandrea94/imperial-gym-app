@@ -9,7 +9,7 @@
       <p class="navsubtitle">{{ subtitle }}</p>
     </div>
 
-    <div class="navactions" [class.hide]="!showHistory && !showInfo && !showAnalytics && !showShoppingList && !showViewToggle && !showSettings && !showSaveEdit && !showProtocolSave && !showSaveMeasure">
+    <div class="navactions" [class.hide]="!showHistory && !showInfo && !showAnalytics && !showShoppingList && !showViewToggle && !showSettings && !showProtocolSave && !showSaveMeasure">
       <div class="viewtoggle" *ngIf="showViewToggle">
         <button class="viewtogglebtn tap44 tap44-v" [class.active]="viewMode === 'list'" (click)="viewModeChange.emit('list')" aria-label="Vista elenco" title="Elenco">
           <lucide-icon name="list" [size]="16"></lucide-icon>
@@ -18,10 +18,6 @@
           <lucide-icon name="gallery-horizontal" [size]="16"></lucide-icon>
         </button>
       </div>
-      <button class="navicon" *ngIf="showSaveEdit" [disabled]="saveEditSaving"
-        (click)="saveEditClick.emit()" aria-label="Salva modifiche" title="Salva modifiche">
-        <lucide-icon name="check" [size]="18"></lucide-icon>
-      </button>
       <button class="navicon" *ngIf="showSaveMeasure" [disabled]="measureSaving"
         (click)="saveMeasureClick.emit()" aria-label="Salva misurazione" title="Salva misurazione">
         <lucide-icon name="check" [size]="18"></lucide-icon>

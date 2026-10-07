@@ -5,6 +5,35 @@
   <button class="savebtn mt-3" (click)="loadAll()">Riprova</button>
 </div>
 
+<div *ngIf="!loading && !errorMsg && notFound" class="history-empty">Seduta non trovata.</div>
+
+<!-- Lo storico: la seduta e' gia' salvata, quindi qui non c'e' niente da
+     avviare e niente da chiudere. Sopra c'e' quando e' stata fatta, con la
+     data che si puo' correggere; sotto ci sono le stesse serie
+     dell'allenamento, con gli stessi comandi. -->
+<ng-container *ngIf="isStorico && day && !loading && !errorMsg">
+  <div class="daymeta">
+    <span>{{ day.label }}</span>
+    <span class="rec">
+      {{ displayDate }}<ng-container *ngIf="sedutaDurata"> &nbsp;·&nbsp; ⏱ {{ formatDuration(sedutaDurata) }}</ng-container>
+    </span>
+  </div>
+
+  <!-- La data e' l'unica cosa che non si corregge in place: l'id della seduta
+       la porta dentro, quindi cambiarla la sposta. Sta in una riga e non in
+       una card sua, che su una schermata di serie costava novanta pixel per
+       un campo solo. -->
+  <div class="seduta-when">
+    <label for="seduta-data">Data</label>
+    <div class="measure-input-wrap">
+      <input id="seduta-data" type="date" [(ngModel)]="storicoDate" [max]="maxDate"
+        (ngModelChange)="onDateChange()" />
+    </div>
+  </div>
+
+  <p class="autosave" [class.err]="statoSalvataggio === 'errore'">{{ testoSalvataggio }}</p>
+</ng-container>
+
 <ng-template #exDetail let-vm="vm">
   <p class="note" *ngIf="vm.ex.note">{{ vm.ex.note }}</p>
 
@@ -192,14 +221,14 @@
   <div class="ex-info">
     <div class="ex-name">{{ vm.ex.name }}</div>
     <div class="ex-tags">
-      <span class="ex-muscle" [style.background]="getMuscleInfo(vm.ex.muscle).color">
+      <span class="ex-muscle" *ngIf="vm.ex.muscle" [style.background]="getMuscleInfo(vm.ex.muscle).color">
         {{ vm.ex.muscle }}
       </span>
       <!-- Il recupero si mostra e si cambia con lo stesso elemento: prima il
            valore stava in un chip e il bottone per modificarlo era un tondo
            dall'altra parte dell'header, e nulla diceva che fossero la stessa
            cosa. -->
-      <button class="ex-chip rest" (click)="openRestModal(vm, $event)"
+      <button class="ex-chip rest" *ngIf="!isStorico" (click)="openRestModal(vm, $event)"
         [attr.aria-label]="'Recupero ' + formatRest(vm.restSeconds) + ', tocca per cambiarlo'">
         <lucide-icon name="timer" [size]="12"></lucide-icon>{{ formatRest(vm.restSeconds) }}
       </button>
@@ -292,7 +321,7 @@
 <!-- Sessione: unico posto da cui si comanda, sopra i pallini e nel flusso con
      le card, non sospesa sopra di loro. Vale per entrambe le viste; lo storico
      usa un altro componente e non la mostra. -->
-<div class="session-bar" *ngIf="day && !loading && !summary">
+<div class="session-bar" *ngIf="day && !loading && !summary && !isStorico">
   <span class="session-bar-dot" [class.live]="isSessionOnThisDay"></span>
 
   <!-- Se la sessione e' su un altro giorno l'etichetta ci porta: senza card non
@@ -383,7 +412,12 @@
 </div>
 
 
-<div class="bottomsheet-overlay" #restSheetOverlay *ngIf="day" [class.show]="restModalOpen" (click)="onRestOverlayClick($event)">
+<!-- Buttare via la seduta: in fondo, dopo averla vista tutta. -->
+<div class="savebar" *ngIf="isStorico && day && !loading && !errorMsg">
+  <button class="savebtn delete-session-btn" (click)="deleteSession()">Elimina questa seduta</button>
+</div>
+
+<div class="bottomsheet-overlay" #restSheetOverlay *ngIf="day && !isStorico" [class.show]="restModalOpen" (click)="onRestOverlayClick($event)">
   <div class="bottomsheet" [class.show]="restModalOpen">
     <div class="grabber"></div>
     <p class="confirmtext sheet-title">
