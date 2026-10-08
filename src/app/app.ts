@@ -6,6 +6,7 @@ import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { NavbarComponent } from './components/navbar/navbar.component';
 import { TabbarComponent } from './components/tabbar/tabbar.component';
+import { ViewportProbeComponent } from './components/viewport-probe/viewport-probe.component';
 import { RestBarComponent } from './components/rest-bar/rest-bar.component';
 import { WorkoutSessionStateService } from './services/workout-session-state.service';
 import { ConfirmDialogComponent } from './components/confirm-dialog/confirm-dialog.component';
@@ -19,7 +20,6 @@ import { ProtocolBuilderStateService } from './services/protocol-builder-state.s
 import { MeasureCategoryStateService } from './services/measure-category-state.service';
 import { ThemeService } from './services/theme.service';
 import { SwipeTabsDirective } from './core/directives/swipe-tabs.directive';
-import { ViewportProbeComponent } from './components/viewport-probe/viewport-probe.component';
 
 @Component({
   selector: 'app-root',
