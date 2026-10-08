@@ -81,7 +81,21 @@
      9,2:1 sul ciano, 12,4:1 sul verde. */
   --accent-contrast:#031620;
   --safe-t: max(env(safe-area-inset-top, 0px), 24px);
-  --safe-b: max(env(safe-area-inset-bottom, 0px), 14px);
+  /*
+   * L'inset di sistema in fondo, con un tetto.
+   *
+   * Su iPhone vale 34px: e' l'indicatore di home, l'unica cosa che c'e'
+   * davvero li' sotto. Ma su alcune schermate il browser ci mette dentro
+   * anche l'altezza della propria barra - oltre ottanta pixel - e la barra
+   * poi non la disegna: sotto la pillola restava sfondo dell'app, e la
+   * tabbar galleggiava 54 px piu' in alto che in Corsa o in Account. Non
+   * cambiava la tabbar, cambiava il numero che arriva dal sistema.
+   *
+   * Il tetto e' quanto serve davvero a stare sopra l'indicatore, ed e' lo
+   * stesso su ogni schermata, qualunque cosa riporti il browser.
+   */
+  --safe-b-sys: min(env(safe-area-inset-bottom, 0px), 34px);
+  --safe-b: max(var(--safe-b-sys), 14px);
   /* Le HIG non danno un'altezza per la tab bar iOS: la sezione iOS descrive
      solo il comportamento, e l'altezza in UIKit non si imposta. L'unico
      numero da rispettare e' la dimensione del bersaglio (vedi .tabbtn), che
@@ -98,7 +112,7 @@
      barra scende ma il suo bordo inferiore resta appena sopra l'indicatore di
      home (21 pt), che e' dove il sistema si prende lo swipe. Sui dispositivi
      senza indicatore vale il minimo di 10. */
-  --tabbar-gap: max(calc(env(safe-area-inset-bottom, 0px) - 12px), 10px);
+  --tabbar-gap: max(calc(var(--safe-b-sys) - 12px), 10px);
   --nav-h: calc(var(--safe-t) + 86px);
   /* Altezza della navbar dopo lo shrink (body.scrolled), gradiente pieno
      incluso: e' il punto sotto cui un elemento sticky resta visibile. */
