@@ -19,7 +19,7 @@ import { PRIVACY_VERSION } from '../../core/privacy';
   templateUrl: './privacy.component.html',
   styles: [`
     :host { display: block; animation: fade .4s var(--spring-soft); }
-    .doc { max-width: 680px; margin: 0 auto; padding: 28px 20px calc(28px + env(safe-area-inset-bottom)); }
+    .doc { max-width: 680px; margin: 0 auto; padding: 28px 20px calc(28px + var(--safe-b-sys)); }
     .doc h1 { font-weight: 800; font-size: 28px; letter-spacing: -.015em; margin: 0 0 4px; }
     .doc .ver {
       font-family: 'IBM Plex Mono', monospace; font-size: var(--text-xs);
