@@ -106,13 +106,27 @@
      appoggia: era ripetuta a mano in quattro punti (5 qui, 10 nelle larghezze)
      e bastava cambiarne uno per vederla sbordare. */
   --tabbar-pad: 6px;
-  /* Quanto la tabbar sta staccata dal fondo. Non e' --safe-b: quella tiene
-     tutta l'area riservata al gesto di home, e con la barra galleggiante
-     lasciava un vuoto di 36 px sotto la pillola. Qui ne togliamo 12, cosi' la
-     barra scende ma il suo bordo inferiore resta appena sopra l'indicatore di
-     home (21 pt), che e' dove il sistema si prende lo swipe. Sui dispositivi
-     senza indicatore vale il minimo di 10. */
-  --tabbar-gap: max(calc(var(--safe-b-sys) - 12px), 10px);
+  /*
+   * Quanto la tabbar sta staccata dal fondo: ventidue pixel, scritti.
+   *
+   * Era env(safe-area-inset-bottom) - 12, cioe' 22 su iPhone: il bordo
+   * inferiore della pillola cade appena sopra l'indicatore di home (21 pt),
+   * che e' dove il sistema si prende lo swipe. Il numero e' quello giusto;
+   * il problema era da dove veniva. L'inset non e' una costante del
+   * dispositivo: lo stesso iPhone lo riporta diverso da una schermata
+   * all'altra - sopra gli ottanta pixel dove il browser ci infila la propria
+   * barra - e la tabbar finiva a tre altezze diverse in cinque sezioni.
+   *
+   * Un tetto non basta, perche' l'inset puo' sbagliare anche verso il basso
+   * (0 invece di 34 fa una barra 12 px piu' giu'). Qui serve una cosa sola:
+   * che la barra stia sempre dove sta. Quindi la distanza dal fondo non la
+   * chiede piu' a nessuno.
+   *
+   * --safe-b continua a leggere l'inset, con il tetto: i bottom sheet sono
+   * larghi quanto lo schermo e arrivano a filo del bordo, quindi la' l'area
+   * dell'indicatore va tenuta davvero.
+   */
+  --tabbar-gap: 22px;
   --nav-h: calc(var(--safe-t) + 86px);
   /* Altezza della navbar dopo lo shrink (body.scrolled), gradiente pieno
      incluso: e' il punto sotto cui un elemento sticky resta visibile. */
