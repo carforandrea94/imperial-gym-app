@@ -98,6 +98,7 @@ export class App implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.tieniLaFinestraAltaQuantoLoSchermo();
     this.setupAutoUpdate();
     this.routeSub = this.router.events.pipe(
       filter(e => e instanceof NavigationEnd)
@@ -111,7 +112,50 @@ export class App implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.routeSub?.unsubscribe();
+    window.removeEventListener('orientationchange', this.misuraSchermo);
+    window.removeEventListener('resize', this.misuraSchermo);
   }
+
+  /**
+   * In un'app installata iOS accorcia la finestra sulle pagine che non
+   * scorrono, e la barra in fondo finisce piu' in alto.
+   *
+   * Lo dicono i numeri letti sul telefono: Scheda, che sta in una schermata,
+   * ha finestra 873 su uno schermo da 932 e un documento alto 873 - non
+   * scorre. Corsa, che e' lunga, ha finestra 932 e documento 992 - scorre. In
+   * tutte e due la tabbar e' a 22px dal fondo DELLA FINESTRA, com'e' scritto:
+   * e' la finestra a mancare di 59 pixel, cioe' esattamente dell'area in alto
+   * sotto la Dynamic Island. Da fuori si vede una barra che si appoggia a due
+   * altezze diverse, e non c'e' niente da correggere nella barra: sotto la
+   * finestra non si puo' disegnare.
+   *
+   * Allora si toglie la condizione: ogni pagina e' alta quanto lo schermo
+   * piu' un soffio, quindi scorre sempre, quindi la finestra resta quella
+   * piena. Il soffio e' 8px e non 1 perche' deve restare piu' alto della
+   * finestra anche dopo che si e' allargata; ed e' 8px e non 60 perche' la
+   * navbar si rimpicciolisce oltre i 10px di scorrimento, e una pagina corta
+   * non deve poterla far scattare.
+   *
+   * Solo da installata: in un browser con le sue barre la finestra e' piu'
+   * bassa dello schermo per un motivo legittimo, e allungare le pagine
+   * lascerebbe un vuoto in fondo a ognuna.
+   */
+  private tieniLaFinestraAltaQuantoLoSchermo(): void {
+    const installata = window.matchMedia?.('(display-mode: standalone)').matches
+      || (navigator as any).standalone === true;
+    if (!installata) return;
+
+    document.documentElement.classList.add('installata');
+    this.misuraSchermo();
+    // Ruotando il telefono lo schermo cambia altezza.
+    window.addEventListener('orientationchange', this.misuraSchermo, { passive: true });
+    window.addEventListener('resize', this.misuraSchermo, { passive: true });
+  }
+
+  private misuraSchermo = (): void => {
+    const h = window.screen?.height;
+    if (h) document.documentElement.style.setProperty('--h-schermo', `${Math.round(h)}px`);
+  };
 
   /**
    * Se il service worker rileva una nuova versione deployata, la attiva e

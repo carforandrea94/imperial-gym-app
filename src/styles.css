@@ -228,6 +228,29 @@ html {
 
 html::-webkit-scrollbar { display: none; }
 
+/*
+ * Da app installata ogni pagina e' alta quanto lo schermo piu' un soffio.
+ *
+ * Non e' un vezzo: su iOS la finestra di un'app installata si accorcia di
+ * 59px - l'area in alto sotto la Dynamic Island - sulle pagine che NON
+ * scorrono, e la barra in fondo, che sta a 22px dal fondo della finestra,
+ * finisce 59px piu' su che altrove. Misurato sul telefono: Scheda, che sta
+ * in una schermata, finestra 873 e documento 873; Corsa, che e' lunga,
+ * finestra 932 e documento 992. Sotto la finestra non si puo' disegnare,
+ * quindi la barra non si puo' riportare giu': si toglie la condizione,
+ * facendo scorrere sempre.
+ *
+ * L'altezza dello schermo la scrive app.ts in --h-schermo, perche' in CSS
+ * non c'e': 100lvh e' la finestra senza le barre del browser, non lo
+ * schermo, e nel caso che ci interessa vale gia' 873. Resta come ripiego.
+ *
+ * Gli 8px: devono restare sopra la finestra anche dopo che si e' allargata,
+ * se no si rimpicciolirebbe di nuovo; e devono stare sotto i 10px oltre i
+ * quali la navbar si rimpicciolisce, se no una pagina corta la farebbe
+ * scattare per niente.
+ */
+.installata body { min-height: calc(var(--h-schermo, 100lvh) + 8px); }
+
 body {
   min-height: 100%;
   background: var(--bg);
