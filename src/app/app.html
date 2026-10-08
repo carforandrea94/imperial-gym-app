@@ -35,8 +35,5 @@
 
 <app-confirm-dialog></app-confirm-dialog>
 <app-toast></app-toast>
-<!-- TEMPORANEA: la sonda del viewport, finche' non si capisce perche' la
-     tabbar si appoggia a altezze diverse fra una sezione e l'altra. -->
-<app-viewport-probe *ngIf="showChrome && auth.authReady()"></app-viewport-probe>
 <app-tabbar *ngIf="showChrome && auth.authReady() && !showRestBar"></app-tabbar>
 <app-rest-bar *ngIf="showChrome && auth.authReady() && showRestBar"></app-rest-bar>

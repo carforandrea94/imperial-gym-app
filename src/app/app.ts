@@ -6,7 +6,6 @@ import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { NavbarComponent } from './components/navbar/navbar.component';
 import { TabbarComponent } from './components/tabbar/tabbar.component';
-import { ViewportProbeComponent } from './components/viewport-probe/viewport-probe.component';
 import { RestBarComponent } from './components/rest-bar/rest-bar.component';
 import { WorkoutSessionStateService } from './services/workout-session-state.service';
 import { ConfirmDialogComponent } from './components/confirm-dialog/confirm-dialog.component';
@@ -24,7 +23,7 @@ import { SwipeTabsDirective } from './core/directives/swipe-tabs.directive';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, NavbarComponent, TabbarComponent, RestBarComponent, ConfirmDialogComponent, ToastComponent, SwipeTabsDirective, ViewportProbeComponent],
+  imports: [CommonModule, RouterOutlet, NavbarComponent, TabbarComponent, RestBarComponent, ConfirmDialogComponent, ToastComponent, SwipeTabsDirective],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
