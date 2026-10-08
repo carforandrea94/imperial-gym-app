@@ -19,11 +19,12 @@ import { ProtocolBuilderStateService } from './services/protocol-builder-state.s
 import { MeasureCategoryStateService } from './services/measure-category-state.service';
 import { ThemeService } from './services/theme.service';
 import { SwipeTabsDirective } from './core/directives/swipe-tabs.directive';
+import { ViewportProbeComponent } from './components/viewport-probe/viewport-probe.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, NavbarComponent, TabbarComponent, RestBarComponent, ConfirmDialogComponent, ToastComponent, SwipeTabsDirective],
+  imports: [CommonModule, RouterOutlet, NavbarComponent, TabbarComponent, RestBarComponent, ConfirmDialogComponent, ToastComponent, SwipeTabsDirective, ViewportProbeComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
