@@ -192,6 +192,13 @@
           <span class="rmpick-out">{{ rmLoad(vm) }} kg</span>
           <span class="rmpick-pct" *ngIf="rmRow(vm) as r">{{ r.percent }}%</span>
         </div>
+        <!-- La percentuale scelta per tutto il programma. Non tocca il campo
+             del peso: li' resta quello che hai sollevato l'ultima volta. -->
+        <p class="rmpick-prog" *ngIf="vm.insight.programLoad as pl">
+          Al {{ pl.percent }}% del massimale: <b>{{ kg(pl.load) }} kg</b> · circa {{ pl.reps }} rip.
+        </p>
+        <p class="rmpick-nota" *ngIf="notaScostamento(vm) as nota">{{ nota }}</p>
+
         <p class="rmpick-from" *ngIf="vm.insight.oneRmText" [innerHTML]="vm.insight.oneRmText"></p>
         <p class="rmpick-soft" *ngIf="vm.rmPick > rmSoftOver">
           Sopra le {{ rmSoftOver }} ripetizioni la stima si allarga: prendilo

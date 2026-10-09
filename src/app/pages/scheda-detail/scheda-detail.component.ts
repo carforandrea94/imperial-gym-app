@@ -13,14 +13,17 @@ import { sessionTonnage, formatKg } from '../../core/utils/tonnage.util';
 import { WorkoutSessionsService } from '../../services/workout-sessions.service';
 import { WorkoutSessionStateService } from '../../services/workout-session-state.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
-import { Day, Exercise, WorkoutSession, ExInsight, ClusterSpec, PerformedSetRecord } from '../../models/workout.model';
+import { Day, Exercise, WorkoutSession, ExInsight, ProgramLoad, ClusterSpec, PerformedSetRecord } from '../../models/workout.model';
 import {
   normalizeCluster, buildBlocks, buildBlock, canAddBlock, canRemoveBlock, removeLastBlock, currentBlock,
   clusterSetDone, blocksLabel, blocksLoadLabel, clusterLabel, formatClusterRest
 } from '../../core/utils/cluster.util';
 import { todayLocalISO } from '../../core/utils/date.util';
 import { findClosestSlideIndex, scrollToSlide } from '../../core/utils/horizontal-slider.util';
-import { PerformedSet, oneRepMaxOf, rmTable, RmRow, RM_TABLE_MAX_REPS, MAX_TRUSTED_REPS } from '../../core/utils/load-estimate.util';
+import {
+  PerformedSet, oneRepMaxOf, rmTable, RmRow, RM_TABLE_MAX_REPS, MAX_TRUSTED_REPS,
+  loadAtPercent, repsAtPercent
+} from '../../core/utils/load-estimate.util';
 import { ToastService } from '../../services/toast.service';
 import {
   SerieRow, BlockRow, canAddSet, buildExtraSet, canRemoveSet, removeSetAt, mergeDraftRows
@@ -350,6 +353,7 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       // Un caricamento piu' recente e' partito prima che questo si risolvesse:
       // i suoi dati sono superati e non vanno applicati allo stato corrente.
       if (generation !== this.loadGeneration) return;
+      this.percentualeProgramma = appState.loadPercent;
       this.buildExercises(appState.restOverrides);
       this.loadDraft(appState.workoutDrafts[dayId]);
       this.daySessions = daySessions.map(d => d.session);
@@ -455,6 +459,10 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   /** Oltre queste ripetizioni il numero va preso con le pinze. */
   readonly rmSoftOver = MAX_TRUSTED_REPS;
 
+  /** La percentuale del massimale scelta per tutto il programma, o null se
+   *  spenta. Arriva dall'account, quindi vale su ogni giorno e ogni esercizio. */
+  private percentualeProgramma: number | null = null;
+
   /** La riga scelta nel menu dei massimali, o null se non c'e' una stima. */
   rmRow(vm: ExerciseVM): RmRow | null {
     return vm.insight?.rmRows?.find(r => r.reps === vm.rmPick) ?? null;
@@ -475,8 +483,46 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /** I chili come si scrivono qui: virgola decimale, e niente ",0" inutile. */
-  private kg(n: number): string {
+  kg(n: number): string {
     return n.toLocaleString('it-IT', { maximumFractionDigits: 1 });
+  }
+
+  /**
+   * Il peso alla percentuale scelta per il programma, con le ripetizioni che a
+   * quella percentuale escono davvero.
+   *
+   * Non tocca il campo del peso: li' resta il suggerimento dell'ultima volta,
+   * che e' quello che hai davvero sollevato. Questa e' un'indicazione da
+   * leggere accanto, perche' una percentuale fissa su un protocollo dove le
+   * ripetizioni cambiano di settimana in settimana non puo' decidere al posto
+   * tuo - puo' solo dirti dove ti porta.
+   */
+  private caricoDiProgramma(oneRm: number): ProgramLoad | null {
+    const p = this.percentualeProgramma;
+    if (!p || oneRm <= 0) return null;
+    const load = loadAtPercent(oneRm, p);
+    if (load <= 0) return null;
+    return { percent: p, load, reps: repsAtPercent(p) };
+  }
+
+  /**
+   * Quando la percentuale fissa e il piano del giorno dicono cose diverse.
+   *
+   * E' il prezzo di una percentuale sola per tutto il programma: l'80% del
+   * massimale e' un peso da otto ripetizioni, e su un giorno da dieci le
+   * dieci non escono. Dirlo qui costa una riga; scoprirlo sotto il bilanciere
+   * costa una serie. Sotto le due ripetizioni di scarto si tace: e' dentro
+   * l'errore della stima.
+   */
+  notaScostamento(vm: ExerciseVM): string | null {
+    const pl = vm.insight?.programLoad;
+    // Un cluster non e' una serie dritta: nessuna di queste formule lo legge,
+    // e infatti dalla stima resta fuori.
+    if (!pl || vm.cluster) return null;
+    const previste = parseInt(vm.rows[0]?.ripPlaceholder ?? '', 10);
+    if (!isFinite(previste) || previste <= 0) return null;
+    if (Math.abs(previste - pl.reps) < 2) return null;
+    return `Oggi il piano ne chiede ${previste}: a questo peso ne escono circa ${pl.reps}.`;
   }
 
   private loadInsights(daySessions: { id: string; session: WorkoutSession }[]): void {
@@ -583,7 +629,11 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       if (oneRmText) lastText = '';
 
       if (lastText || oneRmText) {
-        vm.insight = { lastText, oneRmText, rmRows: stima ? rmTable(stima.value) : null };
+        vm.insight = {
+          lastText, oneRmText,
+          rmRows: stima ? rmTable(stima.value) : null,
+          programLoad: this.caricoDiProgramma(stima?.value ?? 0)
+        };
         vm.insightVisible = true;
       }
 

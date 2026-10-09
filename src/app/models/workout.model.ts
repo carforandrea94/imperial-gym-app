@@ -139,10 +139,26 @@ export function normalizeSession(raw: any): WorkoutSession | null {
 
 import { RmRow } from '../core/utils/load-estimate.util';
 
+/**
+ * Il peso che corrisponde alla percentuale scelta per tutto il programma.
+ *
+ * `reps` sono le ripetizioni che a quella percentuale escono davvero, secondo
+ * la stessa formula: una percentuale fissa e le ripetizioni scritte dal coach
+ * possono contraddirsi, e questo numero e' l'unico modo per accorgersene.
+ */
+export interface ProgramLoad {
+  percent: number;
+  load: number;
+  reps: number;
+}
+
 export interface ExInsight {
   lastText: string;
   /** Il massimale stimato dall'ultima sessione, gia' scritto per chi legge. */
   oneRmText: string | null;
   /** Il carico per ogni numero di ripetizioni, da 1 a 15. */
   rmRows: RmRow[] | null;
+  /** Il peso alla percentuale scelta per il programma. null se la percentuale
+   *  e' spenta, o se di questo esercizio non c'e' un massimale stimato. */
+  programLoad: ProgramLoad | null;
 }

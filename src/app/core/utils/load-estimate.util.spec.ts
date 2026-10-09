@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
-  estimateOneRepMax, loadAtReps, bestSet, oneRepMaxOf, rmTable, RM_TABLE_MAX_REPS
+  estimateOneRepMax, loadAtReps, bestSet, oneRepMaxOf, rmTable, RM_TABLE_MAX_REPS,
+  loadAtPercent, repsAtPercent
 } from './load-estimate.util';
 
 describe('load-estimate', () => {
@@ -139,5 +140,49 @@ describe('rmTable', () => {
     expect(loadAtReps(100, 5)).toBe(89);       // 100 * 32/36 = 88,89
     expect(loadAtReps(100, 0)).toBe(0);
     expect(loadAtReps(0, 5)).toBe(0);
+  });
+});
+
+/**
+ * La percentuale fissa del programma: si sceglie una volta e vale su ogni
+ * esercizio, qualunque cosa chieda il protocollo quel giorno.
+ */
+describe('load-estimate — la percentuale del massimale', () => {
+  it('prende la percentuale secca del massimale', () => {
+    expect(loadAtPercent(98.5, 80)).toBe(79);      // 78,8 -> 79
+    expect(loadAtPercent(100, 100)).toBe(100);
+    expect(loadAtPercent(100, 50)).toBe(50);
+  });
+
+  it('arrotonda al mezzo chilo, come il resto', () => {
+    expect(loadAtPercent(98.5, 77.5)).toBe(76.5);  // 76,34
+    expect(loadAtPercent(93, 82.5)).toBe(76.5);    // 76,72
+  });
+
+  it('senza massimale non c\'e\' carico', () => {
+    expect(loadAtPercent(0, 80)).toBe(0);
+    expect(loadAtPercent(100, 0)).toBe(0);
+    expect(loadAtPercent(NaN, 80)).toBe(0);
+  });
+
+  it('dice quante ripetizioni escono a quella percentuale', () => {
+    // E' l'inversa della tabella: le stesse percentuali, lette al contrario.
+    expect(repsAtPercent(100)).toBe(1);
+    expect(repsAtPercent(75)).toBe(10);
+    expect(repsAtPercent(86)).toBe(6);
+  });
+
+  it('la percentuale e le ripetizioni si rispondono', () => {
+    // Chi imposta l'80% deve poter vedere che il protocollo da 10 ripetizioni
+    // non ci sta: a 10 rip la tabella dice 75%.
+    const rip = repsAtPercent(80);
+    expect(rip).toBe(8);
+    expect(rmTable(98.5).find(r => r.reps === rip)!.percent).toBe(81);
+  });
+
+  it('fuori scala non inventa un numero', () => {
+    expect(repsAtPercent(0)).toBe(0);
+    expect(repsAtPercent(120)).toBe(0);
+    expect(repsAtPercent(NaN)).toBe(0);
   });
 });

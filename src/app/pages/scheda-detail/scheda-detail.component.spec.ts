@@ -597,3 +597,79 @@ describe('SchedaDetailComponent — storico: i cluster salvati', () => {
     expect(component.isPausing(vm, 0)).toBe(false);
   });
 });
+
+/**
+ * La percentuale fissa del programma.
+ *
+ * Si sceglie una volta in Impostazioni e vale su ogni esercizio: quanto pesa
+ * quella percentuale del SUO massimale stimato. Non tocca il campo del peso -
+ * li' resta il suggerimento dell'ultima volta - perche' una percentuale sola
+ * non puo' sapere cosa chiede il protocollo oggi.
+ */
+describe('SchedaDetailComponent — la percentuale del massimale', () => {
+  function conPercentuale(percentuale: number | null, sets: any[] = [{ load: '85', reps: '6' }]) {
+    const { component } = makeComponent({ sessionSuQuestoGiorno: true });
+    const vm = makeVm();
+    component.exercises = [vm];
+    (component as any).percentualeProgramma = percentuale;
+    (component as any).loadInsights([
+      { id: 'a', session: { date: '2026-10-01', exercises: [{ name: 'Panca piana', sets }] } }
+    ]);
+    return { component, vm };
+  }
+
+  it('prende la percentuale secca del massimale stimato', () => {
+    // 85 x 6 -> massimale 98,5. L'80% di 98,5 e' 79 kg.
+    const { vm } = conPercentuale(80);
+    expect(vm.insight.programLoad).toEqual({ percent: 80, load: 79, reps: 8 });
+  });
+
+  it('spenta, non dice niente', () => {
+    const { vm } = conPercentuale(null);
+    expect(vm.insight.programLoad).toBeNull();
+    // Il resto dei consigli resta dov'era.
+    expect(vm.insight.rmRows.length).toBe(15);
+  });
+
+  it('senza massimale stimato non inventa un peso', () => {
+    // Venti ripetizioni: oltre il limite di attendibilita', nessuna stima.
+    const { vm } = conPercentuale(80, [{ load: '40', reps: '20' }]);
+    expect(vm.insight.programLoad).toBeNull();
+  });
+
+  it('non tocca il peso suggerito nel campo', () => {
+    // Quello viene dall'ultima volta, e deve restare quello: e' l'unico
+    // numero che e' stato davvero sollevato.
+    const { vm } = conPercentuale(80);
+    expect(vm.rows[0].loadPlaceholder).toBe('85');
+  });
+
+  it('avverte quando la percentuale e il piano del giorno non coincidono', () => {
+    // Il protocollo di prova chiede 10 ripetizioni; l'80% e' un peso da 8.
+    const { component, vm } = conPercentuale(80);
+    expect(component.notaScostamento(vm)).toBe(
+      'Oggi il piano ne chiede 10: a questo peso ne escono circa 8.'
+    );
+  });
+
+  it('tace quando vanno d\'accordo', () => {
+    // Il 75% E' la riga delle dieci ripetizioni: niente da segnalare.
+    const { component, vm } = conPercentuale(75);
+    expect(vm.insight.programLoad.reps).toBe(10);
+    expect(component.notaScostamento(vm)).toBeNull();
+  });
+
+  it('tace per una ripetizione di scarto: e\' dentro l\'errore della stima', () => {
+    const { component, vm } = conPercentuale(77.5);
+    expect(vm.insight.programLoad.reps).toBe(9);
+    expect(component.notaScostamento(vm)).toBeNull();
+  });
+
+  it('su un cluster non si pronuncia', () => {
+    // "8+8" non e' una serie dritta: nessuna di queste formule la legge, e
+    // infatti dalla stima resta fuori.
+    const { component, vm } = conPercentuale(80);
+    vm.cluster = { blocks: [8, 8], restSec: 20, end: 'fixed' };
+    expect(component.notaScostamento(vm)).toBeNull();
+  });
+});

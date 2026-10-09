@@ -58,6 +58,42 @@
   </div>
 </div>
 
+<!-- La percentuale del massimale: vale per tutto il programma, e si legge
+     dentro ogni esercizio. Non e' del coach: e' una preferenza di chi si
+     allena, come la vista o il recupero. -->
+<ng-container *ngIf="!auth.isCoach">
+  <p class="sectiontitle">Allenamento</p>
+  <div class="infocard">
+    <div class="rows">
+      <div class="account-row">
+        <span class="account-row-label">Percentuale del massimale</span>
+        <div class="viewtoggle labeltoggle">
+          <button class="viewtogglebtn tap44 tap44-v" [class.active]="!percentualeAttiva"
+                  (click)="spegniPercentuale()">Spenta</button>
+          <button class="viewtogglebtn tap44 tap44-v" [class.active]="percentualeAttiva"
+                  (click)="accendiPercentuale()">Attiva</button>
+        </div>
+      </div>
+
+      <div class="account-row" *ngIf="percentualeAttiva">
+        <span class="account-row-label">Quanto</span>
+        <div class="percentstep">
+          <button class="rest-stepbtn" (click)="cambiaPercentuale(-passoPercentuale)"
+                  aria-label="Abbassa la percentuale">–2,5</button>
+          <span class="percentval">{{ percentualeLabel }}</span>
+          <button class="rest-stepbtn" (click)="cambiaPercentuale(passoPercentuale)"
+                  aria-label="Alza la percentuale">+2,5</button>
+        </div>
+      </div>
+    </div>
+    <p class="settings-hint">
+      Sotto a ogni esercizio comparirà quanto pesa questa percentuale del suo massimale stimato,
+      e quante ripetizioni ne escono. Il peso nel campo non cambia: lì resta quello
+      dell'ultima volta, che è l'unico numero che hai davvero sollevato.
+    </p>
+  </div>
+</ng-container>
+
 <!-- L'altezza invece serve alle formule di composizione corporea, che vivono
      nelle Misure: schermata che il coach non ha. -->
 <ng-container *ngIf="!auth.isCoach">
