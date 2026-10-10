@@ -441,18 +441,20 @@
         </button>
       </ng-container>
 
+      <!-- Un gruppo solo per tutti i posti dove un alimento puo' stare: le tre
+           caselle della combinazione, le alternative del pasto, quelle del
+           singolo alimento. Sono lo stesso alimento in tre posti diversi, e
+           spostarlo fra loro e' il mestiere di questa schermata. Gli
+           integratori restano fuori: non sono alimenti. -->
+      <ng-container cdkDropListGroup>
       <ng-container *ngFor="let cat of foodCategories">
         <p class="sectiontitle mt-4">{{ foodCategoryLabels[cat] }}</p>
         <div class="infocard">
-          <!-- Le tre caselle si collegano per nome, una a una, e non con un
-               gruppo: dentro ogni macro vive anche la lista delle alternative
-               di quell'alimento, e un gruppo intorno al giro le aggancerebbe
-               tutte - si potrebbe trascinare la casella dentro le alternative
-               e viceversa, che e' un'altra cosa e con un altro significato.
-               La casella accetta anche da vuota: e' li' che si lascia
-               l'alimento che arriva da un altro macro. -->
-          <div class="slotdrop" cdkDropList [id]="'slot-' + cat" [cdkDropListConnectedTo]="slotCollegati"
-            [cdkDropListData]="cat" (cdkDropListDropped)="scambiaSlot(getActiveCombo(em), $event)">
+          <!-- La casella accetta anche da vuota: e' li' che si lascia
+               l'alimento che arriva da un altro macro o da una lista di
+               alternative. -->
+          <div class="slotdrop" cdkDropList [cdkDropListData]="zonaCasella(cat)"
+            (cdkDropListDropped)="spostaAlimento(getActiveCombo(em), $event)">
             <div class="builder-item" *ngIf="getActiveCombo(em)[cat] as item; else noComboItem"
               cdkDrag>
               <button type="button" class="draghandle" cdkDragHandle
@@ -478,8 +480,8 @@
               </span>
             </div>
             <ng-container *ngIf="isItemAltExpanded(getActiveCombo(em), cat)">
-              <div class="draglist" cdkDropList [cdkDropListData]="itemAlt(item2)"
-                (cdkDropListDropped)="riordina(itemAlt(item2), $event)">
+              <div class="draglist" cdkDropList [cdkDropListData]="zonaLista(itemAlt(item2))"
+                (cdkDropListDropped)="spostaAlimento(getActiveCombo(em), $event)">
                 <div class="builder-item mt-2" *ngFor="let a of itemAlt(item2)"
                   cdkDrag>
                 <button type="button" class="draghandle" cdkDragHandle
@@ -526,11 +528,11 @@
         <!-- I tre macro stanno in un gruppo solo: dentro ognuno si riordina,
              e fra l'uno e l'altro si sposta. Un alimento finito sotto il
              macro sbagliato prima si poteva solo cancellare e riscrivere. -->
-        <ng-container *ngIf="isAltExpanded(em)" cdkDropListGroup>
+        <ng-container *ngIf="isAltExpanded(em)">
           <ng-container *ngFor="let cat of foodCategories">
             <p class="meal-preview-catlabel" style="margin:14px 0 6px">{{ foodCategoryLabels[cat] }}</p>
-            <div class="draglist" cdkDropList [cdkDropListData]="altItems(em, cat)"
-              (cdkDropListDropped)="spostaAlternativa($event, cat)">
+            <div class="draglist" cdkDropList [cdkDropListData]="zonaLista(altItems(em, cat))"
+              (cdkDropListDropped)="spostaAlimento(getActiveCombo(em), $event)">
               <div class="builder-item" *ngFor="let item of altItems(em, cat)"
                 cdkDrag>
                 <button type="button" class="draghandle" cdkDragHandle
@@ -553,6 +555,7 @@
           </ng-container>
         </ng-container>
       </div>
+      </ng-container>
 
       <p class="sectiontitle mt-5">Integrazione</p>
       <div class="infocard mb-3">
