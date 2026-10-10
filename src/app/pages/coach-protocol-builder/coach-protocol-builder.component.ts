@@ -548,15 +548,33 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
   // allena legge per primo, quindi e' quello che compra. Prima si poteva
   // cambiare solo cancellando e riscrivendo.
 
+  /** Le tre caselle si collegano fra loro per nome: vedi il commento nel
+   *  template sul perche' non sia un gruppo. */
+  readonly slotCollegati = FOOD_CATEGORIES.map(c => `slot-${c}`);
+
   /**
-   * Col mouse il trascinamento parte subito; col dito dopo un istante.
+   * Le tre caselle della combinazione: carboidrati, proteine, grassi.
    *
-   * Sul telefono la maniglia e' larga quanto un polpastrello e sta dentro una
-   * pagina che scorre: senza quel ritardo, il gesto per scendere lungo
-   * l'elenco diventerebbe a volte un trascinamento, e la riga partirebbe in
-   * mano a chi voleva solo leggere piu' in basso.
+   * Non sono una lista, sono tre posti singoli, quindi qui "spostare" vuol
+   * dire scambiare: l'alimento va nella casella d'arrivo e quello che c'era
+   * torna indietro, al posto suo. Se la casella d'arrivo era vuota, la
+   * partenza resta vuota. In nessun caso si perde qualcosa - ed e' il motivo
+   * per cui e' uno scambio e non una sovrascrittura.
    */
-  readonly ritardoPresa = { touch: 150, mouse: 0 };
+  scambiaSlot(combo: MealCombination, e: CdkDragDrop<FoodCategory>): void {
+    const da = e.previousContainer.data;
+    const a = e.container.data;
+    if (da === a) return;
+
+    const arrivato = combo[da];
+    combo[da] = combo[a];
+    combo[a] = arrivato;
+
+    // Come per le alternative: `category` dice da che macro viene, e dopo uno
+    // scambio direbbe il falso. Si aggiorna dov'e' gia' scritto.
+    if (combo[a]?.category) combo[a]!.category = a;
+    if (combo[da]?.category) combo[da]!.category = da;
+  }
 
   /** Riordina dentro una lista sola: integratori, alternative di un alimento. */
   riordina<T>(lista: T[], e: CdkDragDrop<T[]>): void {
