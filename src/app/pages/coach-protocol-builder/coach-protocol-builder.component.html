@@ -462,14 +462,23 @@
               </span>
             </div>
             <ng-container *ngIf="isItemAltExpanded(getActiveCombo(em), cat)">
-              <div class="builder-item mt-2" *ngFor="let a of itemAlt(item2)">
-                <div class="measure-input-wrap">
-                  <input type="text" [(ngModel)]="a.name" placeholder="Alimento alternativo" />
+              <div class="draglist" cdkDropList [cdkDropListData]="itemAlt(item2)"
+                (cdkDropListDropped)="riordina(itemAlt(item2), $event)">
+                <div class="builder-item mt-2" *ngFor="let a of itemAlt(item2)"
+                  cdkDrag [cdkDragStartDelay]="ritardoPresa">
+                <button type="button" class="draghandle" cdkDragHandle
+                  aria-label="Trascina per spostare">
+                  <lucide-icon name="grip-vertical" [size]="16"></lucide-icon>
+                </button>
+                  <div class="measure-input-wrap">
+                    <input type="text" [(ngModel)]="a.name" placeholder="Alimento alternativo" />
+                  </div>
+                  <div class="measure-input-wrap builder-qty">
+                    <input type="text" [(ngModel)]="a.qty" placeholder="Quantita'" />
+                  </div>
+                  <button class="delete-btn" (click)="removeItemAltEntry(item2, a)">✕</button>
+                  <div class="dragghost" *cdkDragPlaceholder></div>
                 </div>
-                <div class="measure-input-wrap builder-qty">
-                  <input type="text" [(ngModel)]="a.qty" placeholder="Quantita'" />
-                </div>
-                <button class="delete-btn" (click)="removeItemAltEntry(item2, a)">✕</button>
               </div>
               <button class="confirmbtn cancel w-full mt-2" (click)="addItemAltEntry(item2)">+ Alternativa</button>
             </ng-container>
@@ -498,17 +507,31 @@
             <lucide-icon name="chevron-down" [size]="12"></lucide-icon>
           </span>
         </div>
-        <ng-container *ngIf="isAltExpanded(em)">
+        <!-- I tre macro stanno in un gruppo solo: dentro ognuno si riordina,
+             e fra l'uno e l'altro si sposta. Un alimento finito sotto il
+             macro sbagliato prima si poteva solo cancellare e riscrivere. -->
+        <ng-container *ngIf="isAltExpanded(em)" cdkDropListGroup>
           <ng-container *ngFor="let cat of foodCategories">
             <p class="meal-preview-catlabel" style="margin:14px 0 6px">{{ foodCategoryLabels[cat] }}</p>
-            <div class="builder-item" *ngFor="let item of altItems(em, cat)">
-              <div class="measure-input-wrap">
-                <input type="text" [(ngModel)]="item.name" placeholder="Alimento" />
+            <div class="draglist" cdkDropList [cdkDropListData]="altItems(em, cat)"
+              (cdkDropListDropped)="spostaAlternativa($event, cat)">
+              <div class="builder-item" *ngFor="let item of altItems(em, cat)"
+                cdkDrag [cdkDragStartDelay]="ritardoPresa">
+                <button type="button" class="draghandle" cdkDragHandle
+                  aria-label="Trascina per spostare">
+                  <lucide-icon name="grip-vertical" [size]="16"></lucide-icon>
+                </button>
+                <div class="measure-input-wrap">
+                  <input type="text" [(ngModel)]="item.name" placeholder="Alimento" />
+                </div>
+                <div class="measure-input-wrap builder-qty">
+                  <input type="text" [(ngModel)]="item.qty" placeholder="Quantita'" />
+                </div>
+                <button class="delete-btn" (click)="removeAltItem(em, cat, item)">✕</button>
+                <!-- Il posto dove la riga andrebbe a finire: la riga vera lo
+                     segue sotto il dito, e qui resta il suo ingombro. -->
+                <div class="dragghost" *cdkDragPlaceholder></div>
               </div>
-              <div class="measure-input-wrap builder-qty">
-                <input type="text" [(ngModel)]="item.qty" placeholder="Quantita'" />
-              </div>
-              <button class="delete-btn" (click)="removeAltItem(em, cat, item)">✕</button>
             </div>
             <button class="confirmbtn cancel w-full mt-2" (click)="addAltItem(em, cat)">+ Aggiungi {{ foodCategoryLabels[cat].toLowerCase() }}</button>
           </ng-container>
@@ -517,14 +540,23 @@
 
       <p class="sectiontitle mt-5">Integrazione</p>
       <div class="infocard mb-3">
-        <div class="builder-item" *ngFor="let s of em.supplements ?? []">
-          <div class="measure-input-wrap">
-            <input type="text" [(ngModel)]="s.name" placeholder="Nome (es. Creatina)" />
+        <div class="draglist" cdkDropList [cdkDropListData]="em.supplements ?? []"
+          (cdkDropListDropped)="riordina(em.supplements ?? [], $event)">
+          <div class="builder-item" *ngFor="let s of em.supplements ?? []"
+            cdkDrag [cdkDragStartDelay]="ritardoPresa">
+            <button type="button" class="draghandle" cdkDragHandle
+              aria-label="Trascina per spostare">
+              <lucide-icon name="grip-vertical" [size]="16"></lucide-icon>
+            </button>
+            <div class="measure-input-wrap">
+              <input type="text" [(ngModel)]="s.name" placeholder="Nome (es. Creatina)" />
+            </div>
+            <div class="measure-input-wrap builder-qty">
+              <input type="text" [(ngModel)]="s.qty" placeholder="Dose (es. 5 g)" />
+            </div>
+            <button class="delete-btn" (click)="removeSupplement(em, s)">✕</button>
+            <div class="dragghost" *cdkDragPlaceholder></div>
           </div>
-          <div class="measure-input-wrap builder-qty">
-            <input type="text" [(ngModel)]="s.qty" placeholder="Dose (es. 5 g)" />
-          </div>
-          <button class="delete-btn" (click)="removeSupplement(em, s)">✕</button>
         </div>
         <button class="confirmbtn cancel w-full mt-2" (click)="addSupplement(em)">+ Aggiungi integratore</button>
       </div>

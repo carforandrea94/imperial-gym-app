@@ -1,6 +1,10 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { LucideAngularModule } from 'lucide-angular';
 import { CommonModule } from '@angular/common';
+import {
+  CdkDropListGroup, CdkDropList, CdkDrag, CdkDragHandle, CdkDragPlaceholder,
+  CdkDragDrop, moveItemInArray, transferArrayItem
+} from '@angular/cdk/drag-drop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -25,7 +29,10 @@ type Tab = 'scheda' | 'dieta' | 'corsa' | 'info';
 @Component({
   selector: 'app-coach-protocol-builder',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule],
+  imports: [
+    CommonModule, FormsModule, LucideAngularModule,
+    CdkDropListGroup, CdkDropList, CdkDrag, CdkDragHandle, CdkDragPlaceholder
+  ],
   templateUrl: './coach-protocol-builder.component.html',
   styles: [`:host { display: block; animation: fade .4s var(--spring-soft); }`]
 })
@@ -533,6 +540,48 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
     if (!meal.supplements) return;
     const idx = meal.supplements.indexOf(item);
     if (idx >= 0) meal.supplements.splice(idx, 1);
+  }
+
+  // --- Trascinare un alimento ---
+  //
+  // L'ordine di una lista non e' decorativo: il primo e' quello che chi si
+  // allena legge per primo, quindi e' quello che compra. Prima si poteva
+  // cambiare solo cancellando e riscrivendo.
+
+  /**
+   * Col mouse il trascinamento parte subito; col dito dopo un istante.
+   *
+   * Sul telefono la maniglia e' larga quanto un polpastrello e sta dentro una
+   * pagina che scorre: senza quel ritardo, il gesto per scendere lungo
+   * l'elenco diventerebbe a volte un trascinamento, e la riga partirebbe in
+   * mano a chi voleva solo leggere piu' in basso.
+   */
+  readonly ritardoPresa = { touch: 150, mouse: 0 };
+
+  /** Riordina dentro una lista sola: integratori, alternative di un alimento. */
+  riordina<T>(lista: T[], e: CdkDragDrop<T[]>): void {
+    if (e.previousIndex === e.currentIndex) return;
+    moveItemInArray(lista, e.previousIndex, e.currentIndex);
+  }
+
+  /**
+   * Le alternative del pasto: dentro il macro si riordinano, fra i macro si
+   * spostano. Serve perche' un alimento finito sotto il macro sbagliato - al
+   * coach capita, e all'import da PDF capita di piu' - oggi si puo' solo
+   * cancellare e riscrivere.
+   */
+  spostaAlternativa(e: CdkDragDrop<FoodItem[]>, catArrivo: FoodCategory): void {
+    if (e.previousContainer === e.container) {
+      this.riordina(e.container.data, e);
+      return;
+    }
+    transferArrayItem(e.previousContainer.data, e.container.data, e.previousIndex, e.currentIndex);
+    // `category` dice da che macro viene un alimento, e serve solo a leggere i
+    // protocolli vecchi (quando le alternative erano una lista piatta). Dopo
+    // uno spostamento direbbe il falso: si aggiorna dov'e' gia' scritto, e non
+    // si aggiunge dove non c'era.
+    const spostato = e.container.data[e.currentIndex];
+    if (spostato && spostato.category) spostato.category = catArrivo;
   }
 
   isAltExpanded(meal: NamedMeal): boolean {

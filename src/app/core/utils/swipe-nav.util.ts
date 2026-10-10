@@ -63,8 +63,12 @@ export function nextTab(tabs: readonly string[], current: string, dir: SwipeDir)
  * Girare la ruota non cambia sezione lo stesso: una rotellata e' quasi tutta
  * verticale, e swipeDirection chiede che lo spostamento di lato sia almeno il
  * doppio di quello in su e in giu'.
+ *
+ * `.cdk-drag` e' ogni riga che si puo' trascinare nel builder. Li' il dito
+ * si muove anche di lato - fra un macro e l'altro - e senza questa riga
+ * spostare un alimento cambierebbe sezione a meta' gesto.
  */
-export const SWIPE_BLOCKERS = '.exslider, .bottomsheet, input, select, textarea';
+export const SWIPE_BLOCKERS = '.exslider, .bottomsheet, .cdk-drag, input, select, textarea';
 
 export function startsOnBlocker(target: EventTarget | null): boolean {
   const el = target as Element | null;

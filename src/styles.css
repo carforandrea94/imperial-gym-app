@@ -908,6 +908,30 @@ lucide-icon svg.filled{fill:currentColor;}
 .builder-item .measure-input-wrap{flex:1.6;}
 .builder-item .builder-qty{flex:1;}
 
+/* --- Trascinare una riga del builder ---
+   La presa e' un elemento suo e non tutta la riga: la riga e' fatta di campi
+   di testo, e prenderla dal campo vorrebbe dire non poterci piu' scrivere.
+   La lista tiene un'altezza minima anche da vuota, se no un macro senza
+   alimenti non avrebbe dove ricevere quello che arriva dagli altri. */
+.draglist{min-height:14px;}
+.draghandle{flex-shrink:0;display:flex;align-items:center;justify-content:center;width:34px;height:44px;margin-left:-6px;border:none;background:none;color:var(--label-3);cursor:grab;touch-action:none;}
+.draghandle:active{cursor:grabbing;}
+.builder-item.cdk-drag-dragging .draghandle{color:var(--accent);}
+/* La riga che segue il dito: staccata dal foglio, con l'ombra che lo dice. */
+.cdk-drag-preview{box-shadow:var(--shadow-float);border-radius:var(--r-sm);background:var(--surface-raise);opacity:.96;}
+.cdk-drag-preview .delete-btn{visibility:hidden;}
+/* Il posto che la riga lascia: un ingombro vuoto, non un buco che si chiude
+   di colpo - senza, le righe sotto saltano e si perde di vista dove si sta
+   lasciando quella in mano. */
+.dragghost{height:44px;margin-bottom:8px;border:1px dashed var(--border-line);border-radius:var(--r-sm);background:var(--surface-raise);}
+.cdk-drag-animating{transition:transform .22s var(--spring-soft);}
+.draglist.cdk-drop-list-dragging .builder-item:not(.cdk-drag-placeholder){transition:transform .22s var(--spring-soft);}
+/* Il macro che sta per ricevere: si accende, cosi' si vede dove si lascia, e
+   da vuoto cresce - quattordici pixel bastano al browser per registrare la
+   lista, non al pollice per centrarla. Cresce solo durante il trascinamento:
+   il resto del tempo un macro senza alimenti non deve lasciare un buco. */
+.draglist.cdk-drop-list-receiving{min-height:40px;outline:1px dashed var(--accent);outline-offset:4px;border-radius:var(--r-sm);}
+
 /* La riga con "rimuovi" accanto a "salva". I due tasti erano di due famiglie
    diverse - .confirmbtn ha raggio, altezza, corpo e ombra tutti piu' piccoli
    di .savebtn - e affiancati si vedeva: uno squadrato e uno a pastiglia. Ora
