@@ -43,13 +43,19 @@ export interface AppState {
   mealsCompletion: { date: string; done: Record<string, boolean> } | null;
   themeMode: ThemeMode | null;
   activeWorkoutSession: ActiveWorkoutSession | null;
+  /**
+   * La percentuale del massimale su cui si vuole lavorare, valida per tutto il
+   * programma. null = spenta, ed e' il default: senza, ogni esercizio continua
+   * a suggerire il peso dell'ultima volta e basta.
+   */
+  loadPercent: number | null;
 }
 
 /** Finestra di silenzio fra due segnalazioni di scrittura fallita. */
 const WRITE_ERROR_QUIET_MS = 5000;
 
 function emptyState(): AppState {
-  return { workoutDrafts: {}, restOverrides: {}, measureDraft: null, shoppingChecked: {}, shoppingCustomItems: [], workoutViewMode: 'list', dietViewMode: 'list', mealsCompletion: null, themeMode: null, activeWorkoutSession: null };
+  return { workoutDrafts: {}, restOverrides: {}, measureDraft: null, shoppingChecked: {}, shoppingCustomItems: [], workoutViewMode: 'list', dietViewMode: 'list', mealsCompletion: null, themeMode: null, activeWorkoutSession: null, loadPercent: null };
 }
 
 /**

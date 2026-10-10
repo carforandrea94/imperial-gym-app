@@ -11,6 +11,7 @@ import { Sex } from '../../core/models/user.model';
 import { ThemeService } from '../../services/theme.service';
 import { ToastService } from '../../services/toast.service';
 import { WorkoutSessionStateService } from '../../services/workout-session-state.service';
+import { AppStateService } from '../../services/app-state.service';
 import { isIosSafariNotStandalone } from '../../core/utils/platform.util';
 import { todayLocalISO } from '../../core/utils/date.util';
 import { deleteAccountErrorMessage } from '../../core/utils/auth-errors.util';
@@ -74,6 +75,15 @@ import {
     .textrow:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-xs); }
     .daterow:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-xs); }
     .daterow::-webkit-calendar-picker-indicator { opacity: .5; cursor: pointer; }
+    /* Lo stesso stepper del recupero, in piccolo: due tasti e il valore in
+       mezzo. Niente ruota - qui si cambia di rado e di poco. */
+    .percentstep { display: flex; align-items: center; gap: 8px; }
+    .percentval {
+      font-family: 'IBM Plex Mono', monospace; font-size: var(--text-md);
+      font-weight: 700; color: var(--label); font-variant-numeric: tabular-nums;
+      min-width: 56px; text-align: center;
+    }
+    .percentstep .rest-stepbtn { min-width: 52px; padding: 8px 10px; font-size: var(--text-xs); }
     .settings-hint {
       font-size: var(--text-xs); line-height: 1.5; color: var(--label-3);
       margin: 10px 0 0;
@@ -134,13 +144,77 @@ export class ImpostazioniComponent implements OnInit, AfterViewInit, OnDestroy {
     private renderer: Renderer2,
     private cdr: ChangeDetectorRef,
     private router: Router,
-    private sessionState: WorkoutSessionStateService
+    private sessionState: WorkoutSessionStateService,
+    private appState: AppStateService
   ) {}
 
   ngOnInit(): void {
     if (this.auth.isCoach) {
       this.auth.ensureCoachCode().catch(e => console.error('Errore ensureCoachCode:', e));
     }
+    if (!this.auth.isCoach) this.caricaPercentuale();
+  }
+
+  // ---- La percentuale del massimale ----
+  //
+  // Vale per tutto il programma: si sceglie una volta e ogni esercizio, sotto
+  // al menu dei carichi, dice quanto pesa quella percentuale del SUO massimale
+  // stimato. Il campo del peso non lo tocca - li' resta il suggerimento
+  // dell'ultima volta, che e' l'unico numero che hai davvero sollevato.
+
+  /** Quanto si muove a ogni tocco: mezzo disco da 2,5 kg su un massimale da
+   *  cento, cioe' il piu' piccolo scalino che in palestra si vede davvero. */
+  private readonly PASSO_PERCENTUALE = 2.5;
+  private readonly MIN_PERCENTUALE = 40;
+  private readonly MAX_PERCENTUALE = 100;
+  /** Acceso per la prima volta, parte dal 75%: e' la riga delle dieci
+   *  ripetizioni, cioe' quella che non contraddice un protocollo da 4x10. */
+  private readonly PERCENTUALE_DI_PARTENZA = 75;
+
+  percentuale: number | null = null;
+
+  get percentualeAttiva(): boolean {
+    return this.percentuale !== null;
+  }
+
+  get percentualeLabel(): string {
+    return this.percentuale === null ? '—' : `${this.percentuale.toLocaleString('it-IT')}%`;
+  }
+
+  private async caricaPercentuale(): Promise<void> {
+    try {
+      const stato = await this.appState.load();
+      this.percentuale = stato.loadPercent;
+      this.cdr.detectChanges();
+    } catch {
+      // Gia' segnalato da AppStateService: qui la riga resta spenta.
+    }
+  }
+
+  accendiPercentuale(): void {
+    if (this.percentualeAttiva) return;
+    this.salvaPercentuale(this.PERCENTUALE_DI_PARTENZA);
+  }
+
+  spegniPercentuale(): void {
+    if (!this.percentualeAttiva) return;
+    this.salvaPercentuale(null);
+  }
+
+  cambiaPercentuale(delta: number): void {
+    if (this.percentuale === null) return;
+    const n = Math.min(this.MAX_PERCENTUALE, Math.max(this.MIN_PERCENTUALE, this.percentuale + delta));
+    if (n === this.percentuale) return;
+    this.salvaPercentuale(n);
+  }
+
+  get passoPercentuale(): number {
+    return this.PASSO_PERCENTUALE;
+  }
+
+  private salvaPercentuale(n: number | null): void {
+    this.percentuale = n;
+    this.appState.patchField('loadPercent', n).catch(() => { /* gia' segnalato da AppStateService */ });
   }
 
   /**

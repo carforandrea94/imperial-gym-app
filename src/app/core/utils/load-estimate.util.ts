@@ -132,6 +132,33 @@ export function rmTable(oneRepMax: number, maxReps = RM_TABLE_MAX_REPS): RmRow[]
   return rows;
 }
 
+/**
+ * Il carico che corrisponde a una percentuale del massimale, al mezzo chilo.
+ *
+ * E' la percentuale secca, non la riga della tabella: 80 vuol dire 80% del
+ * massimale, qualunque cosa chieda il protocollo quel giorno.
+ */
+export function loadAtPercent(oneRepMax: number, percent: number): number {
+  if (!isFinite(oneRepMax) || !isFinite(percent)) return 0;
+  if (oneRepMax <= 0 || percent <= 0) return 0;
+  return Math.round(oneRepMax * percent / 100 * 2) / 2;
+}
+
+/**
+ * Quante ripetizioni escono, secondo Brzycki, a una data percentuale del
+ * massimale. E' l'inversa della tabella: 100% da' 1, 75% ne da' 10.
+ *
+ * Serve a dire a chi legge dove lo porta la percentuale che ha scelto. Una
+ * percentuale fissa su tutto il programma e le ripetizioni scritte dal coach
+ * possono contraddirsi - 80% su un giorno da 10 ripetizioni e' un peso con
+ * cui le 10 non escono - e il numero qui accanto e' l'unico modo per
+ * accorgersene prima di essere sotto il bilanciere.
+ */
+export function repsAtPercent(percent: number): number {
+  if (!isFinite(percent) || percent <= 0 || percent > 100) return 0;
+  return Math.max(1, Math.round(37 - 36 * percent / 100));
+}
+
 export interface OneRepMaxEstimate {
   /** Massimale stimato, arrotondato al mezzo chilo. */
   value: number;
