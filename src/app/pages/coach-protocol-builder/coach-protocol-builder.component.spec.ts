@@ -296,116 +296,20 @@ describe('CoachProtocolBuilderComponent', () => {
     });
   });
 });
+
 /**
- * Trascinare un alimento.
+ * Trascinare un alimento, fra tre posti che sono lo stesso posto.
  *
- * L'ordine di una lista non e' decorativo: il primo e' quello che chi si
- * allena legge per primo, quindi e' quello che compra. E un alimento finito
- * sotto il macro sbagliato - al coach capita, all'import da PDF capita di
- * piu' - prima si poteva solo cancellare e riscrivere.
+ * Un alimento puo' stare nella casella di un macro, fra le alternative del
+ * pasto, o fra le alternative di un altro alimento. Spostarlo da uno
+ * all'altro e' il mestiere del builder: promuovere un'alternativa a
+ * principale, declassare il principale ad alternativa, correggere il macro
+ * sotto cui e' finito. Prima si poteva fare solo cancellando e riscrivendo.
  *
- * Qui si prova la parte che decide, non il dito: il trascinamento vero lo fa
- * la CDK, e quello che arriva al componente e' sempre questa forma.
+ * Qui si prova la parte che decide, non il dito: il trascinamento lo fa la
+ * CDK, e quello che arriva al componente e' sempre questa forma.
  */
 describe('CoachProtocolBuilderComponent — spostare un alimento', () => {
-  function builder() {
-    return new CoachProtocolBuilderComponent(
-      {} as any, {} as any, {} as any, new PdfImportService(), new WorkoutDataService(),
-      { detectChanges: () => {} } as any,
-      new ProtocolBuilderStateService(), new ToastService(), new ConfirmDialogService()
-    );
-  }
-
-  /** L'evento della CDK, ridotto a quello che il componente legge davvero. */
-  function trascinamento<T>(da: T[], a: T[], daIdx: number, aIdx: number): any {
-    return {
-      previousContainer: { data: da },
-      container: { data: a },
-      previousIndex: daIdx,
-      currentIndex: aIdx
-    };
-  }
-
-  it('riordina dentro la stessa lista', () => {
-    const c = builder();
-    const lista = [{ name: 'Riso' }, { name: 'Pane' }, { name: 'Patate' }];
-    c.riordina(lista, trascinamento(lista, lista, 2, 0));
-    expect(lista.map(i => i.name)).toEqual(['Patate', 'Riso', 'Pane']);
-  });
-
-  it('lasciata dov\'era, non tocca niente', () => {
-    const c = builder();
-    const lista = [{ name: 'Riso' }, { name: 'Pane' }];
-    c.riordina(lista, trascinamento(lista, lista, 1, 1));
-    expect(lista.map(i => i.name)).toEqual(['Riso', 'Pane']);
-  });
-
-  it('sposta un alimento da un macro all\'altro', () => {
-    const c = builder();
-    const carb = [{ name: 'Riso', qty: '100 g' }, { name: 'Bresaola', qty: '80 g' }];
-    const protein: any[] = [{ name: 'Pollo', qty: '150 g' }];
-
-    // La bresaola era finita fra i carboidrati: va fra le proteine, in cima.
-    c.spostaAlternativa(trascinamento(carb, protein, 1, 0), 'protein');
-
-    expect(carb.map(i => i.name)).toEqual(['Riso']);
-    expect(protein.map(i => i.name)).toEqual(['Bresaola', 'Pollo']);
-  });
-
-  it('dentro lo stesso macro si limita a riordinare', () => {
-    const c = builder();
-    const carb = [{ name: 'Riso' }, { name: 'Pane' }];
-    c.spostaAlternativa(trascinamento(carb, carb, 1, 0), 'carb');
-    expect(carb.map(i => i.name)).toEqual(['Pane', 'Riso']);
-  });
-
-  it('aggiorna il macro scritto nell\'alimento, se c\'era', () => {
-    // `category` serve a leggere i protocolli vecchi, dove le alternative
-    // erano una lista piatta. Dopo lo spostamento direbbe il falso.
-    const c = builder();
-    const carb = [{ name: 'Bresaola', qty: '80 g', category: 'carb' as const }];
-    const protein: any[] = [];
-    c.spostaAlternativa(trascinamento(carb, protein, 0, 0), 'protein');
-    expect(protein[0].category).toBe('protein');
-  });
-
-  it('non lo aggiunge dove non c\'era', () => {
-    const c = builder();
-    const carb = [{ name: 'Bresaola', qty: '80 g' }];
-    const protein: any[] = [];
-    c.spostaAlternativa(trascinamento(carb, protein, 0, 0), 'protein');
-    expect('category' in protein[0]).toBe(false);
-  });
-
-  it('un macro vuoto riceve lo stesso', () => {
-    const c = builder();
-    const carb = [{ name: 'Olio EVO' }];
-    const fat: any[] = [];
-    c.spostaAlternativa(trascinamento(carb, fat, 0, 0), 'fat');
-    expect(carb).toEqual([]);
-    expect(fat.map(i => i.name)).toEqual(['Olio EVO']);
-  });
-
-  it('la presa non aspetta: nessun ritardo, da nessuna parte', () => {
-    // Un cdkDragStartDelay non fa aspettare: se il dito si muove oltre i 5px
-    // PRIMA che sia scaduto, la CDK annulla la presa invece di rinviarla
-    // (_endDragSequence, drag-drop.mjs). Col dito si muove quasi sempre
-    // subito, quindi col ritardo non partiva niente e non si capiva perche'.
-    // La maniglia basta da sola a non far partire trascinamenti per sbaglio.
-    // Senza il campo, un [cdkDragStartDelay]="ritardoPresa" rimesso nel
-    // template non compila nemmeno: il controllo dei template lo ferma.
-    expect((builder() as any).ritardoPresa).toBeUndefined();
-  });
-});
-
-/**
- * Le tre caselle della combinazione: carboidrati, proteine, grassi.
- *
- * Non sono una lista ma tre posti singoli, quindi "spostare" qui vuol dire
- * scambiare. Niente si perde: e' il motivo per cui non e' una
- * sovrascrittura.
- */
-describe('CoachProtocolBuilderComponent — scambiare le caselle della combinazione', () => {
   function builder() {
     return new CoachProtocolBuilderComponent(
       {} as any, {} as any, {} as any, new PdfImportService(), new WorkoutDataService(),
@@ -423,14 +327,55 @@ describe('CoachProtocolBuilderComponent — scambiare le caselle della combinazi
     };
   }
 
-  function trascinamento(da: string, a: string): any {
-    return { previousContainer: { data: da }, container: { data: a }, previousIndex: 0, currentIndex: 0 };
+  function trascina(da: any, a: any, daIdx = 0, aIdx = 0): any {
+    return {
+      previousContainer: { data: da }, container: { data: a },
+      previousIndex: daIdx, currentIndex: aIdx
+    };
   }
 
-  it('due caselle piene si scambiano', () => {
+  const lista = (items: any[]) => ({ tipo: 'lista', items });
+  const casella = (cat: string) => ({ tipo: 'casella', cat });
+
+  it('riordina dentro la stessa lista', () => {
+    const c = builder();
+    const l = [{ name: 'Riso' }, { name: 'Pane' }, { name: 'Patate' }];
+    const z = lista(l);
+    c.spostaAlimento(combo(), trascina(z, z, 2, 0));
+    expect(l.map(i => i.name)).toEqual(['Patate', 'Riso', 'Pane']);
+  });
+
+  it('lasciata dov\'era, non tocca niente', () => {
+    const c = builder();
+    const l = [{ name: 'Riso' }, { name: 'Pane' }];
+    const z = lista(l);
+    c.spostaAlimento(combo(), trascina(z, z, 1, 1));
+    expect(l.map(i => i.name)).toEqual(['Riso', 'Pane']);
+  });
+
+  it('passa da una lista all\'altra', () => {
+    const c = builder();
+    const carb = [{ name: 'Riso' }, { name: 'Bresaola' }];
+    const protein: any[] = [{ name: 'Pollo' }];
+    c.spostaAlimento(combo(), trascina(lista(carb), lista(protein), 1, 0));
+    expect(carb.map(i => i.name)).toEqual(['Riso']);
+    expect(protein.map(i => i.name)).toEqual(['Bresaola', 'Pollo']);
+  });
+
+  it('passa dalle alternative di un alimento a quelle del pasto', () => {
+    // Sono due liste e basta: il gestore non distingue di chi sono.
+    const c = builder();
+    const delPollo = [{ name: 'Tacchino', qty: '150 g' }];
+    const delPasto: any[] = [];
+    c.spostaAlimento(combo(), trascina(lista(delPollo), lista(delPasto), 0, 0));
+    expect(delPollo).toEqual([]);
+    expect(delPasto.map((i: any) => i.name)).toEqual(['Tacchino']);
+  });
+
+  it('due caselle si scambiano', () => {
     const c = builder();
     const k = combo();
-    c.scambiaSlot(k, trascinamento('protein', 'carb'));
+    c.spostaAlimento(k, trascina(casella('protein'), casella('carb')));
     expect(k.carb.name).toBe('Pollo');
     expect(k.protein.name).toBe('Riso');
   });
@@ -438,45 +383,97 @@ describe('CoachProtocolBuilderComponent — scambiare le caselle della combinazi
   it('verso una casella vuota, la partenza resta vuota', () => {
     const c = builder();
     const k = combo();
-    c.scambiaSlot(k, trascinamento('protein', 'fat'));
+    c.spostaAlimento(k, trascina(casella('protein'), casella('fat')));
     expect(k.fat.name).toBe('Pollo');
     expect(k.protein).toBeNull();
-    // Il carboidrato non c'entra e non si muove.
     expect(k.carb.name).toBe('Riso');
   });
 
-  it('lasciata nella sua casella, non succede niente', () => {
+  it('un\'alternativa diventa l\'alimento principale di un altro macro', () => {
+    // La bresaola sta fra le alternative dei carboidrati e deve diventare la
+    // proteina del pasto: il pollo che c'era prende il suo posto in lista.
     const c = builder();
     const k = combo();
-    c.scambiaSlot(k, trascinamento('carb', 'carb'));
-    expect(k.carb.name).toBe('Riso');
-    expect(k.protein.name).toBe('Pollo');
+    const altCarb = [{ name: 'Riso integrale' }, { name: 'Bresaola' }];
+    c.spostaAlimento(k, trascina(lista(altCarb), casella('protein'), 1, 0));
+
+    expect(k.protein.name).toBe('Bresaola');
+    expect(altCarb.map(i => i.name)).toEqual(['Riso integrale', 'Pollo']);
+  });
+
+  it('promossa in una casella vuota, la lista perde solo lei', () => {
+    const c = builder();
+    const k = combo();
+    const altFat = [{ name: 'Olio EVO' }, { name: 'Mandorle' }];
+    c.spostaAlimento(k, trascina(lista(altFat), casella('fat'), 0, 0));
+    expect(k.fat.name).toBe('Olio EVO');
+    expect(altFat.map(i => i.name)).toEqual(['Mandorle']);
+  });
+
+  it('il principale si declassa ad alternativa', () => {
+    const c = builder();
+    const k = combo();
+    const altCarb = [{ name: 'Pane' }];
+    c.spostaAlimento(k, trascina(casella('carb'), lista(altCarb), 0, 1));
+    expect(k.carb).toBeNull();
+    expect(altCarb.map(i => i.name)).toEqual(['Pane', 'Riso']);
+  });
+
+  it('da una casella vuota non parte niente', () => {
+    const c = builder();
+    const k = combo();
+    const l: any[] = [];
+    c.spostaAlimento(k, trascina(casella('fat'), lista(l), 0, 0));
+    expect(l).toEqual([]);
   });
 
   it('non si perde mai un alimento', () => {
     const c = builder();
     const k = combo();
-    c.scambiaSlot(k, trascinamento('carb', 'protein'));
-    const rimasti = [k.carb, k.protein, k.fat].filter(Boolean).map((i: any) => i.name).sort();
-    expect(rimasti).toEqual(['Pollo', 'Riso']);
+    const alt = [{ name: 'Pane' }, { name: 'Bresaola' }];
+    const tutti = () => [k.carb, k.protein, k.fat, ...alt].filter(Boolean).map((i: any) => i.name).sort();
+    const prima = tutti();
+
+    c.spostaAlimento(k, trascina(lista(alt), casella('carb'), 1, 0));
+    expect(tutti()).toEqual(prima);
+
+    c.spostaAlimento(k, trascina(casella('carb'), lista(alt), 0, 0));
+    expect(tutti()).toEqual(prima);
   });
 
   it('aggiorna il macro scritto nell\'alimento, se c\'era', () => {
+    // `category` serve a leggere i protocolli vecchi. Dopo lo spostamento
+    // direbbe il falso.
     const c = builder();
-    const k: any = {
-      id: 'c1', label: 'Base',
-      carb: { name: 'Bresaola', qty: '80 g', category: 'carb' },
-      protein: null, fat: null
-    };
-    c.scambiaSlot(k, trascinamento('carb', 'protein'));
+    const k: any = { id: 'c1', label: 'Base', carb: null, protein: null, fat: null };
+    const alt = [{ name: 'Bresaola', qty: '80 g', category: 'carb' }];
+    c.spostaAlimento(k, trascina(lista(alt), casella('protein'), 0, 0));
     expect(k.protein.category).toBe('protein');
   });
 
-  it('le caselle si collegano solo fra loro', () => {
-    // Dentro ogni macro vive anche la lista delle alternative di
-    // quell'alimento: un gruppo intorno al giro aggancerebbe anche quelle, e
-    // si potrebbe trascinare la casella dentro le alternative - che e'
-    // un'altra cosa, con un altro significato. Il collegamento e' per nome.
-    expect(builder().slotCollegati).toEqual(['slot-carb', 'slot-protein', 'slot-fat']);
+  it('non lo aggiunge dove non c\'era', () => {
+    const c = builder();
+    const k: any = { id: 'c1', label: 'Base', carb: null, protein: null, fat: null };
+    const alt = [{ name: 'Bresaola', qty: '80 g' }];
+    c.spostaAlimento(k, trascina(lista(alt), casella('protein'), 0, 0));
+    expect('category' in k.protein).toBe(false);
+  });
+
+  it('gli integratori restano una lista a parte', () => {
+    // Non sono alimenti: si riordinano e basta, e il loro gestore e' un altro.
+    const c = builder();
+    const integratori = [{ name: 'Creatina', qty: '5 g' }, { name: 'Omega 3', qty: '2 cps' }];
+    c.riordina(integratori, trascina(integratori, integratori, 1, 0));
+    expect(integratori.map(i => i.name)).toEqual(['Omega 3', 'Creatina']);
+  });
+
+  it('la presa non aspetta: nessun ritardo, da nessuna parte', () => {
+    // Un cdkDragStartDelay non fa aspettare: se il dito si muove oltre i 5px
+    // PRIMA che sia scaduto, la CDK annulla la presa invece di rinviarla
+    // (_endDragSequence, drag-drop.mjs). Col dito si muove quasi sempre
+    // subito, quindi col ritardo non partiva niente e non si capiva perche'.
+    // Senza il campo, un [cdkDragStartDelay]="ritardoPresa" rimesso nel
+    // template non compila nemmeno.
+    expect((builder() as any).ritardoPresa).toBeUndefined();
   });
 });

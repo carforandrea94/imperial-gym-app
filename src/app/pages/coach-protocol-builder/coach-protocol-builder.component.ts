@@ -26,6 +26,18 @@ import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 
 type Tab = 'scheda' | 'dieta' | 'corsa' | 'info';
 
+/**
+ * Una zona che puo' ricevere un alimento trascinato.
+ *
+ * `casella` e' uno dei tre posti singoli della combinazione (carboidrati,
+ * proteine, grassi): ne tiene uno solo. `lista` e' una qualunque lista di
+ * alternative - quelle del pasto per un macro, o quelle di un singolo
+ * alimento - e ne tiene quanti ne vuole.
+ */
+export type ZonaDrop =
+  | { tipo: 'casella'; cat: FoodCategory }
+  | { tipo: 'lista'; items: FoodItem[] };
+
 @Component({
   selector: 'app-coach-protocol-builder',
   standalone: true,
@@ -544,62 +556,104 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
 
   // --- Trascinare un alimento ---
   //
-  // L'ordine di una lista non e' decorativo: il primo e' quello che chi si
-  // allena legge per primo, quindi e' quello che compra. Prima si poteva
-  // cambiare solo cancellando e riscrivendo.
-
-  /** Le tre caselle si collegano fra loro per nome: vedi il commento nel
-   *  template sul perche' non sia un gruppo. */
-  readonly slotCollegati = FOOD_CATEGORIES.map(c => `slot-${c}`);
+  // Un alimento puo' stare in tre posti diversi, e sono tutti lo stesso
+  // alimento: la casella di un macro della combinazione, le alternative del
+  // pasto per quel macro, le alternative di un singolo alimento. Spostarlo
+  // da uno all'altro e' il mestiere del builder - promuovere un'alternativa
+  // a principale, declassare il principale ad alternativa, correggere il
+  // macro sotto cui e' finito - e prima si poteva fare solo cancellando e
+  // riscrivendo, grammatura compresa.
+  //
+  // Per questo le zone sono collegate tutte fra loro e il gestore e' uno
+  // solo: ognuna dichiara cos'e', e la combinazione di partenza e arrivo
+  // decide cosa vuol dire "spostare" li' in mezzo.
 
   /**
-   * Le tre caselle della combinazione: carboidrati, proteine, grassi.
+   * Cosa c'e' sotto una zona che riceve.
    *
-   * Non sono una lista, sono tre posti singoli, quindi qui "spostare" vuol
-   * dire scambiare: l'alimento va nella casella d'arrivo e quello che c'era
-   * torna indietro, al posto suo. Se la casella d'arrivo era vuota, la
-   * partenza resta vuota. In nessun caso si perde qualcosa - ed e' il motivo
-   * per cui e' uno scambio e non una sovrascrittura.
+   * Una casella tiene un alimento solo (o nessuno), una lista ne tiene
+   * quanti ne vuole: e' tutta qui la differenza che il gestore deve sapere.
    */
-  scambiaSlot(combo: MealCombination, e: CdkDragDrop<FoodCategory>): void {
+  zonaCasella(cat: FoodCategory): ZonaDrop {
+    return { tipo: 'casella', cat };
+  }
+
+  zonaLista(items: FoodItem[]): ZonaDrop {
+    return { tipo: 'lista', items };
+  }
+
+  /**
+   * Sposta un alimento da una zona all'altra.
+   *
+   * Cinque casi, e nessuno perde niente:
+   *
+   * - lista -> stessa lista: si riordina;
+   * - lista -> altra lista: si trasferisce;
+   * - casella -> casella: si scambia, perche' due posti singoli non possono
+   *   diventare uno pieno e uno doppio;
+   * - lista -> casella: l'alimento entra nella casella, e quello che c'era
+   *   prende il suo posto nella lista, esattamente dove stava l'altro;
+   * - casella -> lista: la casella si svuota e l'alimento entra in lista.
+   */
+  spostaAlimento(combo: MealCombination, e: CdkDragDrop<ZonaDrop>): void {
     const da = e.previousContainer.data;
     const a = e.container.data;
-    if (da === a) return;
 
-    const arrivato = combo[da];
-    combo[da] = combo[a];
-    combo[a] = arrivato;
+    if (da.tipo === 'lista' && a.tipo === 'lista') {
+      if (da.items === a.items) {
+        if (e.previousIndex !== e.currentIndex) {
+          moveItemInArray(a.items, e.previousIndex, e.currentIndex);
+        }
+      } else {
+        transferArrayItem(da.items, a.items, e.previousIndex, e.currentIndex);
+      }
+      return;
+    }
 
-    // Come per le alternative: `category` dice da che macro viene, e dopo uno
-    // scambio direbbe il falso. Si aggiorna dov'e' gia' scritto.
-    if (combo[a]?.category) combo[a]!.category = a;
-    if (combo[da]?.category) combo[da]!.category = da;
+    if (da.tipo === 'casella' && a.tipo === 'casella') {
+      if (da.cat === a.cat) return;
+      const arrivato = combo[da.cat];
+      combo[da.cat] = combo[a.cat];
+      combo[a.cat] = arrivato;
+      this.allineaMacro(combo[a.cat], a.cat);
+      this.allineaMacro(combo[da.cat], da.cat);
+      return;
+    }
+
+    if (da.tipo === 'lista' && a.tipo === 'casella') {
+      const [promosso] = da.items.splice(e.previousIndex, 1);
+      if (!promosso) return;
+      const sfrattato = combo[a.cat];
+      combo[a.cat] = promosso;
+      // Quello che stava nella casella prende il posto lasciato libero: cosi'
+      // un alimento non sparisce perche' se ne e' trascinato un altro sopra.
+      if (sfrattato) da.items.splice(e.previousIndex, 0, sfrattato);
+      this.allineaMacro(promosso, a.cat);
+      return;
+    }
+
+    if (da.tipo === 'casella' && a.tipo === 'lista') {
+      const declassato = combo[da.cat];
+      if (!declassato) return;
+      combo[da.cat] = null;
+      a.items.splice(e.currentIndex, 0, declassato);
+    }
+  }
+
+  /**
+   * `category` dice da che macro viene un alimento, e serve solo a leggere i
+   * protocolli vecchi, quando le alternative erano una lista piatta. Dopo uno
+   * spostamento direbbe il falso: si aggiorna dov'e' gia' scritto, e non si
+   * aggiunge dove non c'era.
+   */
+  private allineaMacro(item: FoodItem | null, cat: FoodCategory): void {
+    if (item?.category) item.category = cat;
   }
 
   /** Riordina dentro una lista sola: integratori, alternative di un alimento. */
   riordina<T>(lista: T[], e: CdkDragDrop<T[]>): void {
     if (e.previousIndex === e.currentIndex) return;
     moveItemInArray(lista, e.previousIndex, e.currentIndex);
-  }
-
-  /**
-   * Le alternative del pasto: dentro il macro si riordinano, fra i macro si
-   * spostano. Serve perche' un alimento finito sotto il macro sbagliato - al
-   * coach capita, e all'import da PDF capita di piu' - oggi si puo' solo
-   * cancellare e riscrivere.
-   */
-  spostaAlternativa(e: CdkDragDrop<FoodItem[]>, catArrivo: FoodCategory): void {
-    if (e.previousContainer === e.container) {
-      this.riordina(e.container.data, e);
-      return;
-    }
-    transferArrayItem(e.previousContainer.data, e.container.data, e.previousIndex, e.currentIndex);
-    // `category` dice da che macro viene un alimento, e serve solo a leggere i
-    // protocolli vecchi (quando le alternative erano una lista piatta). Dopo
-    // uno spostamento direbbe il falso: si aggiorna dov'e' gia' scritto, e non
-    // si aggiunge dove non c'era.
-    const spostato = e.container.data[e.currentIndex];
-    if (spostato && spostato.category) spostato.category = catArrivo;
   }
 
   isAltExpanded(meal: NamedMeal): boolean {
