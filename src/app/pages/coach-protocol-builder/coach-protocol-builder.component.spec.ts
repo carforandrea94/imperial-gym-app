@@ -391,3 +391,86 @@ describe('CoachProtocolBuilderComponent — spostare un alimento', () => {
     expect(builder().ritardoPresa).toEqual({ touch: 150, mouse: 0 });
   });
 });
+
+/**
+ * Le tre caselle della combinazione: carboidrati, proteine, grassi.
+ *
+ * Non sono una lista ma tre posti singoli, quindi "spostare" qui vuol dire
+ * scambiare. Niente si perde: e' il motivo per cui non e' una
+ * sovrascrittura.
+ */
+describe('CoachProtocolBuilderComponent — scambiare le caselle della combinazione', () => {
+  function builder() {
+    return new CoachProtocolBuilderComponent(
+      {} as any, {} as any, {} as any, new PdfImportService(), new WorkoutDataService(),
+      { detectChanges: () => {} } as any,
+      new ProtocolBuilderStateService(), new ToastService(), new ConfirmDialogService()
+    );
+  }
+
+  function combo(): any {
+    return {
+      id: 'c1', label: 'Base',
+      carb: { name: 'Riso', qty: '100 g' },
+      protein: { name: 'Pollo', qty: '150 g' },
+      fat: null
+    };
+  }
+
+  function trascinamento(da: string, a: string): any {
+    return { previousContainer: { data: da }, container: { data: a }, previousIndex: 0, currentIndex: 0 };
+  }
+
+  it('due caselle piene si scambiano', () => {
+    const c = builder();
+    const k = combo();
+    c.scambiaSlot(k, trascinamento('protein', 'carb'));
+    expect(k.carb.name).toBe('Pollo');
+    expect(k.protein.name).toBe('Riso');
+  });
+
+  it('verso una casella vuota, la partenza resta vuota', () => {
+    const c = builder();
+    const k = combo();
+    c.scambiaSlot(k, trascinamento('protein', 'fat'));
+    expect(k.fat.name).toBe('Pollo');
+    expect(k.protein).toBeNull();
+    // Il carboidrato non c'entra e non si muove.
+    expect(k.carb.name).toBe('Riso');
+  });
+
+  it('lasciata nella sua casella, non succede niente', () => {
+    const c = builder();
+    const k = combo();
+    c.scambiaSlot(k, trascinamento('carb', 'carb'));
+    expect(k.carb.name).toBe('Riso');
+    expect(k.protein.name).toBe('Pollo');
+  });
+
+  it('non si perde mai un alimento', () => {
+    const c = builder();
+    const k = combo();
+    c.scambiaSlot(k, trascinamento('carb', 'protein'));
+    const rimasti = [k.carb, k.protein, k.fat].filter(Boolean).map((i: any) => i.name).sort();
+    expect(rimasti).toEqual(['Pollo', 'Riso']);
+  });
+
+  it('aggiorna il macro scritto nell\'alimento, se c\'era', () => {
+    const c = builder();
+    const k: any = {
+      id: 'c1', label: 'Base',
+      carb: { name: 'Bresaola', qty: '80 g', category: 'carb' },
+      protein: null, fat: null
+    };
+    c.scambiaSlot(k, trascinamento('carb', 'protein'));
+    expect(k.protein.category).toBe('protein');
+  });
+
+  it('le caselle si collegano solo fra loro', () => {
+    // Dentro ogni macro vive anche la lista delle alternative di
+    // quell'alimento: un gruppo intorno al giro aggancerebbe anche quelle, e
+    // si potrebbe trascinare la casella dentro le alternative - che e'
+    // un'altra cosa, con un altro significato. Il collegamento e' per nome.
+    expect(builder().slotCollegati).toEqual(['slot-carb', 'slot-protein', 'slot-fat']);
+  });
+});

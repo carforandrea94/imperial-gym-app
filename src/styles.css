@@ -914,6 +914,10 @@ lucide-icon svg.filled{fill:currentColor;}
    La lista tiene un'altezza minima anche da vuota, se no un macro senza
    alimenti non avrebbe dove ricevere quello che arriva dagli altri. */
 .draglist{min-height:14px;}
+/* La casella di un macro della combinazione: un posto solo, che pero' deve
+   poter ricevere anche quando e' vuoto - e' li' che si lascia l'alimento che
+   arriva da un altro macro. */
+.slotdrop{min-height:44px;}
 .draghandle{flex-shrink:0;display:flex;align-items:center;justify-content:center;width:34px;height:44px;margin-left:-6px;border:none;background:none;color:var(--label-3);cursor:grab;touch-action:none;}
 .draghandle:active{cursor:grabbing;}
 .builder-item.cdk-drag-dragging .draghandle{color:var(--accent);}
@@ -931,6 +935,7 @@ lucide-icon svg.filled{fill:currentColor;}
    lista, non al pollice per centrarla. Cresce solo durante il trascinamento:
    il resto del tempo un macro senza alimenti non deve lasciare un buco. */
 .draglist.cdk-drop-list-receiving{min-height:40px;outline:1px dashed var(--accent);outline-offset:4px;border-radius:var(--r-sm);}
+.slotdrop.cdk-drop-list-receiving{outline:1px dashed var(--accent);outline-offset:4px;border-radius:var(--r-sm);}
 
 /* La riga con "rimuovi" accanto a "salva". I due tasti erano di due famiglie
    diverse - .confirmbtn ha raggio, altezza, corpo e ombra tutti piu' piccoli

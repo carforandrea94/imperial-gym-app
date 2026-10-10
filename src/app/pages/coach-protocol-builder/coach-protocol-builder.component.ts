@@ -558,6 +558,34 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
    */
   readonly ritardoPresa = { touch: 150, mouse: 0 };
 
+  /** Le tre caselle si collegano fra loro per nome: vedi il commento nel
+   *  template sul perche' non sia un gruppo. */
+  readonly slotCollegati = FOOD_CATEGORIES.map(c => `slot-${c}`);
+
+  /**
+   * Le tre caselle della combinazione: carboidrati, proteine, grassi.
+   *
+   * Non sono una lista, sono tre posti singoli, quindi qui "spostare" vuol
+   * dire scambiare: l'alimento va nella casella d'arrivo e quello che c'era
+   * torna indietro, al posto suo. Se la casella d'arrivo era vuota, la
+   * partenza resta vuota. In nessun caso si perde qualcosa - ed e' il motivo
+   * per cui e' uno scambio e non una sovrascrittura.
+   */
+  scambiaSlot(combo: MealCombination, e: CdkDragDrop<FoodCategory>): void {
+    const da = e.previousContainer.data;
+    const a = e.container.data;
+    if (da === a) return;
+
+    const arrivato = combo[da];
+    combo[da] = combo[a];
+    combo[a] = arrivato;
+
+    // Come per le alternative: `category` dice da che macro viene, e dopo uno
+    // scambio direbbe il falso. Si aggiorna dov'e' gia' scritto.
+    if (combo[a]?.category) combo[a]!.category = a;
+    if (combo[da]?.category) combo[da]!.category = da;
+  }
+
   /** Riordina dentro una lista sola: integratori, alternative di un alimento. */
   riordina<T>(lista: T[], e: CdkDragDrop<T[]>): void {
     if (e.previousIndex === e.currentIndex) return;

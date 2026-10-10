@@ -444,14 +444,30 @@
       <ng-container *ngFor="let cat of foodCategories">
         <p class="sectiontitle mt-4">{{ foodCategoryLabels[cat] }}</p>
         <div class="infocard">
-          <div class="builder-item" *ngIf="getActiveCombo(em)[cat] as item; else noComboItem">
-            <div class="measure-input-wrap">
-              <input type="text" [(ngModel)]="item.name" placeholder="Alimento" />
+          <!-- Le tre caselle si collegano per nome, una a una, e non con un
+               gruppo: dentro ogni macro vive anche la lista delle alternative
+               di quell'alimento, e un gruppo intorno al giro le aggancerebbe
+               tutte - si potrebbe trascinare la casella dentro le alternative
+               e viceversa, che e' un'altra cosa e con un altro significato.
+               La casella accetta anche da vuota: e' li' che si lascia
+               l'alimento che arriva da un altro macro. -->
+          <div class="slotdrop" cdkDropList [id]="'slot-' + cat" [cdkDropListConnectedTo]="slotCollegati"
+            [cdkDropListData]="cat" (cdkDropListDropped)="scambiaSlot(getActiveCombo(em), $event)">
+            <div class="builder-item" *ngIf="getActiveCombo(em)[cat] as item; else noComboItem"
+              cdkDrag [cdkDragStartDelay]="ritardoPresa">
+              <button type="button" class="draghandle" cdkDragHandle
+                aria-label="Trascina per spostare in un altro macro">
+                <lucide-icon name="grip-vertical" [size]="16"></lucide-icon>
+              </button>
+              <div class="measure-input-wrap">
+                <input type="text" [(ngModel)]="item.name" placeholder="Alimento" />
+              </div>
+              <div class="measure-input-wrap builder-qty">
+                <input type="text" [(ngModel)]="item.qty" placeholder="Quantita'" />
+              </div>
+              <button class="delete-btn" (click)="clearComboItem(getActiveCombo(em), cat, $event)">✕</button>
+              <div class="dragghost" *cdkDragPlaceholder></div>
             </div>
-            <div class="measure-input-wrap builder-qty">
-              <input type="text" [(ngModel)]="item.qty" placeholder="Quantita'" />
-            </div>
-            <button class="delete-btn" (click)="clearComboItem(getActiveCombo(em), cat, $event)">✕</button>
           </div>
 
           <ng-container *ngIf="getActiveCombo(em)[cat] as item2">
