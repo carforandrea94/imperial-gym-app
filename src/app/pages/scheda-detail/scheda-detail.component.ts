@@ -22,7 +22,7 @@ import { todayLocalISO } from '../../core/utils/date.util';
 import { findClosestSlideIndex, scrollToSlide } from '../../core/utils/horizontal-slider.util';
 import {
   PerformedSet, oneRepMaxOf, rmTable, RmRow, RM_TABLE_MAX_REPS, MAX_TRUSTED_REPS,
-  loadAtPercent, repsAtPercent
+  loadAtPercent, repsAtPercent, numeroSevero
 } from '../../core/utils/load-estimate.util';
 import { ToastService } from '../../services/toast.service';
 import {
@@ -551,14 +551,17 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         sexData.sets.forEach(sr => {
           // Le serie a cluster restano fuori. Il loro carico e le loro
           // ripetizioni sono riassunti scritti per essere letti ("5+5+3",
-          // "62,5-55"), non numeri: parseFloat ne cava 5 e 62, che sembrano
-          // una serie vera e non lo sono. E un cluster non e' comunque una
-          // serie dritta - fra un blocco e l'altro c'e' una pausa - quindi
-          // nessuna di queste formule lo sa leggere.
+          // "62,5-55"), non numeri, e un cluster non e' comunque una serie
+          // dritta - fra un blocco e l'altro c'e' una pausa - quindi nessuna
+          // di queste formule lo sa leggere.
           if (sr.blocks?.length) return;
-          const load = parseFloat(sr.load ?? '');
-          const reps = parseFloat(sr.reps ?? '');
-          if (load > 0 && reps > 0) diQuesta.push({ load, reps });
+          // E si leggono solo i numeri interi e puliti. Non basta fidarsi dei
+          // blocchi: una seduta vecchia, o salvata a meta', puo' avere il
+          // riassunto senza di loro, e parseFloat da "5+5+3" cava 5 senza
+          // battere ciglio - un numero che sembra una serie vera e non lo e'.
+          const load = numeroSevero(sr.load);
+          const reps = numeroSevero(sr.reps);
+          if (load !== null && reps !== null) diQuesta.push({ load, reps });
         });
         if (diQuesta.length > 0) perSessione.push({ data: s.date, sets: diQuesta });
         lastSessionData = sexData.sets.map(sr => ({
@@ -603,7 +606,13 @@ export class SchedaDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       // la parte che si guarda davvero: dice se si sta salendo.
       let oneRmText: string | null = null;
       const ultima = perSessione[perSessione.length - 1];
-      const stima = ultima ? oneRepMaxOf(ultima.sets) : null;
+      // Su un esercizio a cluster non si stima niente, nemmeno quando una
+      // coppia pulita si trova: quella coppia non descrive il lavoro che si
+      // sta facendo. Un "5 ripetizioni, 30 secondi, a esaurimento" non ha un
+      // massimale da cui dedurre il carico di oggi, e un numero inventato li'
+      // in mezzo si legge come se lo avesse - l'ultima volta, invece, e' un
+      // fatto, e resta.
+      const stima = ultima && !vm.cluster ? oneRepMaxOf(ultima.sets) : null;
       if (stima) {
         const quando = this.giornoMese(ultima.data);
         oneRmText = `Dal massimale stimato di <b>${this.kg(stima.value)} kg</b>`

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   estimateOneRepMax, loadAtReps, bestSet, oneRepMaxOf, rmTable, RM_TABLE_MAX_REPS,
-  loadAtPercent, repsAtPercent
+  loadAtPercent, repsAtPercent, numeroSevero
 } from './load-estimate.util';
 
 describe('load-estimate', () => {
@@ -184,5 +184,39 @@ describe('load-estimate — la percentuale del massimale', () => {
     expect(repsAtPercent(0)).toBe(0);
     expect(repsAtPercent(120)).toBe(0);
     expect(repsAtPercent(NaN)).toBe(0);
+  });
+});
+
+/**
+ * Quello che arriva dalle sedute salvate e' testo scritto da chi si allena.
+ * Certe volte non e' una misura ma una frase, e parseFloat non lo sa.
+ */
+describe('load-estimate — leggere un numero da una seduta salvata', () => {
+  it('passa un numero scritto bene, con la virgola o col punto', () => {
+    expect(numeroSevero('30')).toBe(30);
+    expect(numeroSevero('62,5')).toBe(62.5);
+    expect(numeroSevero(' 80 ')).toBe(80);
+  });
+
+  it('non legge il riassunto di una serie a cluster', () => {
+    // parseFloat ne caverebbe 5: un numero plausibile, una serie mai esistita.
+    expect(numeroSevero('5+5+3')).toBeNull();
+    expect(numeroSevero('8+8')).toBeNull();
+  });
+
+  it('non legge un carico che scende', () => {
+    expect(numeroSevero('62,5-55')).toBeNull();
+  });
+
+  it('non legge una nota', () => {
+    expect(numeroSevero('8 per lato')).toBeNull();
+    expect(numeroSevero('max')).toBeNull();
+  });
+
+  it('niente, zero e il nulla non sono carichi', () => {
+    expect(numeroSevero(null)).toBeNull();
+    expect(numeroSevero(undefined)).toBeNull();
+    expect(numeroSevero('')).toBeNull();
+    expect(numeroSevero('0')).toBeNull();
   });
 });

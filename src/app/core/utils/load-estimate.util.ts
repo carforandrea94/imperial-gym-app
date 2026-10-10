@@ -55,6 +55,25 @@
  * la stessa cosa.
  */
 
+/**
+ * Un numero vero, o niente.
+ *
+ * Quello che si legge da una seduta salvata e' testo: lo scrive chi si
+ * allena, e certe volte non e' una misura ma una frase - il riassunto di una
+ * serie a cluster ("5+5+3"), un carico che scende ("62,5-55"), una nota ("8
+ * per lato"). parseFloat ne cava il primo pezzo senza battere ciglio, e
+ * quel pezzo arriva alle formule come se fosse un carico: da "5+5+3" un 5,
+ * da "62,5-55" un 62,5. Numeri plausibili, serie mai esistite.
+ *
+ * Qui passa solo quello che e' tutto un numero, e positivo.
+ */
+export function numeroSevero(raw: string | null | undefined): number | null {
+  const t = (raw ?? '').trim().replace(',', '.');
+  if (!/^\d+(\.\d+)?$/.test(t)) return null;
+  const n = parseFloat(t);
+  return isFinite(n) && n > 0 ? n : null;
+}
+
 /** Serie realmente eseguita, gia' convertita in numeri. */
 export interface PerformedSet {
   load: number;
