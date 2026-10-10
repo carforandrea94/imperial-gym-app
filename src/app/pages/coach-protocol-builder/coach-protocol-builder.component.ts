@@ -548,16 +548,6 @@ export class CoachProtocolBuilderComponent implements OnInit, OnDestroy {
   // allena legge per primo, quindi e' quello che compra. Prima si poteva
   // cambiare solo cancellando e riscrivendo.
 
-  /**
-   * Col mouse il trascinamento parte subito; col dito dopo un istante.
-   *
-   * Sul telefono la maniglia e' larga quanto un polpastrello e sta dentro una
-   * pagina che scorre: senza quel ritardo, il gesto per scendere lungo
-   * l'elenco diventerebbe a volte un trascinamento, e la riga partirebbe in
-   * mano a chi voleva solo leggere piu' in basso.
-   */
-  readonly ritardoPresa = { touch: 150, mouse: 0 };
-
   /** Le tre caselle si collegano fra loro per nome: vedi il commento nel
    *  template sul perche' non sia un gruppo. */
   readonly slotCollegati = FOOD_CATEGORIES.map(c => `slot-${c}`);

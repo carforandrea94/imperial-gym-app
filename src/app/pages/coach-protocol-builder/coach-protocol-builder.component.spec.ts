@@ -18,6 +18,7 @@ import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { PdfImportService } from '../../services/pdf-import.service';
 import { Protocol } from '../../models/protocol.model';
 
+
 describe('CoachProtocolBuilderComponent', () => {
   function buildProtocol(): Protocol {
     return {
@@ -385,10 +386,15 @@ describe('CoachProtocolBuilderComponent — spostare un alimento', () => {
     expect(fat.map(i => i.name)).toEqual(['Olio EVO']);
   });
 
-  it('col dito la presa aspetta un istante, col mouse no', () => {
-    // Sul telefono la maniglia sta dentro una pagina che scorre: senza quel
-    // ritardo il gesto per scendere diventerebbe a volte un trascinamento.
-    expect(builder().ritardoPresa).toEqual({ touch: 150, mouse: 0 });
+  it('la presa non aspetta: nessun ritardo, da nessuna parte', () => {
+    // Un cdkDragStartDelay non fa aspettare: se il dito si muove oltre i 5px
+    // PRIMA che sia scaduto, la CDK annulla la presa invece di rinviarla
+    // (_endDragSequence, drag-drop.mjs). Col dito si muove quasi sempre
+    // subito, quindi col ritardo non partiva niente e non si capiva perche'.
+    // La maniglia basta da sola a non far partire trascinamenti per sbaglio.
+    // Senza il campo, un [cdkDragStartDelay]="ritardoPresa" rimesso nel
+    // template non compila nemmeno: il controllo dei template lo ferma.
+    expect((builder() as any).ritardoPresa).toBeUndefined();
   });
 });
 

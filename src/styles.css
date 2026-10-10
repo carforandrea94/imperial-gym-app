@@ -911,6 +911,10 @@ lucide-icon svg.filled{fill:currentColor;}
 /* --- Trascinare una riga del builder ---
    La presa e' un elemento suo e non tutta la riga: la riga e' fatta di campi
    di testo, e prenderla dal campo vorrebbe dire non poterci piu' scrivere.
+   Ed e' anche l'unica difesa contro le prese per sbaglio: un ritardo
+   all'avvio non servirebbe, perche' la CDK - se il dito si muove prima che
+   scada - annulla la presa invece di rinviarla, e col dito ci si muove quasi
+   sempre subito.
    La lista tiene un'altezza minima anche da vuota, se no un macro senza
    alimenti non avrebbe dove ricevere quello che arriva dagli altri. */
 .draglist{min-height:14px;}
