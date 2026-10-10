@@ -673,3 +673,82 @@ describe('SchedaDetailComponent — la percentuale del massimale', () => {
     expect(component.notaScostamento(vm)).toBeNull();
   });
 });
+
+/**
+ * Gli esercizi a cluster non hanno un massimale da cui dedurre il carico.
+ *
+ * "5 ripetizioni, 30 secondi di pausa, a esaurimento" non e' una serie
+ * dritta: fra un blocco e l'altro si riposa, e nessuna delle formule sa
+ * leggerlo. Un numero messo li' in mezzo si legge come se invece lo sapesse.
+ */
+describe('SchedaDetailComponent — niente stime sui cluster', () => {
+  function conCluster(sets: any[]) {
+    const { component } = makeComponent({ sessionSuQuestoGiorno: true });
+    const vm = makeVm();
+    vm.cluster = { blocks: [5], restSec: 30, end: 'open' };
+    component.exercises = [vm];
+    (component as any).percentualeProgramma = 85;
+    (component as any).loadInsights([
+      { id: 'a', session: { date: '2026-09-21', exercises: [{ name: 'Panca piana', sets }] } }
+    ]);
+    return { component, vm };
+  }
+
+  it('non stima niente, nemmeno quando trova una coppia pulita', () => {
+    // E' il caso visto a schermo: un 3 x 5 rimasto in una seduta vecchia
+    // diventava "massimale stimato 3,5 kg" sotto un esercizio caricato a 30.
+    const { vm } = conCluster([{ load: '3', reps: '5', done: true }]);
+    expect(vm.insight.oneRmText).toBeNull();
+    expect(vm.insight.rmRows).toBeNull();
+    expect(vm.insight.programLoad).toBeNull();
+  });
+
+  it('l\'ultima volta resta: quella e\' un fatto', () => {
+    const { vm } = conCluster([{ load: '30', reps: '5', done: true }]);
+    expect(vm.insight.lastText).toBe('Ultimo (21/09): 30 kg');
+  });
+
+  it('su una serie dritta la stima torna', () => {
+    const { component } = makeComponent({ sessionSuQuestoGiorno: true });
+    const vm = makeVm();
+    component.exercises = [vm];
+    (component as any).loadInsights([
+      { id: 'a', session: { date: '2026-09-21', exercises: [{ name: 'Panca piana', sets: [{ load: '80', reps: '6' }] }] } }
+    ]);
+    expect(vm.insight.oneRmText).toContain('93 kg');
+  });
+});
+
+/**
+ * I riassunti non sono numeri. Vale anche quando i blocchi non ci sono -
+ * una seduta vecchia, o salvata a meta' - ed e' li' che prima passavano.
+ */
+describe('SchedaDetailComponent — un riassunto non e\' una misura', () => {
+  function senzaBlocchi(sets: any[]) {
+    const { component } = makeComponent({ sessionSuQuestoGiorno: true });
+    const vm = makeVm();
+    component.exercises = [vm];
+    (component as any).loadInsights([
+      { id: 'a', session: { date: '2026-09-21', exercises: [{ name: 'Panca piana', sets }] } }
+    ]);
+    return vm;
+  }
+
+  it('"5+5+3" non vale 5 ripetizioni', () => {
+    const vm = senzaBlocchi([{ load: '30', reps: '5+5+3', done: true }]);
+    expect(vm.insight.oneRmText).toBeNull();
+  });
+
+  it('"62,5-55" non vale 62,5 kg', () => {
+    const vm = senzaBlocchi([{ load: '62,5-55', reps: '5', done: true }]);
+    expect(vm.insight.oneRmText).toBeNull();
+  });
+
+  it('una serie dritta nella stessa seduta si legge lo stesso', () => {
+    const vm = senzaBlocchi([
+      { load: '62,5-55', reps: '5+5+3', done: true },
+      { load: '70', reps: '5', done: true }
+    ]);
+    expect(vm.insight.oneRmText).toContain('70 × 5');
+  });
+});
