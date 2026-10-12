@@ -8,7 +8,8 @@ import { Injectable } from '@angular/core';
 // ne' della logica di parsing (verificato: lo stesso identico file estrae il
 // testo senza errori con questa stessa libreria).
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
-import { Day, Exercise, WeekPlan } from '../models/workout.model';
+import { Day, Exercise, WeekPlan, ClusterSpec } from '../models/workout.model';
+import { normalizeCluster } from '../core/utils/cluster.util';
 import {
   Diet, DietPlan, NamedMeal, MealCombination, FoodItem, FoodCategory, SupplementItem,
   DEFAULT_MEAL_NAMES, newDietPlan, newNamedMeal, newCombination
@@ -122,8 +123,27 @@ function categorizeFood(name: string): FoodCategory | 'skip' {
 }
 
 const DURATA_RE = /DURATA\s+(\d+)\s+SETTIMANE/i;
-/** "DAY 1 : PETTO-SPALLE-TRICIPITI REC TRA 60-90”" (spaziatura/virgolette variabili prima dei due punti). */
-const DAY_HEADER_RE = /^DAY\s*(\d+)\s*:\s*(.+?)\s+REC\s+TRA\s+([\d\-]+)[”"″'’]*\s*$/i;
+/**
+ * "DAY 1 : PETTO-SPALLE-TRICIPITI REC TRA 60-90”", e anche senza il recupero:
+ * "DAY 1 : ADDUTTORI-TRICIPITI-ADDOME-LAVORO AEROBICO RISCALDAMENTO 3’".
+ *
+ * Il recupero dichiarato nell'intestazione e' facoltativo perche' c'e' chi lo
+ * scrive una volta per tutto il giorno e chi lo scrive su ogni esercizio
+ * ("REC 1’", "REC 50”"). Nel secondo caso lo si ricava dagli esercizi, piu'
+ * sotto: senza, il giorno resterebbe senza un recupero da proporre.
+ */
+const DAY_HEADER_RE = /^DAY\s*(\d+)\s*:\s*(.+?)(?:\s+REC\s+TRA\s+([\d\-]+)[”"″'’]*)?\s*$/i;
+/** Il riscaldamento finisce in coda ai muscoli del giorno: non e' un muscolo. */
+const RISCALDAMENTO_RE = /\s+RISCALDAMENTO\b.*$/i;
+/**
+ * "REC 1’" sono sessanta secondi, "REC 50”" sono cinquanta: l'apostrofo sono
+ * minuti, il doppio apice secondi. Vale anche per "RECUPERO".
+ */
+const REC_RE = /\bREC(?:UPERO)?\.?\s*(\d+)\s*([”"″'’])?/i;
+/** "12/15’ VELOCITÀ 5,5 KM": il lavoro aerobico si conta in minuti. */
+const DURATA_MINUTI_RE = /^(\d+(?:\s*\/\s*\d+)?\s*[’'])/;
+/** "6X15+12 PAUSA 5”": una serie spezzata in due blocchi con una pausa dentro. */
+const PAUSA_RE = /\bPAUSA\s*(\d+)\s*[”"″]/i;
 /** "EX.1/SPINTE MANUBRI PANCA PIANA": il nome puo' contenere altre "/" (es. "DIPS MACHINE/PARALLELE"). */
 const EX_HEADER_RE = /^EX\.?\s*(\d+)\s*\/\s*(.+)$/i;
 /** Coppie "SxR" isolate su una riga schema, es. "4X10 4X10 4X8 ... 5X6" o "2x8 1x20". */
@@ -196,6 +216,20 @@ function toTitleCase(label: string): string {
 
 /** "12-10-8" con 3 set -> un valore diverso per set; altrimenti (range "10/12", bilaterale
  *  "12+12", isometria "2’", "MAX", ripetizione fissa "8"...) lo stesso descrittore per ogni set. */
+/**
+ * I secondi di recupero scritti in una riga di schema, o null se non ce ne
+ * sono. L'apostrofo sono minuti ("REC 1’" = 60), il doppio apice secondi
+ * ("REC 50”" = 50); senza simbolo si leggono come secondi, che e' come li
+ * scrive chi non mette il segno.
+ */
+function secondiDiRecupero(line: string): number | null {
+  const m = line.match(REC_RE);
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  if (!isFinite(n) || n <= 0) return null;
+  return /['’]/.test(m[2] ?? '') ? n * 60 : n;
+}
+
 function buildReps(sets: number, repsRaw: string): string[] {
   const parts = repsRaw.split('-').map(s => s.trim()).filter(Boolean);
   if (parts.length === sets) return parts;
@@ -441,7 +475,7 @@ export class PdfImportService {
 
       const dayMatch = line.match(DAY_HEADER_RE);
       if (dayMatch) {
-        const label = dayMatch[2].trim();
+        const label = dayMatch[2].replace(RISCALDAMENTO_RE, '').trim();
         const dayLabel = toTitleCase(label);
         // Stesso fix del parser dieta: "DAY N: ..." e' anche l'intestazione ripetuta a
         // inizio di OGNI pagina, non solo a inizio sezione. Se e' lo stesso giorno gia' in
@@ -452,7 +486,8 @@ export class PdfImportService {
         if (existingDay !== currentDay) {
           finalizePending();
           currentDayMuscles = label.split(/[-,/]/).map(s => s.trim()).filter(Boolean);
-          currentDay = existingDay ?? { id: `day${days.length + 1}`, label: dayLabel, rec: `${dayMatch[3].trim()}"`, ex: [] };
+          const recDichiarato = dayMatch[3] ? `${dayMatch[3].trim()}"` : '';
+          currentDay = existingDay ?? { id: `day${days.length + 1}`, label: dayLabel, rec: recDichiarato, ex: [] };
           if (!existingDay) days.push(currentDay);
         }
         continue;
@@ -468,14 +503,49 @@ export class PdfImportService {
       }
 
       if (pendingExercise) {
+        // Il nome di un esercizio puo' finire a capo: "EX.2/CAMMINATA LATERALE
+        // CON FASCIA (3 PASSI A SX E 3 PASSI A DX" e sotto "RESTANDO BASSA IN
+        // POSIZIONE SQUAT = 1 MOVIMENTO)". Una riga di schema comincia sempre
+        // con una cifra - "6X10 REC 50”", "12/15’ VELOCITÀ 5,5 KM" - una
+        // continuazione del nome no. Prima la continuazione veniva letta come
+        // schema (e non lo era), e lo schema vero, arrivando dopo, si perdeva.
+        if (!/^\d/.test(line)) {
+          pendingExercise = `${pendingExercise} ${line}`.replace(/\s+/g, ' ').trim();
+          continue;
+        }
         currentDay.ex.push(this.parseSchemeLine(line, pendingExercise, currentDayMuscles, totalWeeks));
         pendingExercise = null;
       }
       // altre righe fuori contesto (raro in questo formato) vengono ignorate
     }
     finalizePending();
+    for (const day of days) {
+      if (!day.rec) day.rec = this.recDagliEsercizi(day);
+    }
 
     return days.length > 0 ? days : null;
+  }
+
+  /**
+   * Il recupero del giorno, quando l'intestazione non lo dichiara: si prende
+   * quello scritto sugli esercizi ("REC 1’", "REC 50”") e si tiene il piu'
+   * frequente. E' un default - nell'app si cambia per esercizio - e il
+   * numero piu' ricorrente e' quello che fa sbagliare meno volte.
+   *
+   * Nessuno scritto, nessun default: resta vuoto, e l'app usa i suoi 90".
+   */
+  private recDagliEsercizi(day: Day): string {
+    const conteggi = new Map<number, number>();
+    for (const ex of day.ex) {
+      const sec = secondiDiRecupero(ex.text ?? '');
+      if (sec !== null) conteggi.set(sec, (conteggi.get(sec) ?? 0) + 1);
+    }
+    let scelto: number | null = null;
+    let piuVisto = 0;
+    for (const [sec, n] of conteggi) {
+      if (n > piuVisto) { scelto = sec; piuVisto = n; }
+    }
+    return scelto === null ? '' : `${scelto}"`;
   }
 
   /** Interpreta la riga di schema subito sotto "EX.N/Nome": puo' essere una progressione
@@ -484,6 +554,21 @@ export class PdfImportService {
   private parseSchemeLine(line: string, name: string, dayMuscles: string[], totalWeeks: number): Exercise {
     const muscle = categorizeExerciseMuscle(name, dayMuscles);
     const pairs = Array.from(line.matchAll(PAIR_RE)).map(m => ({ sets: parseInt(m[1], 10), reps: parseInt(m[2], 10) }));
+
+    // "6X15+12 PAUSA 5”": una serie spezzata in due, con una pausa dentro.
+    // L'app i cluster li sa fare - blocchi, pausa che scorre, riassunto - ma
+    // solo se glielo si dice qui: senza, "15+12" finisce nelle ripetizioni
+    // come testo, e una ruota che deve mostrare un numero ci legge 15.
+    const cluster = this.clusterDaRiga(line);
+    if (cluster) {
+      return {
+        name, scheme: 'plain', sets: cluster.sets, muscle,
+        reps: Array.from({ length: cluster.sets }, () => cluster.spec.blocks.join('+')),
+        cluster: cluster.spec,
+        note: cluster.nota,
+        text: line
+      };
+    }
 
     if (pairs.length >= 2 && WAVE_MARKER_RE.test(line)) {
       const weekPlan: WeekPlan[] = Array.from({ length: totalWeeks }, (_, i) => pairs[i % pairs.length]);
@@ -497,6 +582,19 @@ export class PdfImportService {
       const sets = pairs.reduce((acc, p) => acc + p.sets, 0);
       const reps = pairs.flatMap(p => Array.from({ length: p.sets }, () => String(p.reps)));
       return { name, scheme: 'plain', sets, muscle, reps, text: line };
+    }
+
+    // "12/15’ VELOCITÀ 5,5 KM", "7/8’ MAX VELOCITÀ 5 KM": il tappeto non si
+    // conta in serie per ripetizioni, si conta in minuti. Scriverlo come
+    // "schema non riconosciuto" con un 3x12 inventato sotto sarebbe peggio
+    // che non scriverlo: quel 3x12 nessuno l'ha mai chiesto.
+    const durata = line.match(DURATA_MINUTI_RE);
+    if (durata && pairs.length === 0) {
+      const resto = line.slice(durata[0].length).trim();
+      return {
+        name, scheme: 'plain', sets: 1, muscle,
+        reps: [durata[1]], note: resto || undefined, text: line
+      };
     }
 
     const single = line.match(SINGLE_SCHEME_RE);
@@ -521,6 +619,36 @@ export class PdfImportService {
       name, scheme: 'plain', sets: 3, muscle, reps: ['12', '12', '12'],
       note: `Schema non riconosciuto nel PDF ("${line}"): da rivedere nel builder.`, text: line
     };
+  }
+
+  /**
+   * Una serie a cluster letta dalla riga: "6X15+12 PAUSA 5”" sono sei serie
+   * fatte di 15 ripetizioni, cinque secondi di pausa, altre 12.
+   *
+   * Si riconosce solo quando la pausa c'e' scritta, coi suoi secondi. Un
+   * "12+10" senza pausa puo' essere un cluster come un doppio carico o uno
+   * stripping, e inventargliela vorrebbe dire far partire un conto alla
+   * rovescia che il coach non ha mai chiesto.
+   *
+   * Il resto della riga ("E RIPARTI CON LO STESSO GLUTEO PER LE 12") resta
+   * come nota: e' un'istruzione per chi si allena, e il parser non deve
+   * provare a capirla.
+   */
+  private clusterDaRiga(line: string): { sets: number; spec: ClusterSpec; nota?: string } | null {
+    const pausa = line.match(PAUSA_RE);
+    if (!pausa) return null;
+    const m = line.match(/^(\d+)\s*[xX×]\s*(\d+)\s*\+\s*(\d+)/);
+    if (!m) return null;
+
+    const spec = normalizeCluster({
+      blocks: [parseInt(m[2], 10), parseInt(m[3], 10)],
+      restSec: parseInt(pausa[1], 10),
+      end: 'fixed'
+    });
+    if (!spec) return null;
+
+    const nota = line.slice(pausa.index! + pausa[0].length).trim();
+    return { sets: parseInt(m[1], 10), spec, nota: nota || undefined };
   }
 
   /**
