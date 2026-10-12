@@ -140,7 +140,10 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
       if (this.loadingExisting) return false;
       return !!(this.schedaFile || this.dietaFile || this.integrazioneFile);
     }
-    return !!this.schedaFile && !!this.dietaFile;
+    // Solo la scheda e' obbligatoria. La dieta si puo' scrivere a mano nel
+    // builder, e per molti clienti il coach la scrive li' e basta: chiedere
+    // un PDF che non esiste bloccava la creazione del protocollo.
+    return !!this.schedaFile;
   }
 
   private async withTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
@@ -253,16 +256,21 @@ export class CoachProtocolImportComponent implements OnInit, OnDestroy {
     this.setStage('Lettura scheda allenamento…', 20);
     const schedaText = await this.withTimeout(this.pdfSvc.extractText(this.schedaFile!), 'Lettura scheda');
 
-    this.setStage('Lettura dieta…', 40);
-    const dietaText = await this.withTimeout(this.pdfSvc.extractText(this.dietaFile!), 'Lettura dieta');
+    // Senza il PDF della dieta il protocollo nasce con la dieta vuota: il
+    // builder la apre su "Nessun piano ancora" e la si scrive li'.
+    let dietaText = '';
+    if (this.dietaFile) {
+      this.setStage('Lettura dieta…', 40);
+      dietaText = await this.withTimeout(this.pdfSvc.extractText(this.dietaFile), 'Lettura dieta');
+    }
 
     this.setStage('Analisi esercizi e alimenti…', 65);
     const days = this.pdfSvc.parseWorkoutText(schedaText);
-    const diet = this.pdfSvc.parseDietText(dietaText);
+    const diet = dietaText ? this.pdfSvc.parseDietText(dietaText) : [];
     const durationWeeks = this.pdfSvc.detectProgramDurationWeeks(schedaText);
     const weekPlan = this.pdfSvc.detectProtocolWeekPlan(days, durationWeeks);
 
-    const dietNotesSource = this.pdfSvc.extractDietNotes(dietaText);
+    const dietNotesSource = dietaText ? this.pdfSvc.extractDietNotes(dietaText) : '';
     let supplementNotesSource = '';
     if (this.integrazioneFile) {
       this.setStage('Lettura integrazione…', 75);
