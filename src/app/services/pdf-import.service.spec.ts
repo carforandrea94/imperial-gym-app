@@ -711,3 +711,136 @@ bromelina assumere la dose consigliata a pranzo e cena`;
     ]);
   });
 });
+
+/**
+ * Il secondo template di scheda, quello senza "REC TRA" nell'intestazione.
+ *
+ * Il testo e' quello vero, estratto da un PDF del coach con lo stesso pdfjs
+ * che usa l'app: i ritorni a capo, le virgolette tipografiche e i nomi
+ * spezzati a meta' riga sono i suoi, non una semplificazione.
+ */
+const SCHEDA_SENZA_REC_TRA = `DAY 1 : ADDUTTORI-TRICIPITI-ADDOME-LAVORO AEROBICO RISCALDAMENTO 3’
+TAPPETO O CYCLET
+EX.1/MACCHINA ADDUTTORI
+4X12+10 REC 1’
+EX.2/CAMMINATA LATERALE CON FASCIA (3 PASSI A SX E 3 PASSI A DX
+RESTANDO BASSA IN POSIZIONE SQUAT = 1 MOVIMENTO)
+6X10 REC 50”
+EX.3/STACCHI SUMO CON BILANCIERE
+5X12 REC 1’
+EX.4/PUSH DOWN
+5X15 REC 1’
+EX.5/DOWN UP
+3X15 REC 1’
+EX.6/CRUNCH SU PANCA+CRUNCH INVERSO SU PANCA
+5X20+5X15 REC 40”
+EX.7/TAPPETO, CYCLET O ELLITTICA POST WORKOUT
+12/15’ VELOCITÀ 5,5 KM
+DAY 2 : GLUTEI-FEMORALI-DORSALI-ADDOME-LAVORO AEROBICO
+EX.1/MACCHINA GLUTEI
+5X12 ISOMETRIA 2” REC 1’
+EX.2/STACCHI GLUTEI
+4X12+10 DOPPIO CARICO REC 80”
+EX.3/SPINTE 90 GLUTEI DA TERRA CON FASCIA
+6X15+12 PAUSA 5” E RIPARTI CON LO STESSO GLUTEO PER LE 12
+EX.4/STACCHI FEMORALI GAMBA TESA
+6X12 REC 50”
+EX.5/LAT MACHINE
+5X12 REC 1’
+EX.6/ADDOME TRASVERSO A TERRA
+6X12 REC 40”
+EX.7/TAPPETO, CYCLET O ELLITTICA
+10/12’ VELOCITÀ 5,5 KM
+DAY 3 : GLUTEI-GAMBE-LOMBARI-LAVORO AEROBICO RISCALDAMENTO 5’
+TAPPETO, CYCLET O ELLITTICA
+EX.1/SWING CON KETTLEBELL
+6X15 PESO DA 6 O 8 REC 1’
+EX.2/SALTI SUMO CON KETTLEBELL
+5X12 REC 50”
+EX.3/APERTURE LATERALI CON SPINTA DEI GLUTEI VERSO IL BASSO CON
+KETTLEBELL
+5X12 PER GAMBA REC 1’
+EX.4/AFFONDO CON KETTLEBELL CON ROTAZIONE DI 45° DEL PIEDE VERSO
+L’INTERNO 
+4X12 PER GAMBA REC 1’
+EX.5/HYPEREXTENSION CORPO LIBERO
+5X10 REC 50”
+EX.6/BURPEES
+4X10 REC 50”
+EX.7/DEFATICAMENTO TAPPETO, CYCLET O ELLITTICA
+7/8’ MAX VELOCITÀ 5 KM`;
+
+describe('parseWorkoutText — il template senza "REC TRA"', () => {
+  const giorni = () => new PdfImportService().parseWorkoutText(SCHEDA_SENZA_REC_TRA);
+
+  it('legge i tre giorni, e il riscaldamento non e\' un muscolo', () => {
+    const d = giorni();
+    expect(d.length).toBe(3);
+    // Nell'intestazione c'e' "...LAVORO AEROBICO RISCALDAMENTO 3’": il
+    // riscaldamento esce dall'elenco dei gruppi muscolari.
+    expect(d[0].label).toBe('Adduttori-Tricipiti-Addome-Lavoro aerobico');
+    expect(d[1].label).toBe('Glutei-Femorali-Dorsali-Addome-Lavoro aerobico');
+    expect(d[2].label).toBe('Glutei-Gambe-Lombari-Lavoro aerobico');
+  });
+
+  it('il recupero del giorno lo ricava dagli esercizi', () => {
+    // L'intestazione non lo dichiara, ma ogni esercizio ha il suo ("REC 1’",
+    // "REC 50”"): si tiene il piu' frequente, che qui e' un minuto.
+    expect(giorni().every(d => d.rec === '60"')).toBe(true);
+  });
+
+  it('sette esercizi per giorno, nell\'ordine del PDF', () => {
+    const d = giorni();
+    expect(d.map(g => g.ex.length)).toEqual([7, 7, 7]);
+    expect(d[0].ex[0].name).toBe('MACCHINA ADDUTTORI');
+    expect(d[0].ex[2].name).toBe('STACCHI SUMO CON BILANCIERE');
+  });
+
+  it('un nome che va a capo resta un nome solo', () => {
+    // "EX.2/CAMMINATA LATERALE CON FASCIA (3 PASSI A SX E 3 PASSI A DX" e
+    // sotto "RESTANDO BASSA IN POSIZIONE SQUAT = 1 MOVIMENTO)". Prima la
+    // seconda riga veniva letta come schema, e lo schema vero si perdeva.
+    const ex = giorni()[0].ex[1];
+    expect(ex.name).toBe(
+      'CAMMINATA LATERALE CON FASCIA (3 PASSI A SX E 3 PASSI A DX RESTANDO BASSA IN POSIZIONE SQUAT = 1 MOVIMENTO)'
+    );
+    expect(ex.sets).toBe(6);
+    expect(ex.reps).toEqual(['10', '10', '10', '10', '10', '10']);
+  });
+
+  it('il recupero del singolo esercizio resta scritto', () => {
+    expect(giorni()[0].ex[1].note).toBe('REC 50”');
+  });
+
+  it('"6X15+12 PAUSA 5”" e\' una serie a cluster', () => {
+    const ex = giorni()[1].ex[2];
+    expect(ex.name).toBe('SPINTE 90 GLUTEI DA TERRA CON FASCIA');
+    expect(ex.sets).toBe(6);
+    expect(ex.cluster).toEqual({ blocks: [15, 12], restSec: 5, end: 'fixed' });
+    // Il resto della riga e' un'istruzione per chi si allena, non per il parser.
+    expect(ex.note).toBe('E RIPARTI CON LO STESSO GLUTEO PER LE 12');
+  });
+
+  it('senza una pausa scritta non si inventa un cluster', () => {
+    // "4X12+10 REC 1’" puo' essere un doppio carico o uno stripping: dargli
+    // una pausa vorrebbe dire far partire un conto che nessuno ha chiesto.
+    const ex = giorni()[0].ex[0];
+    expect(ex.cluster).toBeUndefined();
+    expect(ex.sets).toBe(4);
+  });
+
+  it('il lavoro aerobico si conta in minuti, non in serie', () => {
+    const ex = giorni()[0].ex[6];
+    expect(ex.name).toBe('TAPPETO, CYCLET O ELLITTICA POST WORKOUT');
+    expect(ex.sets).toBe(1);
+    expect(ex.reps).toEqual(['12/15’']);
+    expect(ex.note).toBe('VELOCITÀ 5,5 KM');
+  });
+
+  it('due schemi sulla stessa riga restano due blocchi di serie', () => {
+    // "5X20+5X15 REC 40”" sul superset dei crunch: cinque da 20 e cinque da 15.
+    const ex = giorni()[0].ex[5];
+    expect(ex.sets).toBe(10);
+    expect(ex.reps).toEqual(['20', '20', '20', '20', '20', '15', '15', '15', '15', '15']);
+  });
+});
