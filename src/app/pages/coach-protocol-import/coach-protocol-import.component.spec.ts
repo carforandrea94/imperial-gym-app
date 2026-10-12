@@ -130,4 +130,54 @@ describe('CoachProtocolImportComponent', () => {
     expect(onPlan.meals.find(m => m.name === 'Cena')!.supplements)
       .toEqual([{ name: 'Magnesio', qty: '400 mg' }, { name: 'Creatina', qty: '5 g' }]);
   });
+
+  /**
+   * Il PDF della dieta e' opzionale.
+   *
+   * Per molti clienti il coach la dieta la scrive a mano nel builder, e
+   * chiedere un PDF che non esiste bloccava la creazione del protocollo. La
+   * scheda invece resta obbligatoria: senza, non c'e' un protocollo.
+   */
+  describe('la dieta e\' opzionale', () => {
+    const finto = (nome: string) => new File(['x'], nome, { type: 'application/pdf' });
+
+    // "aggiornamento" vuol dire che c'e' gia' un protocollo: lo dice
+    // protocolId, da cui isUpdateMode si ricava.
+    function inCreazione() {
+      const c = buildComponent();
+      c.protocolId = '';
+      return c;
+    }
+
+    it('con la sola scheda si puo\' procedere', () => {
+      const c = inCreazione();
+      c.schedaFile = finto('scheda.pdf');
+      expect(c.canProcess).toBe(true);
+    });
+
+    it('senza scheda no, nemmeno con la dieta', () => {
+      const c = inCreazione();
+      c.dietaFile = finto('dieta.pdf');
+      expect(c.canProcess).toBe(false);
+    });
+
+    it('a mani vuote no', () => {
+      expect(inCreazione().canProcess).toBe(false);
+    });
+
+    it('mentre elabora, no', () => {
+      const c = inCreazione();
+      c.schedaFile = finto('scheda.pdf');
+      c.processing = true;
+      expect(c.canProcess).toBe(false);
+    });
+
+    it('in aggiornamento basta ancora uno qualsiasi dei tre', () => {
+      const c = buildComponent();
+      c.protocolId = 'proto1';
+      c.loadingExisting = false;
+      c.dietaFile = finto('dieta.pdf');
+      expect(c.canProcess).toBe(true);
+    });
+  });
 });

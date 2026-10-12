@@ -6,6 +6,11 @@
     E' un'estrazione best-effort: funziona meglio se il PDF ha un formato semplice
     (una riga per esercizio/alimento). Rivedi sempre la bozza nel builder prima di attivarla.
   </p>
+  <p class="bacheca-text mb-4" *ngIf="!isUpdateMode">
+    Serve solo la scheda. Senza il PDF della dieta il protocollo nasce senza piani
+    alimentari e la dieta si scrive a mano nel builder — dove si puo' anche caricarla
+    piu' tardi, con "Aggiorna da PDF".
+  </p>
   <p class="bacheca-text mb-4" *ngIf="isUpdateMode">
     Carica almeno uno dei PDF per aggiornare le parti corrispondenti del
     protocollo. Ricaricare la dieta o l'integrazione da sola non cancella le
@@ -18,7 +23,7 @@
   </div>
 
   <div class="authfield">
-    <label>{{ isUpdateMode ? 'Dieta' : 'Dieta (obbligatorio)' }}</label>
+    <label>{{ isUpdateMode ? 'Dieta' : 'Dieta (opzionale)' }}</label>
     <input type="file" accept="application/pdf" (change)="onFile($event, 'dieta')" />
   </div>
 
